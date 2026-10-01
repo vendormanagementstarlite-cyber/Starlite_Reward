@@ -1342,15 +1342,27 @@ function setLive(on,txt){ $('#live').classList.toggle('on',on); $('#liveTxt').te
 
 /* ---------- GOOGLE SHEETS SYNC ---------- */
 const EXEC_URL='https://script.google.com/macros/s/AKfycbwzFfC919JOKjANI8Gq6Ix6knLqaMpahIZw5zwcUU_vwoKN94pZRwYvfsyL22yIPHp48g/exec';
-function api(fn,...args){
+const READ_FNS=['getData','getDigest','checkAdminPin'];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function rawApi(fn,args){
+  const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),30000);
+  return fetch(EXEC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn,args}),redirect:'follow',cache:'no-store',signal:ctl.signal})
+    .then(r=>r.json()).then(j=>{ if(!j.ok) throw new Error(j.error||'Gagal memanggil server'); const r=j.result; if(r&&r.error){ const e=new Error(r.error); e.logical=true; throw e; } return r; })
+    .catch(e=>{ if(e.name==='AbortError') throw new Error('Server lambat merespons'); throw e; })
+    .finally(()=>clearTimeout(to));
+}
+async function api(fn,...args){
   if(window.google&&google.script&&google.script.run){   // dibuka dari dalam Apps Script
     return new Promise((res,rej)=>{ google.script.run
       .withSuccessHandler(r=>{ if(r&&r.error) rej(new Error(r.error)); else res(r); })
       .withFailureHandler(e=>rej(new Error((e&&e.message)||String(e))))[fn](...args); });
   }
-  // dibuka dari luar (mis. GitHub Pages): panggil Web App Apps Script lewat HTTP
-  return fetch(EXEC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn,args}),redirect:'follow'})
-    .then(r=>r.json()).then(j=>{ if(!j.ok) throw new Error(j.error||'Gagal memanggil server'); const r=j.result; if(r&&r.error) throw new Error(r.error); return r; });
+  // dibuka dari luar (mis. GitHub Pages): panggil Web App Apps Script lewat HTTP; data dibaca dicoba ulang otomatis
+  const tries=READ_FNS.includes(fn)?3:1; let last;
+  for(let i=0;i<tries;i++){
+    try{ return await rawApi(fn,args); }catch(e){ last=e; if(e.logical) throw e; if(i<tries-1) await sleep(800*(i+1)); }
+  }
+  throw last;
 }
 let digest=null, loading=false;
 function applyData(d){
@@ -1360,12 +1372,18 @@ function applyData(d){
   if(!d.admin){ try{ localStorage.setItem('starlite-cache',JSON.stringify({mitra:d.mitra||[],stasiun:d.stasiun||[],ach:d.ach||null,regs:d.regs||[]})); }catch(e){} }
   const t=new Date(); setLive(true,'Tersinkron · '+t.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));
 }
+let fails=0, pollTimer=null;
 async function load(){ if(loading) return; loading=true;
-  try{ applyData(await api('getData',mode==='admin'?adminPw:'')); }catch(err){ setLive(false,'Gagal sinkron, mencoba lagi…'); }
+  try{ applyData(await api('getData',mode==='admin'?adminPw:'')); fails=0; }
+  catch(err){ fails++; console.warn('sync gagal:',err&&err.message); if(fails>=2||!state.mitra.length) setLive(false,'Gagal sinkron, mencoba lagi…'); }
   loading=false; }
 async function poll(){
-  if(!document.hidden && !loading){ try{ const dg=await api('getDigest'); if(dg!==digest) await load(); else setLive(true,'Tersinkron · '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})); }catch(e){ setLive(false,'Koneksi terputus, mencoba lagi…'); } }
-  setTimeout(poll,8000);
+  clearTimeout(pollTimer);
+  if(!document.hidden && !loading){
+    try{ const dg=await api('getDigest'); fails=0; if(dg!==digest) await load(); else setLive(true,'Tersinkron · '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})); }
+    catch(e){ fails++; console.warn('poll gagal:',e&&e.message); if(fails>=2) setLive(false,'Koneksi terputus, mencoba lagi…'); }
+  }
+  pollTimer=setTimeout(poll,15000);
 }
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) poll(); });
 function init(){
@@ -1376,7 +1394,7 @@ function init(){
   setMode(m);
   setLive(false,'Memuat dari Google Sheets…');
   if(m==='mitra'){ try{ const c=JSON.parse(localStorage.getItem('starlite-cache')||'null'); if(c&&c.mitra){ state.mitra=c.mitra.map(n=>({nama:n})); state.stasiun=c.stasiun||[]; state.ach=c.ach||null; state.regs=c.regs||[]; refreshAll(); setLive(false,'Memperbarui data…'); } }catch(e){} }
-  load().then(()=>setTimeout(poll,8000));
+  load().then(()=>{ pollTimer=setTimeout(poll,15000); });
 }
 init();
 })();
