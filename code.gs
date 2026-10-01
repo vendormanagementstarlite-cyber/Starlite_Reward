@@ -208,7 +208,7 @@ function achData_() {
     const hasReg = String(at(r, I.reg)).trim() !== '';
     const mitra = String(at(r, I.mitra)).trim(), st = String(at(r, I.st)).trim(), rgn = String(at(r, I.reg2)).trim();
     [['ikr', at(r, I.ikrId), at(r, I.ikrName), at(r, I.ikrMail)], ['sales', at(r, I.sal), at(r, I.salName), at(r, I.salMail)]].forEach(([kind, rawId, nm, mail]) => {
-      const key = achKey_(rawId); if (!key) return;
+      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) return;   // ID kosong/placeholder → tidak dihitung
       const M = maps[kind];
       const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], sa: {}, sr: {} });
       if (!e.name) e.name = String(nm).trim();
