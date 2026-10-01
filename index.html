@@ -1357,6 +1357,7 @@ function applyData(d){
   if(mode==='admin' && d.admin===false){ adminPw=''; setMode('mitra'); toast('Sesi admin berakhir. Masuk lagi dengan password.'); }
   state.peserta=d.rows||[]; state.mitra=(d.mitra||[]).map(n=>({nama:n})); state.stasiun=d.stasiun||[]; state.ach=d.ach||null; state.regs=d.regs||[]; state.capaian={};
   digest=d.digest; refreshAll();
+  if(!d.admin){ try{ localStorage.setItem('starlite-cache',JSON.stringify({mitra:d.mitra||[],stasiun:d.stasiun||[],ach:d.ach||null,regs:d.regs||[]})); }catch(e){} }
   const t=new Date(); setLive(true,'Tersinkron · '+t.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));
 }
 async function load(){ if(loading) return; loading=true;
@@ -1374,6 +1375,7 @@ function init(){
   let m='mitra'; try{ if(sessionStorage.getItem('starlite-mode')==='admin'){ adminPw=sessionStorage.getItem('starlite-pin')||''; if(adminPw) m='admin'; } }catch(e){}
   setMode(m);
   setLive(false,'Memuat dari Google Sheets…');
+  if(m==='mitra'){ try{ const c=JSON.parse(localStorage.getItem('starlite-cache')||'null'); if(c&&c.mitra){ state.mitra=c.mitra.map(n=>({nama:n})); state.stasiun=c.stasiun||[]; state.ach=c.ach||null; state.regs=c.regs||[]; refreshAll(); setLive(false,'Memperbarui data…'); } }catch(e){} }
   load().then(()=>setTimeout(poll,8000));
 }
 init();
