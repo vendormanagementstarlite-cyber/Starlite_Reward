@@ -1240,9 +1240,17 @@ function refreshAll(){ fillMitraSelects(); syncSteps(); renderDash(); renderLB()
 function setLive(on,txt){ $('#live').classList.toggle('on',on); $('#liveTxt').textContent=txt; }
 
 /* ---------- GOOGLE SHEETS SYNC ---------- */
-function api(fn,...args){ return new Promise((res,rej)=>{ google.script.run
-  .withSuccessHandler(r=>{ if(r&&r.error) rej(new Error(r.error)); else res(r); })
-  .withFailureHandler(e=>rej(new Error((e&&e.message)||String(e))))[fn](...args); }); }
+const EXEC_URL='https://script.google.com/macros/s/AKfycbwzFfC919JOKjANI8Gq6Ix6knLqaMpahIZw5zwcUU_vwoKN94pZRwYvfsyL22yIPHp48g/exec';
+function api(fn,...args){
+  if(window.google&&google.script&&google.script.run){   // dibuka dari dalam Apps Script
+    return new Promise((res,rej)=>{ google.script.run
+      .withSuccessHandler(r=>{ if(r&&r.error) rej(new Error(r.error)); else res(r); })
+      .withFailureHandler(e=>rej(new Error((e&&e.message)||String(e))))[fn](...args); });
+  }
+  // dibuka dari luar (mis. GitHub Pages): panggil Web App Apps Script lewat HTTP
+  return fetch(EXEC_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn,args}),redirect:'follow'})
+    .then(r=>r.json()).then(j=>{ if(!j.ok) throw new Error(j.error||'Gagal memanggil server'); const r=j.result; if(r&&r.error) throw new Error(r.error); return r; });
+}
 let digest=null, loading=false;
 function applyData(d){
   if(mode==='admin' && d.admin===false){ adminPw=''; setMode('mitra'); toast('Sesi admin berakhir. Masuk lagi dengan password.'); }
