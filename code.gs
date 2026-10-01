@@ -189,13 +189,13 @@ function achData_() {
     act: ix(['active_date', 'activation_date', 'aktif_date', 'tgl_aktivasi']),
     cust: ix(['customer_code', 'customer_id', 'cust_code']),
     mitra: ix(['mitra']), st: ix(['station', 'stasiun']), reg2: ix(['region']),
-    ikrId: ix(['ikr_id', 'id_ikr', 'ikrid']), ikrName: ix(['ikr_name', 'nama_ikr']), ikrMail: ix(['ikr_email']),
-    sal: ix(['sales_id', 'sales', 'id_sales', 'salesid', 'sales_code', 'id_sales_kit']), salName: ix(['sales_name', 'nama_sales']), salMail: ix(['sales_email'])
+    ikrId: ix(['ikr_number', 'ikr_no', 'ikr_id', 'id_ikr', 'ikrid']), ikrName: ix(['ikr_name', 'nama_ikr']), ikrMail: ix(['ikr_email']),
+    sal: ix(['sales_number', 'sales_no', 'sales_id', 'sales', 'id_sales', 'salesid', 'sales_code', 'id_sales_kit']), salName: ix(['sales_name', 'nama_sales']), salMail: ix(['sales_email'])
   };
-  if (I.sal < 0) I.sal = head.findIndex(h => /sales/.test(h) && /id|code|kode/.test(h) && !/name|nama|email|mail/.test(h));
-  if (I.ikrId < 0) I.ikrId = head.findIndex(h => /ikr/.test(h) && /id|code|kode/.test(h) && !/name|nama|email|mail/.test(h));
+  if (I.sal < 0) I.sal = head.findIndex(h => /sales/.test(h) && /id|code|kode|number|no/.test(h) && !/name|nama|email|mail/.test(h));
+  if (I.ikrId < 0) I.ikrId = head.findIndex(h => /ikr/.test(h) && /id|code|kode|number|no/.test(h) && !/name|nama|email|mail/.test(h));
   out.headers = rawHead;
-  out.missing = Object.keys(I).filter(k => I[k] < 0 && ['reg', 'act', 'ikrId', 'sal'].indexOf(k) >= 0).map(k => ({ reg: 'registration_date', act: 'active_date', ikrId: 'ikr_id', sal: 'sales_id' }[k]));
+  out.missing = Object.keys(I).filter(k => I[k] < 0 && ['reg', 'act', 'ikrId', 'sal'].indexOf(k) >= 0).map(k => ({ reg: 'registration_date', act: 'active_date', ikrId: 'ikr_number', sal: 'sales_number' }[k]));
   const vals = sh.getRange(2, 1, sh.getLastRow() - 1, lc).getValues();
   out.rows = vals.length;
   const at = (r, i) => i < 0 ? '' : r[i];
