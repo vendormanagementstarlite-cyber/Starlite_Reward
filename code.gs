@@ -36,7 +36,8 @@ function doPost(e) {
   try {
     const req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (!ALLOWED.hasOwnProperty(req.fn)) throw new Error('Fungsi tidak dikenal: ' + req.fn);
-    setup_();
+    const cch = CacheService.getScriptCache();
+    if (!cch.get('setup_ok')) { setup_(); cch.put('setup_ok', '1', 21600); }   // setup hanya sesekali (lebih cepat)
     out = { ok: true, result: ALLOWED[req.fn].apply(null, req.args || []) };
   } catch (err) { out = { ok: false, error: String(err && err.message || err) }; }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
@@ -108,17 +109,20 @@ function seedStasiun_() {
 /** Mitra (tanpa password) menerima daftar mitra/stasiun + data leaderboard; Admin (password benar) juga menerima seluruh data peserta. */
 function getData(pin) {
   const isAdmin = checkPin_(pin);
-  const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_DATA);
-    const last = sh.getLastRow();
-    let values = last > 1 ? sh.getRange(2, 1, last - 1, HEADERS.length).getValues() : [];
-    // Baris yang diisi manual di sheet belum punya ID → beri ID
-    let changed = false;
-    values.forEach(r => { if (!String(r[C.ID]).trim() && rowHasData_(r)) { r[C.ID] = Utilities.getUuid().slice(0, 8); changed = true; } });
-    if (changed) sh.getRange(2, C.ID + 1, values.length, 1).setValues(values.map(r => [r[C.ID]]));
-
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_DATA);
+  const last = sh.getLastRow();
+  let values = last > 1 ? sh.getRange(2, 1, last - 1, HEADERS.length).getValues() : [];
+  // Baris yang diisi manual di sheet belum punya ID → beri ID (kunci hanya dipakai saat menulis)
+  if (values.some(r => !String(r[C.ID]).trim() && rowHasData_(r))) {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(20000);
+    try {
+      values = sh.getRange(2, 1, Math.max(1, sh.getLastRow() - 1), HEADERS.length).getValues();
+      values.forEach(r => { if (!String(r[C.ID]).trim() && rowHasData_(r)) r[C.ID] = Utilities.getUuid().slice(0, 8); });
+      sh.getRange(2, C.ID + 1, values.length, 1).setValues(values.map(r => [r[C.ID]]));
+    } finally { lock.releaseLock(); }
+  }
+  {
     const rows = isAdmin ? values.filter(rowHasData_).map(toObj_) : [];
     const mitraSh = SpreadsheetApp.getActive().getSheetByName(SHEET_MITRA);
     const ml = mitraSh.getLastRow();
@@ -132,7 +136,7 @@ function getData(pin) {
     payload.digest = digest_(JSON.stringify(payload));
     payload.at = new Date().toISOString();
     return payload;
-  } finally { lock.releaseLock(); }
+  }
 }
 
 /** Dipanggil tiap beberapa detik oleh web: hanya mengembalikan sidik data untuk deteksi perubahan. */
@@ -175,6 +179,26 @@ function achKey_(v) { return achId_(v).toLowerCase().replace(/\s+/g, ''); }
  * IKR: aktivasi = ada active_date. Sales: registrasi = ada registration_date; aktivasi = ada registration_date dan active_date.
  */
 function achData_() {
+  const cache = CacheService.getScriptCache();
+  try {
+    const n = Number(cache.get('ach_n'));
+    if (n > 0) {
+      const keys = []; for (let i = 0; i < n; i++) keys.push('ach_' + i);
+      const got = cache.getAll(keys); let s = '';
+      for (let i = 0; i < n; i++) { if (got['ach_' + i] == null) { s = null; break; } s += got['ach_' + i]; }
+      if (s) return JSON.parse(s);
+    }
+  } catch (e) {}
+  const res = achCompute_();
+  try {
+    const s = JSON.stringify(res), size = 90000, parts = {};
+    let n = 0; for (let i = 0; i < s.length; i += size) parts['ach_' + (n++)] = s.slice(i, i + size);
+    parts['ach_n'] = String(n);
+    cache.putAll(parts, 120);   // data pencapaian di-cache 2 menit
+  } catch (e) {}
+  return res;
+}
+function achCompute_() {
   const out = { ikr: [], sales: [], found: false, rows: 0 };
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_ACH);
   if (!sh || sh.getLastRow() < 2) return out;
