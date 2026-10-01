@@ -1236,6 +1236,10 @@ function openTierList(k){ const d=rkLists[k]; if(!d) return;
   const isSalesReg=k.startsWith('Sales|')&&/Registrasi/.test(d.title);
   $('#tierDlgT').textContent=d.title+' · '+k.split('|')[0].replace('Ikr','IKR');
   $('#tierDlgS').textContent=d.sub+' · '+fmt(d.rows.length)+' orang';
+  const isRac=/^Racing/.test(d.title);
+  if(isRac){ const rs=d.rows.slice().sort((a,b)=>String(a.region||'').localeCompare(String(b.region||''),'id'));
+    $('#tierDlgL').innerHTML=rs.length?rs.map(r=>`<div class="mrow"><div class="mw"><small style="font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)">${esc(r.region||'—')}</small><b>${esc(r.nama)}</b><small>${esc(r.id)} · ${esc(r.mitra||'—')} · ${esc(r.stasiun||'—')}</small></div><div class="mv">${fmt(r.total)}<small>${(Math.round(r.rate*10)/10).toLocaleString('id-ID')}/hari</small></div></div>`).join(''):'<div class="empty">Belum ada yang mencapai.</div>';
+    $('#tierDlg').hidden=false; return; }
   const rs=d.rows.slice().sort((a,b)=>(isSalesReg?b.reg-a.reg:b.total-a.total)||a.nama.localeCompare(b.nama,'id'));
   $('#tierDlgL').innerHTML=rs.length?rs.map((r,i)=>`<div class="mrow"><span class="mn">${i+1}</span><div class="mw"><b>${esc(r.nama)}</b><small>${esc(r.id)} · ${esc(r.mitra||'—')} · ${esc(r.stasiun||'—')}${r.region?' · '+esc(r.region):''}</small></div><div class="mv">${fmt(isSalesReg?r.reg:r.total)}<small>${(Math.round((isSalesReg?r.regRate:r.rate)*10)/10).toLocaleString('id-ID')}/hari</small></div></div>`).join(''):'<div class="empty">Belum ada yang mencapai.</div>';
   $('#tierDlg').hidden=false; }
