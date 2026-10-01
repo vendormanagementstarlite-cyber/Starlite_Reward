@@ -142,19 +142,11 @@ function getData(pin) {
 /** Dipanggil tiap beberapa detik oleh web: hanya mengembalikan sidik data untuk deteksi perubahan. */
 function getDigest() {
   const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEET_DATA);
-  const last = sh.getLastRow();
-  const v = last > 1 ? sh.getRange(2, 1, last - 1, HEADERS.length).getDisplayValues() : [];
-  const m = ss.getSheetByName(SHEET_MITRA);
-  const ml = m.getLastRow();
-  const mv = ml > 1 ? m.getRange(2, 1, ml - 1, 1).getDisplayValues() : [];
-  const s = ss.getSheetByName(SHEET_STASIUN);
-  const sl = s.getLastRow();
-  const sv = sl > 1 ? s.getRange(2, 1, sl - 1, 1).getDisplayValues() : [];
+  const lr = n => { const s = ss.getSheetByName(n); return s ? s.getLastRow() : 0; };
   const a = ss.getSheetByName(SHEET_ACH);
-  const achSig = a ? [a.getLastRow(), a.getLastColumn()] : [0, 0];
-  // Sheet pencapaian bisa berubah di baris lama (mis. active_date terisi) → paksa muat ulang tiap 2 menit
-  return digest_(JSON.stringify([v, mv, sv, achSig, Math.floor(Date.now() / 120000)]));
+  const v = PropertiesService.getScriptProperties().getProperty('DATA_V') || '';
+  // Ringan: tanpa membaca isi sheet. Perubahan manual di sheet terdeteksi lewat jumlah baris + paksa muat ulang tiap 2 menit.
+  return digest_(JSON.stringify([lr(SHEET_DATA), lr(SHEET_MITRA), lr(SHEET_STASIUN), a ? [a.getLastRow(), a.getLastColumn()] : [0, 0], v, Math.floor(Date.now() / 120000)]));
 }
 
 /* ---------- Pencapaian (tab "Ach sales ikr") ---------- */
@@ -255,7 +247,7 @@ function achCompute_() {
 }
 
 /* ---------- Write ---------- */
-function submitPeserta(d) {
+function submitPeserta_(d) {
   d = d || {};
   const peran = d.peran === 'Sales' ? 'Sales' : (d.peran === 'IKR' ? 'IKR' : '');
   const posisi = d.posisi === 'Lead' ? 'Lead' : (d.posisi === 'Tim' ? 'Tim' : '');
@@ -290,7 +282,7 @@ function submitPeserta(d) {
 }
 
 /** Mitra mengoreksi data yang baru dikirim (ID dari hasil submit dipakai sebagai kunci). Tanggal input & ID tidak berubah. */
-function updatePeserta(id, d) {
+function updatePeserta_(id, d) {
   d = d || {};
   const peran = d.peran === 'Sales' ? 'Sales' : (d.peran === 'IKR' ? 'IKR' : '');
   const posisi = d.posisi === 'Lead' ? 'Lead' : (d.posisi === 'Tim' ? 'Tim' : '');
@@ -321,7 +313,7 @@ function updatePeserta(id, d) {
   } finally { lock.releaseLock(); }
 }
 
-function addMitra(name) {
+function addMitra_(name) {
   name = clean_(name);
   if (name.length < 3) return { error: 'Nama mitra minimal 3 huruf.' };
   const lock = LockService.getScriptLock();
@@ -329,7 +321,7 @@ function addMitra(name) {
   try { return { ok: true, nama: ensureMitra_(name) }; } finally { lock.releaseLock(); }
 }
 
-function addStasiun(name) {
+function addStasiun_(name) {
   name = normStasiun_(name);
   if (name.length < 3) return { error: 'Nama stasiun minimal 3 huruf.' };
   const lock = LockService.getScriptLock();
@@ -337,7 +329,7 @@ function addStasiun(name) {
   try { return { ok: true, nama: ensureStasiun_(name) }; } finally { lock.releaseLock(); }
 }
 
-function deletePeserta(pin, id) {
+function deletePeserta_(pin, id) {
   if (!checkPin_(pin)) return { error: 'Password admin salah.' };
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -1195,3 +1187,15 @@ const MITRA_LIST = [
   "PT THREE MUSKETEERS TEKNOLOGI",
   "PT SATRIA SAKTI MANDIRI"
 ];
+function submitPeserta(d) { const r = submitPeserta_(d); bumpV_(); return r; }
+
+function updatePeserta(id, d) { const r = updatePeserta_(id, d); bumpV_(); return r; }
+
+function addMitra(name) { const r = addMitra_(name); bumpV_(); return r; }
+
+function addStasiun(name) { const r = addStasiun_(name); bumpV_(); return r; }
+
+function deletePeserta(pin, id) { const r = deletePeserta_(pin, id); bumpV_(); return r; }
+
+/** Penanda versi data (naik tiap ada tulis dari web) — dipakai getDigest tanpa harus membaca seluruh sheet. */
+function bumpV_() { try { PropertiesService.getScriptProperties().setProperty('DATA_V', String(Date.now())); } catch (e) {} }
