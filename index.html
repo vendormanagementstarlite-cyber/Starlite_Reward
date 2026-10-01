@@ -1383,7 +1383,7 @@ async function poll(){
     try{ const dg=await api('getDigest'); fails=0; if(dg!==digest) await load(); else setLive(true,'Tersinkron · '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})); }
     catch(e){ fails++; console.warn('poll gagal:',e&&e.message); if(fails>=2) setLive(false,'Koneksi terputus, mencoba lagi…'); }
   }
-  pollTimer=setTimeout(poll,15000);
+  pollTimer=setTimeout(poll,10000);
 }
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) poll(); });
 function init(){
@@ -1394,7 +1394,7 @@ function init(){
   setMode(m);
   setLive(false,'Memuat dari Google Sheets…');
   if(m==='mitra'){ try{ const c=JSON.parse(localStorage.getItem('starlite-cache')||'null'); if(c&&c.mitra){ state.mitra=c.mitra.map(n=>({nama:n})); state.stasiun=c.stasiun||[]; state.ach=c.ach||null; state.regs=c.regs||[]; refreshAll(); setLive(false,'Memperbarui data…'); } }catch(e){} }
-  load().then(()=>{ pollTimer=setTimeout(poll,15000); });
+  load().then(()=>{ pollTimer=setTimeout(poll,10000); });
 }
 init();
 })();
