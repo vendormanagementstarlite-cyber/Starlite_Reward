@@ -1321,7 +1321,7 @@ function renderRankSection(role,P,metric,rows,found,lfresh){
   const maxBar=role==='IKR'?R.q4:T1.q4;
   const ticks=[[T2.q4,'Tier 2']].concat(role==='IKR'?[[T1.q4,'Tier 1']]:[]).map(([v,l])=>`<i style="left:${v/maxBar*100}%" title="Target ${l}: ${v}"></i>`).join('');
   const html=shown.map((r,i)=>{ const rank=i+1, pct=Math.min(100,r.total/maxBar*100), v=val(r);
-    const chips=[r.level==='Racing'?'<span class="chip race">Racing</span>':r.level?`<span class="chip ${r.level==='Tier 1'?'t1':'t2'}">${r.level}</span>`:'<span class="chip none">Belum tier</span>', r.pace==='on'?'<span class="chip warn">On track</span>':r.pace==='late'?'<span class="chip bad">Tertinggal</span>':''].join(' ');
+    const chips=[r.level==='Racing'?'<span class="chip race">Racing</span>':r.level?`<span class="chip ${r.level==='Tier 1'?'t1':'t2'}">${r.level}</span>`:'<span class="chip none">Belum tier</span>'].join(' ');
     const mid = isReg ? `<td class="r num" style="font-weight:700">${fmt(r.reg)}</td><td class="r num">${fmt(r.total)}</td>`
       : `<td class="r num" style="font-weight:700">${fmt(r.total)}<br><small style="font-weight:500;color:var(--muted)">${(Math.round(r.rate*10)/10).toLocaleString('id-ID')}/hari${role==='Sales'?` · reg ${fmt(r.reg)}`:''}</small></td>
       <td><div class="prog"><div class="bar"><span class="anim-w" data-w="${pct}%" style="width:0;transition-delay:${Math.min(i,15)*40+200}ms"></span>${ticks}</div><small>${fmt(r.total)} / ${fmt(T2.q4)} · ${fmt(T1.q4)}${role==='IKR'?' · '+fmt(R.q4):''} ${unit}</small></div></td>`;
