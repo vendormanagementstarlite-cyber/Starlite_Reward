@@ -28,6 +28,20 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+/** API untuk frontend yang di-host di luar Apps Script (mis. GitHub Pages). Body: {fn, args:[...]} (Content-Type text/plain). */
+function doPost(e) {
+  const ALLOWED = { getData: getData, getDigest: getDigest, submitPeserta: submitPeserta, updatePeserta: updatePeserta,
+    addMitra: addMitra, addStasiun: addStasiun, deletePeserta: deletePeserta, checkAdminPin: checkAdminPin };
+  let out;
+  try {
+    const req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (!ALLOWED.hasOwnProperty(req.fn)) throw new Error('Fungsi tidak dikenal: ' + req.fn);
+    setup_();
+    out = { ok: true, result: ALLOWED[req.fn].apply(null, req.args || []) };
+  } catch (err) { out = { ok: false, error: String(err && err.message || err) }; }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
 /** Jalankan sekali dari editor (pilih fungsi setup → Run) untuk menyiapkan kolom & izin. */
 function setup() { setup_(); }
 
