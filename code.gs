@@ -106,9 +106,27 @@ function seedStasiun_() {
 }
 
 /* ---------- Read ---------- */
-/** Mitra (tanpa password) menerima daftar mitra/stasiun + data leaderboard; Admin (password benar) juga menerima seluruh data peserta. */
-function getData(pin) {
-  const isAdmin = checkPin_(pin);
+/** Cache besar (dipecah per 90 KB karena batas CacheService 100 KB per kunci). */
+function putBig_(key, obj, ttl) {
+  try {
+    const cache = CacheService.getScriptCache(), s = JSON.stringify(obj), size = 90000, parts = {};
+    let n = 0; for (let i = 0; i < s.length; i += size) parts[key + '_' + (n++)] = s.slice(i, i + size);
+    parts[key + '_n'] = String(n);
+    cache.putAll(parts, ttl);
+  } catch (e) {}
+}
+function getBig_(key) {
+  try {
+    const cache = CacheService.getScriptCache(), n = Number(cache.get(key + '_n'));
+    if (!(n > 0)) return null;
+    const keys = []; for (let i = 0; i < n; i++) keys.push(key + '_' + i);
+    const got = cache.getAll(keys); let s = '';
+    for (let i = 0; i < n; i++) { if (got[key + '_' + i] == null) return null; s += got[key + '_' + i]; }
+    return JSON.parse(s);
+  } catch (e) { return null; }
+}
+
+function readValues_() {
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_DATA);
   const last = sh.getLastRow();
   let values = last > 1 ? sh.getRange(2, 1, last - 1, HEADERS.length).getValues() : [];
@@ -122,21 +140,27 @@ function getData(pin) {
       sh.getRange(2, C.ID + 1, values.length, 1).setValues(values.map(r => [r[C.ID]]));
     } finally { lock.releaseLock(); }
   }
-  {
-    const rows = isAdmin ? values.filter(rowHasData_).map(toObj_) : [];
-    const mitraSh = SpreadsheetApp.getActive().getSheetByName(SHEET_MITRA);
-    const ml = mitraSh.getLastRow();
-    const mitra = ml > 1 ? mitraSh.getRange(2, 1, ml - 1, 1).getValues().map(r => String(r[0]).trim()).filter(String) : [];
-    const stSh = SpreadsheetApp.getActive().getSheetByName(SHEET_STASIUN);
-    const sl = stSh.getLastRow();
-    const stasiun = sl > 1 ? stSh.getRange(2, 1, sl - 1, 1).getValues().map(r => String(r[0]).trim()).filter(String) : [];
-    // Leaderboard terbuka untuk Mitra & Admin: pencapaian + daftar peserta terdaftar versi ringkas (tanpa HP/email/akun)
-    const regs = values.filter(rowHasData_).map(r => { const o = toObj_(r); return { peran: o.peran, uid: o.uid, nama: o.nama, mitra: o.mitra, stasiun: o.stasiun }; }).filter(x => x.uid);
-    const payload = { rows: rows, mitra: mitra, stasiun: stasiun, admin: isAdmin, ach: achData_(), regs: regs };
-    payload.digest = digest_(JSON.stringify(payload));
-    payload.at = new Date().toISOString();
-    return payload;
-  }
+  return values;
+}
+
+/** Data yang boleh dilihat Mitra (di-cache): daftar mitra/stasiun, pencapaian, dan peserta terdaftar versi ringkas (tanpa HP/email/akun). */
+function buildPub_(values) {
+  const ss = SpreadsheetApp.getActive();
+  const col = name => { const s = ss.getSheetByName(name), n = s.getLastRow(); return n > 1 ? s.getRange(2, 1, n - 1, 1).getValues().map(r => String(r[0]).trim()).filter(String) : []; };
+  const regs = values.filter(rowHasData_).map(r => { const o = toObj_(r); return { peran: o.peran, uid: o.uid, nama: o.nama, mitra: o.mitra, stasiun: o.stasiun }; }).filter(x => x.uid);
+  return { mitra: col(SHEET_MITRA), stasiun: col(SHEET_STASIUN), ach: achData_(), regs: regs };
+}
+
+/** Mitra (tanpa password) menerima data publik dari cache (cepat); Admin (password benar) juga menerima seluruh data peserta. */
+function getData(pin) {
+  const isAdmin = checkPin_(pin);
+  let pub = getBig_('pub'), values = null;
+  if (!pub || isAdmin) values = readValues_();
+  if (!pub) { pub = buildPub_(values); putBig_('pub', pub, 120); }
+  const payload = { rows: isAdmin ? values.filter(rowHasData_).map(toObj_) : [], mitra: pub.mitra, stasiun: pub.stasiun, admin: isAdmin, ach: pub.ach, regs: pub.regs };
+  payload.digest = getDigest();   // harus sama dengan nilai yang dipakai pengecekan berkala, kalau tidak web memuat ulang terus
+  payload.at = new Date().toISOString();
+  return payload;
 }
 
 /** Dipanggil tiap beberapa detik oleh web: hanya mengembalikan sidik data untuk deteksi perubahan. */
@@ -171,23 +195,10 @@ function achKey_(v) { return achId_(v).toLowerCase().replace(/\s+/g, ''); }
  * IKR: aktivasi = ada active_date. Sales: registrasi = ada registration_date; aktivasi = ada registration_date dan active_date.
  */
 function achData_() {
-  const cache = CacheService.getScriptCache();
-  try {
-    const n = Number(cache.get('ach_n'));
-    if (n > 0) {
-      const keys = []; for (let i = 0; i < n; i++) keys.push('ach_' + i);
-      const got = cache.getAll(keys); let s = '';
-      for (let i = 0; i < n; i++) { if (got['ach_' + i] == null) { s = null; break; } s += got['ach_' + i]; }
-      if (s) return JSON.parse(s);
-    }
-  } catch (e) {}
+  const hit = getBig_('ach');
+  if (hit) return hit;
   const res = achCompute_();
-  try {
-    const s = JSON.stringify(res), size = 90000, parts = {};
-    let n = 0; for (let i = 0; i < s.length; i += size) parts['ach_' + (n++)] = s.slice(i, i + size);
-    parts['ach_n'] = String(n);
-    cache.putAll(parts, 120);   // data pencapaian di-cache 2 menit
-  } catch (e) {}
+  putBig_('ach', res, 120);   // data pencapaian di-cache 2 menit
   return res;
 }
 function achCompute_() {
@@ -1198,4 +1209,4 @@ function addStasiun(name) { const r = addStasiun_(name); bumpV_(); return r; }
 function deletePeserta(pin, id) { const r = deletePeserta_(pin, id); bumpV_(); return r; }
 
 /** Penanda versi data (naik tiap ada tulis dari web) — dipakai getDigest tanpa harus membaca seluruh sheet. */
-function bumpV_() { try { PropertiesService.getScriptProperties().setProperty('DATA_V', String(Date.now())); } catch (e) {} }
+function bumpV_() { try { PropertiesService.getScriptProperties().setProperty('DATA_V', String(Date.now())); CacheService.getScriptCache().remove('pub_n'); } catch (e) {} }
