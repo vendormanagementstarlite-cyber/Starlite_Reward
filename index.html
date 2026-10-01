@@ -343,8 +343,11 @@ td.r,th.r{text-align:right}
 @media(max-width:860px){.hc-grid{grid-template-columns:minmax(0,1fr)}}
 .hc-card{padding:20px 22px}
 .hc-card h2{margin:0;font-size:17px}.hc-card .sub{color:var(--muted);font-size:12px;margin:2px 0 14px}
-.hc-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.hc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px;margin-bottom:16px}
 @media(max-width:520px){.hc-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hc-stats.five{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.hc-stats.five div{padding:10px 10px}.hc-stats.five b{font-size:19px}.hc-stats.five span{font-size:10.5px}
+@media(max-width:520px){.hc-stats.five{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .hc-stats div{border:1px solid var(--line-2);border-radius:12px;padding:10px 12px}
 .hc-stats b{display:block;font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .hc-stats span{font-size:11px;color:var(--muted);font-weight:600}
@@ -1083,11 +1086,12 @@ function renderDash(){
       const tot=m[0]+m[1]+m[2], act=rows.filter(r=>r.total>0).length;
       const t1=rows.filter(r=>r.tier==='Tier 1').length, t2=rows.filter(r=>r.tier==='Tier 2').length;
       const mx=Math.max(1,...m), nm=['Okt','Nov','Des'];
+      const rtAll=role==='Sales'?rows.reduce((a,r)=>a+r.reg,0):0;
       let extra='';
       if(role==='Sales'){ const rg=[0,0,0]; rows.forEach(r=>r.regM.forEach((x,i)=>rg[i]+=x)); const rt=rg[0]+rg[1]+rg[2], rmx=Math.max(1,...rg);
         extra=`<div class="hc-sub" style="margin-top:14px">Registrasi · total ${fmt(rt)}</div><div class="hc-mon">`+rg.map((x,i)=>`<div class="r"><span>${nm[i]}</span><div class="bar"><i style="width:${x/rmx*100}%;background:var(--accent)"></i></div><b>${fmt(x)}</b></div>`).join('')+'</div>'; }
       return `<div class="card hc-card lift"><h2>${label}</h2><p class="sub">Monitoring HC ${role==='Sales'?'aktivasi':'aktivasi'} Q4 2026</p>
-        <div class="hc-stats"><div><b>${fmt(tot)}</b><span>Total HC</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div><b>${fmt(t1)} / ${fmt(t2)}</b><span>Tier 1 / Tier 2</span></div></div>
+        <div class="hc-stats${role==='Sales'?' five':''}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div><b>${fmt(t1)} / ${fmt(t2)}</b><span>Tier 1 / Tier 2</span></div></div>
         <div class="hc-sub">Aktivasi per bulan</div><div class="hc-mon">`+m.map((x,i)=>`<div class="r"><span>${nm[i]}</span><div class="bar"><i style="width:${x/mx*100}%;background:${color}"></i></div><b>${fmt(x)}</b></div>`).join('')+`</div>${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
   })();
