@@ -204,8 +204,8 @@ td.r,th.r{text-align:right}
 .chip.warn{background:var(--warn-soft);color:var(--warn)}
 .chip.bad{background:var(--bad-soft);color:var(--bad)}
 .chip.none{background:var(--none-soft);color:var(--muted)}
-.chip.t1{background:var(--accent-soft);color:var(--accent)}
-.chip.t2{background:var(--s-ikr-soft);color:var(--s-ikr)}
+.chip.t1{background:var(--s-ikr-soft);color:var(--side)}
+.chip.t2{background:var(--good-soft);color:var(--good)}
 .chip.race{background:var(--side);color:#fff}
 .prog{display:flex;flex-direction:column;gap:5px;min-width:150px}
 .prog .bar{height:8px;border-radius:999px;background:var(--none-soft);overflow:hidden;position:relative}
@@ -329,10 +329,47 @@ td.r,th.r{text-align:right}
 .tcard.racing .tr,.tcard.racing .tc small{color:rgba(255,255,255,.85)}
 .tcard.t1{background:linear-gradient(160deg,var(--side),var(--side-2));color:var(--side-fg);border-color:transparent}
 .tcard.t1 .tr,.tcard.t1 .tc small{color:var(--side-muted)}
+.tcard.t2{background:linear-gradient(160deg,#2FA36F,#1B7A50);color:#fff;border-color:transparent}
+.tcard.t2 .tr,.tcard.t2 .tc small{color:rgba(255,255,255,.88)}
 .tcard .tpic{position:absolute;top:12px;right:14px;width:140px;height:104px;display:flex;align-items:center;justify-content:flex-end;pointer-events:none}
 .tcard .tpic img,.tcard .tpic svg{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(0,0,0,.25))}
 .tcard .tn,.tcard .tr,.tcard .tc{position:relative;z-index:1}
 @media(max-width:520px){.tcard .tpic{width:96px;height:84px}}
+.rkseg{display:inline-flex;flex-wrap:nowrap;border:1px solid var(--line-2);border-radius:999px;padding:4px;background:var(--surface);box-shadow:var(--shadow);gap:2px}
+.rkseg button{flex:0 0 auto;display:block;text-align:center;white-space:nowrap;border:0;background:transparent;padding:9px 22px;border-radius:999px;font-weight:700;cursor:pointer;min-height:38px;color:inherit;font:inherit;font-weight:700}
+.rkseg button[aria-selected="true"]{background:var(--side);color:#fff}
+.rk-switch{margin:4px 0 14px}
+.hc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:4px 0 18px}
+@media(max-width:860px){.hc-grid{grid-template-columns:minmax(0,1fr)}}
+.hc-card{padding:20px 22px}
+.hc-card h2{margin:0;font-size:17px}.hc-card .sub{color:var(--muted);font-size:12px;margin:2px 0 14px}
+.hc-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+@media(max-width:520px){.hc-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hc-stats div{border:1px solid var(--line-2);border-radius:12px;padding:10px 12px}
+.hc-stats b{display:block;font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.hc-stats span{font-size:11px;color:var(--muted);font-weight:600}
+.hc-mon{display:flex;flex-direction:column;gap:8px}
+.hc-mon .r{display:grid;grid-template-columns:44px 1fr 56px;gap:10px;align-items:center;font-size:12px}
+.hc-mon .bar{height:12px;border-radius:99px;background:var(--line-2);overflow:hidden}
+.hc-mon .bar i{display:block;height:100%;border-radius:99px;min-width:2px}
+.hc-mon .r b{text-align:right;font-variant-numeric:tabular-nums}
+.hc-sub{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:2px 0 8px}
+/* podium: ukuran ringkas, warna mengikuti tier */
+.podium{gap:10px}
+.pod{padding:12px 14px;gap:2px}
+.pod.r1{padding-block:14px}
+.pod .rk{font-size:11px}
+.pod .nm{font-size:14px}
+.pod .mt{font-size:11px}
+.pod .sc{font-size:22px;margin-top:4px}
+.pod .sc small{font-size:11px}
+.pod.pr,.pod.p1,.pod.p2{color:#fff;border-color:transparent}
+.pod.pr{background:linear-gradient(150deg,var(--accent-2),var(--accent))}
+.pod.p1{background:linear-gradient(160deg,var(--side),var(--side-2))}
+.pod.p2{background:linear-gradient(160deg,#2FA36F,#1B7A50)}
+.pod.pr .rk,.pod.p1 .rk,.pod.p2 .rk{color:rgba(255,255,255,.92)}
+.pod.pr .mt,.pod.p1 .mt,.pod.p2 .mt{color:rgba(255,255,255,.82)}
+.pod.r1::after{width:100px;height:100px;right:-30px;top:-30px}
 .tcard.click{cursor:pointer;transition:transform .2s,box-shadow .2s}
 .tcard.click:hover{transform:translateY(-3px);box-shadow:var(--shadow-up)}
 .tcard .tmore{font-size:11px;font-weight:700;margin-top:10px;opacity:.85}
@@ -610,6 +647,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button></div>
       </div>
       <div class="kpis" id="kpis"></div>
+      <div class="hc-grid" id="hcMon"></div>
       <div class="grid2">
         <div class="card chart-card lift">
           <div class="chart-head"><div><h2>Pendaftar per mitra</h2><p>Jumlah IKR dan Sales yang didaftarkan</p></div>
@@ -638,6 +676,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
         <h1>Leaderboard</h1>
         <p class="lede">Peringkat IKR dan Sales, berdasarkan IKR ID dan Sales ID dari data pencapaian Okt–Des 2026.</p>
       </div></div>
+      <div class="rk-switch"><div class="rkseg" id="rkSwitch" role="tablist"><button type="button" role="tab" data-s="Ikr" aria-selected="true">Leaderboard IKR</button><button type="button" role="tab" data-s="Sales" aria-selected="false">Leaderboard Sales</button></div></div>
       <div class="toolbar">
         <input type="search" class="rk-q" id="rkQ" placeholder="Cari nama atau ID…" aria-label="Cari nama atau ID" autocomplete="off">
         <div class="mf" id="rkTier"></div>
@@ -649,7 +688,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div>
       <div class="rk-note" id="rkNote"></div>
 
-      <div class="rk-sec">
+      <div class="rk-sec" id="secIkr">
         <div class="rk-sec-head"><div><div class="eyebrow">Leaderboard IKR</div><h2>IKR · Aktivasi (HC)</h2></div></div>
         <div class="tier-cards" id="rkTiersIkr"></div>
         <div class="podium" id="rkPodIkr"></div>
@@ -657,7 +696,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
         <div class="more-row" id="rkMoreIkr" hidden><button type="button" class="btn btn-ghost" id="rkMoreBtnIkr">Tampilkan lebih banyak</button></div>
       </div>
 
-      <div class="rk-sec">
+      <div class="rk-sec" id="secSales" hidden>
         <div class="rk-sec-head"><div><div class="eyebrow">Leaderboard Sales</div><h2>Sales · Registrasi &amp; Aktivasi</h2></div>
           <div class="tabs" role="tablist">
             <span class="tab-ind" id="tabIndS" aria-hidden="true"></span>
@@ -1034,6 +1073,25 @@ function renderDash(){
   if(kp._desc!==kDesc || fresh){ if(kp._desc!==kDesc){ kp.innerHTML=kHtml; } kp._desc=kDesc;
     kp.querySelectorAll('.v').forEach((el,i)=>countUp(el,kvals[i],fresh?0:(prevK[i]??0))); kp._vals=kvals; }
 
+  // monitoring HC per tim (dari sheet pencapaian)
+  (function(){
+    const el=$('#hcMon'); if(!el) return;
+    const mk=(role,label,color)=>{
+      const rows=buildRank(role).filter(r=>fDashMitra.has(r.mitra)||(!r.mitra&&fDashMitra.size()===0));
+      const reg=state.regs.filter(p=>p.peran===role&&fDashMitra.has(p.mitra)).length;
+      const m=[0,0,0]; rows.forEach(r=>r.m.forEach((x,i)=>m[i]+=x));
+      const tot=m[0]+m[1]+m[2], act=rows.filter(r=>r.total>0).length;
+      const t1=rows.filter(r=>r.tier==='Tier 1').length, t2=rows.filter(r=>r.tier==='Tier 2').length;
+      const mx=Math.max(1,...m), nm=['Okt','Nov','Des'];
+      let extra='';
+      if(role==='Sales'){ const rg=[0,0,0]; rows.forEach(r=>r.regM.forEach((x,i)=>rg[i]+=x)); const rt=rg[0]+rg[1]+rg[2], rmx=Math.max(1,...rg);
+        extra=`<div class="hc-sub" style="margin-top:14px">Registrasi · total ${fmt(rt)}</div><div class="hc-mon">`+rg.map((x,i)=>`<div class="r"><span>${nm[i]}</span><div class="bar"><i style="width:${x/rmx*100}%;background:var(--accent)"></i></div><b>${fmt(x)}</b></div>`).join('')+'</div>'; }
+      return `<div class="card hc-card lift"><h2>${label}</h2><p class="sub">Monitoring HC ${role==='Sales'?'aktivasi':'aktivasi'} Q4 2026</p>
+        <div class="hc-stats"><div><b>${fmt(tot)}</b><span>Total HC</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div><b>${fmt(t1)} / ${fmt(t2)}</b><span>Tier 1 / Tier 2</span></div></div>
+        <div class="hc-sub">Aktivasi per bulan</div><div class="hc-mon">`+m.map((x,i)=>`<div class="r"><span>${nm[i]}</span><div class="bar"><i style="width:${x/mx*100}%;background:${color}"></i></div><b>${fmt(x)}</b></div>`).join('')+`</div>${extra}</div>`; };
+    setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
+  })();
+
   // per mitra
   const byM={}; ps.forEach(p=>{ byM[p.mitra]=byM[p.mitra]||{i:0,s:0}; byM[p.mitra][p.peran==='IKR'?'i':'s']++; });
   const mRows=Object.entries(byM).sort((a,b)=>(b[1].i+b[1].s)-(a[1].i+a[1].s)); const mMax=Math.max(1,...mRows.map(([,v])=>v.i+v.s));
@@ -1100,6 +1158,11 @@ const TGT = {
 };
 const normKey = s=>String(s==null?'':s).trim().toLowerCase().replace(/\s+/g,'').replace(/\.0+$/,'');
 let rkLimit={Ikr:10,Sales:10}, salMode='act';
+let rkSec='Ikr'; try{ rkSec=localStorage.getItem('starlite-rksec')==='Sales'?'Sales':'Ikr'; }catch(e){}
+function applyRkSec(){ $('#secIkr').hidden=rkSec!=='Ikr'; $('#secSales').hidden=rkSec!=='Sales';
+  document.querySelectorAll('#rkSwitch button').forEach(b=>b.setAttribute('aria-selected',b.dataset.s===rkSec)); }
+document.querySelectorAll('#rkSwitch button').forEach(b=>b.addEventListener('click',()=>{ rkSec=b.dataset.s; try{localStorage.setItem('starlite-rksec',rkSec)}catch(e){} applyRkSec(); renderRank(); window.scrollTo({top:0,behavior:'smooth'}); }));
+applyRkSec();
 const fRkTier=MultiFilter($('#rkTier'),{all:'Semua tier',noun:'tier',onChange:rkChanged});
 const fRkMitra=MultiFilter($('#rkMitra'),{all:'Semua mitra',noun:'mitra',onChange:rkChanged});
 const fRkStasiun=MultiFilter($('#rkStasiun'),{all:'Semua stasiun',noun:'stasiun',onChange:rkChanged});
@@ -1210,7 +1273,7 @@ function renderRankSection(role,P,metric,rows,found,lfresh){
   setHTML($('#rkTiers'+P),tiersHtml);
   // podium
   const top=rows.filter(r=>val(r)>0).slice(0,3);
-  const podEl=$('#rkPod'+P); const podHtml=top.map((r,i)=>`<div class="pod r${i+1}"><span class="rk">#${i+1}${i===0?(isReg?' · Registrasi tertinggi':(r.racing?' · Racing':' · Pimpinan')):''}</span><span class="nm">${esc(r.nama)}</span><span class="mt">${esc(r.mitra)} · ${esc(r.stasiun)}${r.region?' · '+esc(r.region):''}</span><span class="sc">${fmt(val(r))} <small>${unit}</small></span><span class="mt" style="margin-top:6px">${r.racing?'Racing · ':''}${r.tier||'Belum tier'} · ${(Math.round(r.rate*10)/10).toLocaleString('id-ID')}/hari</span></div>`).join('');
+  const podEl=$('#rkPod'+P); const podHtml=top.map((r,i)=>`<div class="pod r${i+1} ${r.racing?'pr':r.tier==='Tier 1'?'p1':r.tier==='Tier 2'?'p2':''}"><span class="rk">#${i+1}${i===0?(isReg?' · Registrasi tertinggi':(r.racing?' · Racing':' · Pimpinan')):''}</span><span class="nm">${esc(r.nama)}</span><span class="mt">${esc(r.mitra)} · ${esc(r.stasiun)}${r.region?' · '+esc(r.region):''}</span><span class="sc">${fmt(val(r))} <small>${unit}</small></span><span class="mt" style="margin-top:6px">${r.racing?'Racing · ':''}${r.tier||'Belum tier'} · ${(Math.round(r.rate*10)/10).toLocaleString('id-ID')}/hari</span></div>`).join('');
   if(setHTML(podEl,podHtml)||lfresh){ podEl.classList.remove('play'); void podEl.offsetWidth; podEl.classList.add('play'); }
   podEl.hidden=!top.length;
   // tabel
