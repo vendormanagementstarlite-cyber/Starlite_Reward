@@ -156,7 +156,7 @@ function getData(pin) {
   const isAdmin = checkPin_(pin);
   let pub = getBig_('pub'), values = null;
   if (!pub || isAdmin) values = readValues_();
-  if (!pub) { pub = buildPub_(values); putBig_('pub', pub, 30); }
+  if (!pub) { pub = buildPub_(values); storePub_(pub); }
   const payload = { rows: isAdmin ? values.filter(rowHasData_).map(toObj_) : [], mitra: pub.mitra, stasiun: pub.stasiun, admin: isAdmin, ach: pub.ach, regs: pub.regs };
   payload.digest = getDigest();   // harus sama dengan nilai yang dipakai pengecekan berkala, kalau tidak web memuat ulang terus
   payload.at = new Date().toISOString();
@@ -169,8 +169,8 @@ function getDigest() {
   const lr = n => { const s = ss.getSheetByName(n); return s ? s.getLastRow() : 0; };
   const a = ss.getSheetByName(SHEET_ACH);
   const v = PropertiesService.getScriptProperties().getProperty('DATA_V') || '';
-  // Ringan: tanpa membaca isi sheet. Perubahan manual di sheet terdeteksi lewat jumlah baris + paksa muat ulang tiap 2 menit.
-  return digest_(JSON.stringify([lr(SHEET_DATA), lr(SHEET_MITRA), lr(SHEET_STASIUN), a ? [a.getLastRow(), a.getLastColumn()] : [0, 0], v, Math.floor(Date.now() / 30000)]));
+  // Ringan: tanpa membaca isi sheet. PUB_H = sidik isi data publik, diperbarui oleh refreshCache_ (tiap menit) sehingga web hanya memuat ulang kalau data benar-benar berubah.
+  return digest_(JSON.stringify([lr(SHEET_DATA), lr(SHEET_MITRA), lr(SHEET_STASIUN), a ? [a.getLastRow(), a.getLastColumn()] : [0, 0], v, PropertiesService.getScriptProperties().getProperty('PUB_H') || '']));
 }
 
 /* ---------- Pencapaian (tab "Ach sales ikr") ---------- */
@@ -198,7 +198,7 @@ function achData_() {
   const hit = getBig_('ach');
   if (hit) return hit;
   const res = achCompute_();
-  putBig_('ach', res, 30);   // cache singkat 30 detik; juga dihapus otomatis tiap ada perubahan di sheet
+  putBig_('ach', res, 120);   // cache singkat 30 detik; juga dihapus otomatis tiap ada perubahan di sheet
   return res;
 }
 function achCompute_() {
@@ -1209,6 +1209,18 @@ function addStasiun(name) { const r = addStasiun_(name); bumpV_(); return r; }
 function deletePeserta(pin, id) { const r = deletePeserta_(pin, id); bumpV_(); return r; }
 
 /** Penanda versi data (naik tiap ada tulis dari web) — dipakai getDigest tanpa harus membaca seluruh sheet. */
+/** Simpan data publik ke cache (2 menit) dan perbarui sidik isi bila berubah. */
+function storePub_(pub) {
+  putBig_('pub', pub, 120);
+  try {
+    const h = digest_(JSON.stringify(pub)), P = PropertiesService.getScriptProperties();
+    if (P.getProperty('PUB_H') !== h) P.setProperty('PUB_H', h);
+  } catch (e) {}
+}
+/** Dijalankan trigger waktu tiap 1 menit: menghitung ulang data di latar belakang agar pengunjung selalu mendapat cache hangat (cepat). */
+function refreshCache_() {
+  try { CacheService.getScriptCache().remove('ach_n'); storePub_(buildPub_(readValues_())); } catch (e) {}
+}
 function bumpV_() { try { PropertiesService.getScriptProperties().setProperty('DATA_V', String(Date.now())); const cc = CacheService.getScriptCache(); cc.remove('pub_n'); cc.remove('ach_n'); } catch (e) {} }
 
 /* ---------- Realtime: perubahan manual di Google Sheet langsung terdeteksi ---------- */
@@ -1220,4 +1232,7 @@ function setupTriggers() {
   const ss = SpreadsheetApp.getActive();
   ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'onSheetChange_').forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('onSheetChange_').forSpreadsheet(ss).onChange().create();
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'refreshCache_').forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('refreshCache_').timeBased().everyMinutes(1).create();
+  refreshCache_();
 }
