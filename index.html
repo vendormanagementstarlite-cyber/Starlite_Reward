@@ -548,6 +548,23 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
   .podium{grid-template-columns:minmax(0,1fr);gap:8px}
   .hc-card{padding:16px}
 }
+
+/* warna card dashboard */
+.kpi[class*="c-"]{border-color:transparent;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.kpi[class*="c-"] .k,.kpi[class*="c-"] .d{color:rgba(255,255,255,.88)}
+.kpi[class*="c-"]::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.12)}
+.kpi.c-ikr{background:linear-gradient(150deg,#2f7fd6,#0B3D7A)}
+.kpi.c-sales{background:linear-gradient(150deg,#EE8B55,#D0612A)}
+.kpi.c-mitra{background:linear-gradient(150deg,#2fae82,#1a7a57)}
+.kpi.c-st{background:linear-gradient(150deg,#8a5bd0,#5a32a3)}
+.kpi.c-lead{background:linear-gradient(150deg,#f2b441,#c47f0a)}
+.kpi.dark{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+/* kartu Tim IKR / Tim Sales */
+.hc-card{border-top:4px solid var(--hc,#1C95E9)}
+.hc-card.hc-ikr{--hc:#1C6FC8;--hcs:#E6F0FB}.hc-card.hc-sales{--hc:#D0612A;--hcs:#FCEBDF}
+.hc-card h2{color:var(--hc,inherit)}
+.hc-stats div{background:var(--hcs,#F4F7FB);border-color:transparent;border-left:3px solid var(--hc,#1C95E9);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.hc-stats b{color:var(--hc,inherit)}
 </style>
 </head>
 <body>
@@ -601,7 +618,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 2 Okt 2026 · 14.40</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 2 Okt 2026 · 16.40</span>
     </div>
   </aside>
 
@@ -1192,11 +1209,11 @@ function renderDash(){
   const kp=$('#kpis'); const prevK=kp._vals||[]; const kvals=[];
   const kHtml=[
     ['Total pendaftar',ps.length,'IKR + Sales','dark'],
-    ['IKR',ikr.length,`${ikr.filter(p=>p.posisi==='Lead').length} lead · ${ikr.filter(p=>p.posisi==='Tim').length} tim`,''],
-    ['Sales',sal.length,`${sal.filter(p=>p.posisi==='Lead').length} lead · ${sal.filter(p=>p.posisi==='Tim').length} tim`,''],
-    ['Mitra ikut serta',mitraCount,'mitra yang sudah mendaftarkan',''],
-    ['Stasiun terwakili',stCount,'stasiun berbeda',''],
-    ['Posisi Lead',lead,`dari ${fmt(ps.length)} pendaftar`,'hot'],
+    ['IKR',ikr.length,`${ikr.filter(p=>p.posisi==='Lead').length} lead · ${ikr.filter(p=>p.posisi==='Tim').length} tim`,'c-ikr'],
+    ['Sales',sal.length,`${sal.filter(p=>p.posisi==='Lead').length} lead · ${sal.filter(p=>p.posisi==='Tim').length} tim`,'c-sales'],
+    ['Mitra ikut serta',mitraCount,'mitra yang sudah mendaftarkan','c-mitra'],
+    ['Stasiun terwakili',stCount,'stasiun berbeda','c-st'],
+    ['Posisi Lead',lead,`dari ${fmt(ps.length)} pendaftar`,'c-lead'],
   ].map(([k,v,d,c])=>{ kvals.push(v); return `<div class="kpi ${c}"><div class="k">${k}</div><div class="v num-d">${fmt(fresh?0:v)}</div><div class="d">${d}</div></div>`; }).join('');
   const kDesc=kvals.join('|')+kHtml.replace(/<div class="v num-d">[^<]*<\/div>/g,'');
   if(kp._desc!==kDesc || fresh){ if(kp._desc!==kDesc){ kp.innerHTML=kHtml; } kp._desc=kDesc;
@@ -1218,7 +1235,7 @@ function renderDash(){
       if(role==='Sales'){ const rg=[0,0,0]; rows.forEach(r=>r.regM.forEach((x,i)=>rg[i]+=x)); const rt=rg[0]+rg[1]+rg[2];
         extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(rt)}</div>`+hcBars(sumMap('dr'),rg,'var(--accent)'); }
       const sw=`<div class="hcv" role="group" aria-label="Rentang">${[['bln','Bulan'],['mgg','Minggu'],['hari','Hari']].map(([k,l])=>`<button type="button" data-hcv="${k}" aria-pressed="${hcView===k}">${l}</button>`).join('')}</div>`;
-      return `<div class="card hc-card lift"><h2>${label}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p>
+      return `<div class="card hc-card lift ${role==='Sales'?'hc-sales':'hc-ikr'}"><h2>${label}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p>
         <div class="hc-stats${role==='Sales'?' five':''}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div><b>${fmt(t1)} / ${fmt(t2)}</b><span>Tier 1 / Tier 2</span></div></div>
         ${sw}<div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
@@ -1564,8 +1581,13 @@ function rankReport(){
     html+=kpiH([[fmt(all.length),role+' ID'],[fmt(all.reduce((s,r)=>s+r.total,0)),isS?'Total aktivasi':'Total HC']].concat(isS?[[fmt(all.reduce((s,r)=>s+r.reg,0)),'Total registrasi']]:[]));
     html+=`<div class="pcards">`+(isS?`<h4>Tier berdasarkan aktivasi</h4>${tierCardsHtml(role,'Sales','act')}<h4>Tier berdasarkan registrasi</h4>${tierCardsHtml(role,'Sales','reg')}`:tierCardsHtml(role,'Ikr','act'))+`</div>`;
     if(win.length) html+=`<p style="font-size:10px;margin:0 0 6px"><b>Racing per region:</b> ${win.map(r=>esc((r.region||'—')+': '+r.nama+' ('+fmt(r.total)+')')).join(' · ')}</p>`;
+    const podH=(top,unit,isReg,ttl)=>top.length?`<h4 style="font-size:10px;margin:6px 0 3px;color:#475569;text-transform:uppercase">${ttl}</h4><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 10px;break-inside:avoid">`+top.map((r,i)=>{ const bg=r.level==='Racing'?'#e2773a':r.level==='Tier 1'?'#164896':r.level==='Tier 2'?'#289668':'#fff', fg=bg==='#fff'?'#0f172a':'#fff';
+      return `<div style="background:${bg};color:${fg};border:1px solid ${bg==='#fff'?'#d7dee8':bg};border-radius:10px;padding:8px 10px;-webkit-print-color-adjust:exact;print-color-adjust:exact"><div style="font-size:9px;font-weight:700">#${i+1}${i===0?(isReg?' · Registrasi tertinggi':(r.racing?' · Racing':' · Pimpinan')):''}</div><div style="font-size:13px;font-weight:700">${esc(r.nama)}</div><div style="font-size:8.5px;opacity:.85">${esc([r.mitra,r.stasiun,r.region].filter(Boolean).join(' · '))}</div><div style="font-size:20px;font-weight:700;margin-top:3px">${fmt(isReg?r.reg:r.total)} <span style="font-size:10px;font-weight:400">${unit}</span></div><div style="font-size:9px;opacity:.85">${esc(r.level||'Belum tier')} · ${f1(isReg?r.regRate:r.rate)}/hari</div></div>`; }).join('')+`</div>`:'';
+    html+=podH(sorted.slice().sort((a,b)=>b.total-a.total).filter(r=>r.total>0).slice(0,3),isS?'aktivasi':'HC',false,isS?'Peringkat 1–3 · Aktivasi':'Peringkat 1–3');
+    if(isS) html+=podH(sorted.slice().sort((a,b)=>b.reg-a.reg||b.total-a.total).filter(r=>r.reg>0).slice(0,3),'registrasi',true,'Peringkat 1–3 · Registrasi');
+    html+=`<p style="font-size:9px;margin:4px 0;color:#555">Daftar 20 teratas</p>`;
     html+=`<table class="rp"><thead><tr><th>#</th><th>Nama · ID</th><th>Mitra · Stasiun</th><th>Region</th><th class="r">Okt</th><th class="r">Nov</th><th class="r">Des</th><th class="r">Total</th>${isS?'<th class="r">Reg</th>':''}<th class="r">/hari</th>${per?`<th class="r">${esc(per.label)}</th>`:''}<th>Level</th></tr></thead><tbody>`
-      +(sorted.length?sorted.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.nama)}<small>${esc(r.id)}</small></td><td>${esc(r.mitra||'—')}<small>${esc(r.stasiun||'—')}</small></td><td>${esc(r.region||'—')}</td><td class="r">${fmt(r.m[0])}</td><td class="r">${fmt(r.m[1])}</td><td class="r">${fmt(r.m[2])}</td><td class="r"><b>${fmt(r.total)}</b></td>${isS?`<td class="r">${fmt(r.reg)}</td>`:''}<td class="r">${f1(r.rate)}</td>${per?`<td class="r">${fmt(periodVal(r,false,per))}</td>`:''}<td>${esc(r.level||'Belum tier')}</td></tr>`).join(''):'<tr><td colspan="12">Tidak ada data.</td></tr>')+'</tbody></table>';
+      +(sorted.length?sorted.slice(0,20).map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.nama)}<small>${esc(r.id)}</small></td><td>${esc(r.mitra||'—')}<small>${esc(r.stasiun||'—')}</small></td><td>${esc(r.region||'—')}</td><td class="r">${fmt(r.m[0])}</td><td class="r">${fmt(r.m[1])}</td><td class="r">${fmt(r.m[2])}</td><td class="r"><b>${fmt(r.total)}</b></td>${isS?`<td class="r">${fmt(r.reg)}</td>`:''}<td class="r">${f1(r.rate)}</td>${per?`<td class="r">${fmt(periodVal(r,false,per))}</td>`:''}<td>${esc(r.level||'Belum tier')}</td></tr>`).join(''):'<tr><td colspan="12">Tidak ada data.</td></tr>')+'</tbody></table>';
   });
   return html;
 }
@@ -1573,13 +1595,13 @@ function dashReport(){
   const ps=state.peserta.filter(p=>fDashMitra.has(p.mitra)), fil=r=>fDashMitra.has(r.mitra)||(!r.mitra&&fDashMitra.size()===0);
   let html=`<h1>Starlite Reward · Dashboard Q4 2026</h1><p style="margin:0 0 6px;color:#555;font-size:11px">Dicetak ${esc(nowTxt())}${state.pubAt?' · Data sheet per '+esc(new Date(state.pubAt).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):''}${fDashMitra.size()?' · Filter mitra aktif ('+fDashMitra.size()+')':''}</p>`;
   const ik=ps.filter(p=>p.peran==='IKR'), sl=ps.filter(p=>p.peran==='Sales'), ld=ps.filter(p=>p.posisi==='Lead').length;
-  html+='<div class="pkpis"><div class="kpis">'+[['Total pendaftar',ps.length,'IKR + Sales','dark'],['IKR',ik.length,`${ik.filter(p=>p.posisi==='Lead').length} lead · ${ik.filter(p=>p.posisi==='Tim').length} tim`,''],['Sales',sl.length,`${sl.filter(p=>p.posisi==='Lead').length} lead · ${sl.filter(p=>p.posisi==='Tim').length} tim`,''],['Mitra ikut serta',new Set(ps.map(p=>p.mitra)).size,'mitra yang sudah mendaftarkan',''],['Stasiun terwakili',new Set(ps.map(p=>String(p.stasiun||'').toUpperCase()).filter(Boolean)).size,'stasiun berbeda',''],['Posisi Lead',ld,`dari ${fmt(ps.length)} pendaftar`,'hot']].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('')+'</div></div>';
+  html+='<div class="pkpis"><div class="kpis">'+[['Total pendaftar',ps.length,'IKR + Sales','dark'],['IKR',ik.length,`${ik.filter(p=>p.posisi==='Lead').length} lead · ${ik.filter(p=>p.posisi==='Tim').length} tim`,'c-ikr'],['Sales',sl.length,`${sl.filter(p=>p.posisi==='Lead').length} lead · ${sl.filter(p=>p.posisi==='Tim').length} tim`,'c-sales'],['Mitra ikut serta',new Set(ps.map(p=>p.mitra)).size,'mitra yang sudah mendaftarkan','c-mitra'],['Stasiun terwakili',new Set(ps.map(p=>String(p.stasiun||'').toUpperCase()).filter(Boolean)).size,'stasiun berbeda','c-st'],['Posisi Lead',ld,`dari ${fmt(ps.length)} pendaftar`,'c-lead']].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('')+'</div></div>';
   ['IKR','Sales'].forEach(role=>{
     const rows=buildRank(role).filter(fil), isS=role==='Sales', m=[0,0,0], rg=[0,0,0]; rows.forEach(r=>{ r.m.forEach((x,i)=>m[i]+=x); r.regM.forEach((x,i)=>rg[i]+=x); });
     const dyM={}, drM={}; rows.forEach(r=>{ for(const k in r.dy) dyM[k]=(dyM[k]||0)+(Number(r.dy[k])||0); for(const k in r.dr) drM[k]=(drM[k]||0)+(Number(r.dr[k])||0); });
     const tot=m[0]+m[1]+m[2], dwA=dayWeek(dyM), dwR=dayWeek(drM);
     const st=[].concat(isS?[[fmt(rg[0]+rg[1]+rg[2]),'Total registrasi']]:[]).concat([[fmt(tot),isS?'Total aktivasi':'Total HC'],[fmt(rows.filter(r=>r.total>0).length),role+' ID aktif'],[fmt(state.regs.filter(p=>p.peran===role&&fDashMitra.has(p.mitra)).length),'Terdaftar'],[rows.filter(r=>r.level==='Tier 1').length+' / '+rows.filter(r=>r.level==='Tier 2').length,'Tier 1 / Tier 2']]);
-    html+=`<div class="pkpis"><div class="card hc-card"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p><div class="hc-stats${isS?' five':''}">${st.map(([v,l])=>`<div><b>${v}</b><span>${esc(l)}</span></div>`).join('')}</div></div></div>`;
+    html+=`<div class="pkpis"><div class="card hc-card ${isS?'hc-sales':'hc-ikr'}"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p><div class="hc-stats${isS?' five':''}">${st.map(([v,l])=>`<div><b>${v}</b><span>${esc(l)}</span></div>`).join('')}</div></div></div>`;
     html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:m[i]})))}<h4 style="font-size:10px;margin:4px 0">Aktivasi per minggu</h4>${miniTbl('Minggu',dwA.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per hari</h4>${miniTbl('Hari',dwA.days.slice().reverse())}</div></div>`;
     if(isS) html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Registrasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:rg[i]})))}<h4 style="font-size:10px;margin:4px 0">Registrasi per minggu</h4>${miniTbl('Minggu',dwR.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Registrasi per hari</h4>${miniTbl('Hari',dwR.days.slice().reverse())}</div></div>`;
   });
@@ -1669,7 +1691,8 @@ async function makeLeaderboardPdf(role){
   if(win.length){ doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(15,23,42); const t=doc.splitTextToSize('Racing per region: '+win.map(r=>(r.region||'-')+': '+r.nama+' ('+fmt(r.total)+')').join(' · '),210-2*M); doc.text(t,M,y); y+=t.length*3.6+2; }
   // tabel
   const head=['#','ID','Nama','Mitra','Stasiun','Region','Okt','Nov','Des','Total'].concat(isS?['Reg']:[]).concat(['/hari']).concat(per?[per.label]:[]).concat(['Level']);
-  const body=rows.map((r,i)=>[i+1,r.id,r.nama,r.mitra||'-',r.stasiun||'-',r.region||'-',fmt(r.m[0]),fmt(r.m[1]),fmt(r.m[2]),fmt(r.total)].concat(isS?[fmt(r.reg)]:[]).concat([f1(r.rate)]).concat(per?[fmt(periodVal(r,false,per))]:[]).concat([r.level||'Belum tier']));
+  const body=rows.slice(0,20).map((r,i)=>[i+1,r.id,r.nama,r.mitra||'-',r.stasiun||'-',r.region||'-',fmt(r.m[0]),fmt(r.m[1]),fmt(r.m[2]),fmt(r.total)].concat(isS?[fmt(r.reg)]:[]).concat([f1(r.rate)]).concat(per?[fmt(periodVal(r,false,per))]:[]).concat([r.level||'Belum tier']));
+  sec('Daftar 20 teratas · '+(per?'urut '+per.label:'urut total'+(isS?' aktivasi':' HC'))); y-=1;
   const numFrom=6, lastCol=head.length-1, cs={}; for(let c=numFrom;c<lastCol;c++) cs[c]={halign:'right'}; cs[0]={halign:'right',cellWidth:7};
   doc.autoTable({head:[head],body,startY:y,margin:{left:M,right:M,top:14,bottom:14},theme:'plain',styles:{fontSize:6.8,cellPadding:{top:1.1,bottom:1.1,left:1.3,right:1.3},textColor:[30,41,59],lineColor:[226,232,240],lineWidth:{bottom:0.15},overflow:'linebreak'},headStyles:{fillColor:[234,239,247],textColor:[71,85,105],fontStyle:'bold',fontSize:6.5},columnStyles:cs,
     didParseCell:d=>{ if(d.section==='body'&&d.column.index===lastCol){ const v=d.cell.raw; if(v==='Racing'){ d.cell.styles.textColor=PC.racing; d.cell.styles.fontStyle='bold'; } else if(v==='Tier 1'){ d.cell.styles.textColor=PC.t1; d.cell.styles.fontStyle='bold'; } else if(v==='Tier 2'){ d.cell.styles.textColor=PC.t2; d.cell.styles.fontStyle='bold'; } else d.cell.styles.textColor=[120,130,145]; } } });
