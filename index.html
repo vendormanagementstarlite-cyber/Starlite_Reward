@@ -353,6 +353,11 @@ td.r,th.r{text-align:right}
 .hc-stats span{font-size:11px;color:var(--muted);font-weight:600}
 .hc-mon{display:flex;flex-direction:column;gap:8px}
 .hc-mon .r{display:grid;grid-template-columns:44px 1fr 56px;gap:10px;align-items:center;font-size:12px}
+.hc-mon.wide .r{grid-template-columns:104px 1fr 48px}
+.hc-mon.scroll{max-height:300px;overflow:auto;padding-right:4px}
+.hcv{display:inline-flex;gap:2px;padding:3px;background:var(--line-2);border-radius:99px;margin:0 0 12px}
+.hcv button{border:0;background:transparent;font:inherit;font-size:12px;font-weight:600;color:var(--muted);padding:5px 14px;border-radius:99px;cursor:pointer}
+.hcv button[aria-pressed=true]{background:#fff;color:var(--ink,#0b1b34);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .hc-mon .bar{height:12px;border-radius:99px;background:var(--line-2);overflow:hidden}
 .hc-mon .bar i{display:block;height:100%;border-radius:99px;min-width:2px}
 .hc-mon .r b{text-align:right;font-variant-numeric:tabular-nums}
@@ -1095,6 +1100,19 @@ function fillMitraSelects(){
 
 /* ---------- DASHBOARD (khusus pendaftaran) ---------- */
 function stackedBars(rows,max,titleFn){ return `<div class="hbars">${rows.map(([n,v],ri)=>`<div class="hbar" title="${esc(titleFn(n,v))}"><span class="nm">${esc(n)}</span><div class="track"><span class="anim-w" data-w="${v.i/max*100}%" style="width:0;transition-delay:${ri*70}ms;background:var(--s-ikr)"></span><span class="anim-w" data-w="${v.s/max*100}%" style="width:0;transition-delay:${ri*70+120}ms;background:var(--s-sales)"></span></div><span class="tv">${v.i+v.s}</span></div>`).join('')}</div>`; }
+let hcView='bln'; try{ hcView=localStorage.getItem('starlite-hcv')||'bln'; }catch(e){}
+function hcBars(dayMap,monthArr,color){
+  const view=hcView, MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  if(view==='bln'){ const mx=Math.max(1,...monthArr); return '<div class="hc-mon">'+['Okt','Nov','Des'].map((n,i)=>`<div class="r"><span>${n}</span><div class="bar"><i style="width:${monthArr[i]/mx*100}%;background:${color}"></i></div><b>${fmt(monthArr[i])}</b></div>`).join('')+'</div>'; }
+  const dn=Math.min(92,Math.max(1,Math.floor((Date.now()-new Date(2026,9,1).getTime())/864e5)+1)), days=[];
+  for(let i=0;i<dn;i++){ const d=new Date(2026,9,1+i); days.push({d,v:(dayMap||{})[String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')]||0}); }
+  let items;
+  if(view==='hari') items=days.map(x=>({l:DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()],v:x.v}));
+  else { items=[]; for(let w=0;w*7<dn;w++){ const s=days.slice(w*7,w*7+7), a=s[0].d, z=s[s.length-1].d;
+    items.push({l:'M'+(w+1)+' · '+a.getDate()+(a.getMonth()!==z.getMonth()?' '+MN[a.getMonth()]:'')+'–'+z.getDate()+' '+MN[z.getMonth()],v:s.reduce((t,x)=>t+x.v,0)}); } }
+  items.reverse(); const mx=Math.max(1,...items.map(x=>x.v));
+  return '<div class="hc-mon wide scroll">'+items.map(x=>`<div class="r"><span>${x.l}</span><div class="bar"><i style="width:${x.v/mx*100}%;background:${color}"></i></div><b>${fmt(x.v)}</b></div>`).join('')+'</div>';
+}
 function renderDash(){
   if($('#v-dashboard').hidden) return;
   const ps=state.peserta.filter(p=>fDashMitra.has(p.mitra));
@@ -1124,14 +1142,16 @@ function renderDash(){
       const m=[0,0,0]; rows.forEach(r=>r.m.forEach((x,i)=>m[i]+=x));
       const tot=m[0]+m[1]+m[2], act=rows.filter(r=>r.total>0).length;
       const t1=rows.filter(r=>r.level==='Tier 1').length, t2=rows.filter(r=>r.level==='Tier 2').length;
-      const mx=Math.max(1,...m), nm=['Okt','Nov','Des'];
       const rtAll=role==='Sales'?rows.reduce((a,r)=>a+r.reg,0):0;
+      const sumMap=k=>{ const o={}; rows.forEach(r=>Object.entries(r[k]||{}).forEach(([d,n])=>o[d]=(o[d]||0)+n)); return o; };
+      const unitTxt={bln:'bulan',mgg:'minggu',hari:'hari'}[hcView]||'bulan';
       let extra='';
-      if(role==='Sales'){ const rg=[0,0,0]; rows.forEach(r=>r.regM.forEach((x,i)=>rg[i]+=x)); const rt=rg[0]+rg[1]+rg[2], rmx=Math.max(1,...rg);
-        extra=`<div class="hc-sub" style="margin-top:14px">Registrasi · total ${fmt(rt)}</div><div class="hc-mon">`+rg.map((x,i)=>`<div class="r"><span>${nm[i]}</span><div class="bar"><i style="width:${x/rmx*100}%;background:var(--accent)"></i></div><b>${fmt(x)}</b></div>`).join('')+'</div>'; }
-      return `<div class="card hc-card lift"><h2>${label}</h2><p class="sub">Monitoring HC ${role==='Sales'?'aktivasi':'aktivasi'} Q4 2026</p>
+      if(role==='Sales'){ const rg=[0,0,0]; rows.forEach(r=>r.regM.forEach((x,i)=>rg[i]+=x)); const rt=rg[0]+rg[1]+rg[2];
+        extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(rt)}</div>`+hcBars(sumMap('dr'),rg,'var(--accent)'); }
+      const sw=`<div class="hcv" role="group" aria-label="Rentang">${[['bln','Bulan'],['mgg','Minggu'],['hari','Hari']].map(([k,l])=>`<button type="button" data-hcv="${k}" aria-pressed="${hcView===k}">${l}</button>`).join('')}</div>`;
+      return `<div class="card hc-card lift"><h2>${label}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p>
         <div class="hc-stats${role==='Sales'?' five':''}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div><b>${fmt(t1)} / ${fmt(t2)}</b><span>Tier 1 / Tier 2</span></div></div>
-        <div class="hc-sub">Aktivasi per bulan</div><div class="hc-mon">`+m.map((x,i)=>`<div class="r"><span>${nm[i]}</span><div class="bar"><i style="width:${x/mx*100}%;background:${color}"></i></div><b>${fmt(x)}</b></div>`).join('')+`</div>${extra}</div>`; };
+        ${sw}<div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
   })();
 
@@ -1300,7 +1320,8 @@ function openDay(role,key){ const r=(rkRowMap[role]||new Map()).get(key); if(!r)
   $('#dayL').innerHTML=days.map(x=>{ const lbl=DOW[x.d.getDay()]+', '+x.d.getDate()+' '+['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][x.d.getMonth()];
     return `<div class="drow${x.a||x.g?'':' z'}"><span class="dd">${lbl}</span><span class="db"><i style="width:${x.a/mx*100}%"></i></span><span class="dv">${fmt(x.a)}${isS?`<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">reg ${fmt(x.g)}</small>`:''}</span></div>`; }).join('');
   $('#dayDlg').hidden=false; $('#dayL').scrollTop=0; }
-document.addEventListener('click',e=>{ const tr=e.target.closest('tr[data-rk]'); if(!tr) return; const sec=tr.closest('tbody'); const role=sec&&sec.id==='rkBodySales'?'Sales':'IKR'; openDay(role,tr.dataset.rk); });
+document.addEventListener('click',e=>{ const hb=e.target.closest('[data-hcv]'); if(hb){ hcView=hb.dataset.hcv; try{ localStorage.setItem('starlite-hcv',hcView); }catch(x){} renderDash(); return; }
+  const tr=e.target.closest('tr[data-rk]'); if(!tr) return; const sec=tr.closest('tbody'); const role=sec&&sec.id==='rkBodySales'?'Sales':'IKR'; openDay(role,tr.dataset.rk); });
 $('#dayX').addEventListener('click',()=>{ $('#dayDlg').hidden=true; });
 $('#dayDlg').addEventListener('click',e=>{ if(e.target.id==='dayDlg') $('#dayDlg').hidden=true; });
 $('#tierDlgX').addEventListener('click',()=>{ $('#tierDlg').hidden=true; });
