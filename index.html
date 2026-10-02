@@ -375,6 +375,10 @@ td .gap{display:block;margin-top:4px;font-size:11px;color:var(--muted);white-spa
 .rp{width:100%;border-collapse:collapse;font-size:10px;margin:4px 0 8px}.rp th{background:#eef2f7;text-align:left;padding:4px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #94a3b8}.rp td{padding:3px 6px;border-bottom:1px solid #e2e8f0}.rp .r{text-align:right;font-variant-numeric:tabular-nums}.rp small{display:block;color:#64748b;font-size:9px}
 #printArea .rp th{padding:3px 5px}#printArea .rp td{padding:2px 5px;font-size:9px;line-height:1.25}#printArea .rp td small{font-size:8px;line-height:1.2}
 .rp-kpi{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.rp-kpi div{border:1px solid #cbd5e1;border-radius:6px;padding:5px 10px;min-width:92px}.rp-kpi b{display:block;font-size:14px}.rp-kpi span{font-size:9px;color:#64748b}
+.pcards .tier-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:6px 0 10px;overflow:visible;padding:0;margin-inline:0}.pcards .tcard{flex:none;padding:10px 12px;box-shadow:none;break-inside:avoid}.pcards .tcard .tpic{width:78px;height:60px;top:8px;right:8px}.pcards .tcard .tc{font-size:22px;margin-top:6px}.pcards .tcard .trow{font-size:9.5px;padding:2px 0}.pcards .tcard .tmore{display:none}.pcards .tcard .tn{font-size:12px}.pcards .tcard .tr{font-size:10px}.pcards .tcard .tnote{font-size:9px}
+.pcards h4{font-size:10px;margin:6px 0 2px;color:#475569;text-transform:uppercase;letter-spacing:.05em}
+.pkpis .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:6px 0 10px}.pkpis .kpi{padding:8px 10px;box-shadow:none;break-inside:avoid}.pkpis .kpi .v{font-size:18px}.pkpis .kpi .k{font-size:9px}.pkpis .kpi .d{font-size:8.5px}
+.pkpis .hc-card{padding:12px 14px;box-shadow:none;margin:0 0 8px;break-inside:avoid}.pkpis .hc-card h2{font-size:14px}.pkpis .hc-stats{margin:6px 0 0}.pkpis .hc-stats b{font-size:15px}.pkpis .hc-stats span{font-size:9px}
 .rp-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @page{size:A4;margin:10mm}
 @media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}.rp thead{display:table-header-group}.rp tr{break-inside:avoid}#printArea h3{break-after:avoid}body.printing>*:not(#printArea){display:none!important}body.printing #printArea{display:block!important;padding:8mm;color:#000;background:#fff}#printArea h1{font-size:20px;margin:0 0 2px}#printArea h3{margin:14px 0 4px;font-size:14px}#printArea h4{margin:8px 0 2px;font-size:11px;text-transform:uppercase;color:#555}}
@@ -1529,6 +1533,10 @@ function dayWeek(map){
   return {days:days.map(x=>({l:DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MONTHS[x.d.getMonth()],v:x.v})),wk};
 }
 const miniTbl=(head,rows)=>`<table class="rp"><thead><tr><th>${head}</th><th class="r">Jumlah</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.l)}</td><td class="r">${fmt(x.v)}</td></tr>`).join('')}</tbody></table>`;
+function tierCardsHtml(role,P,metric){
+  const el=$('#rkTiers'+P); renderRankSection(role,P,metric,rkFilter(buildRank(role)),!!(state.ach&&state.ach.found),false);
+  return el.outerHTML.replace(/<div class="tmore">[^<]*<\/div>/g,'').replace(/ data-k="[^"]*"| tabindex="0"| role="button"| id="rkTiers\w+"/g,'');
+}
 function rankReport(){
   const per=periodInfo(); let html=`<h1>Starlite Reward · Leaderboard Q4 2026</h1><p style="margin:0 0 6px;color:#555;font-size:11px">Dicetak ${esc(nowTxt())}${state.pubAt?' · Data sheet per '+esc(new Date(state.pubAt).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):''}${per?' · Kolom periode: '+esc(per.label):''}${rkActive()?' · Tabel memakai filter yang aktif':''}</p>`;
   ['IKR','Sales'].forEach(role=>{
@@ -1536,7 +1544,8 @@ function rankReport(){
     const cnt=l=>all.filter(r=>r.level===l).length, win=all.filter(r=>r.level==='Racing').sort((a,b)=>(a.region||'').localeCompare(b.region||'','id'));
     const sorted=per?rows.slice().sort((a,b)=>periodVal(b,false,per)-periodVal(a,false,per)||b.total-a.total):rows;
     html+=`<h3 style="font-size:14px;margin:14px 0 2px;break-before:${isS?'page':'auto'}">${isS?'Leaderboard Sales · Aktivasi &amp; Registrasi':'Leaderboard IKR · Aktivasi (HC)'}</h3>`;
-    html+=kpiH([[fmt(all.length),role+' ID'],[fmt(all.reduce((s,r)=>s+r.total,0)),isS?'Total aktivasi':'Total HC']].concat(isS?[[fmt(all.reduce((s,r)=>s+r.reg,0)),'Total registrasi']]:[]).concat([[fmt(cnt('Racing')),'Racing'],[fmt(cnt('Tier 1')),'Tier 1'],[fmt(cnt('Tier 2')),'Tier 2']]));
+    html+=kpiH([[fmt(all.length),role+' ID'],[fmt(all.reduce((s,r)=>s+r.total,0)),isS?'Total aktivasi':'Total HC']].concat(isS?[[fmt(all.reduce((s,r)=>s+r.reg,0)),'Total registrasi']]:[]));
+    html+=`<div class="pcards">`+(isS?`<h4>Tier berdasarkan aktivasi</h4>${tierCardsHtml(role,'Sales','act')}<h4>Tier berdasarkan registrasi</h4>${tierCardsHtml(role,'Sales','reg')}`:tierCardsHtml(role,'Ikr','act'))+`</div>`;
     if(win.length) html+=`<p style="font-size:10px;margin:0 0 6px"><b>Racing per region:</b> ${win.map(r=>esc((r.region||'—')+': '+r.nama+' ('+fmt(r.total)+')')).join(' · ')}</p>`;
     html+=`<table class="rp"><thead><tr><th>#</th><th>Nama · ID</th><th>Mitra · Stasiun</th><th>Region</th><th class="r">Okt</th><th class="r">Nov</th><th class="r">Des</th><th class="r">Total</th>${isS?'<th class="r">Reg</th>':''}<th class="r">/hari</th>${per?`<th class="r">${esc(per.label)}</th>`:''}<th>Level</th></tr></thead><tbody>`
       +(sorted.length?sorted.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.nama)}<small>${esc(r.id)}</small></td><td>${esc(r.mitra||'—')}<small>${esc(r.stasiun||'—')}</small></td><td>${esc(r.region||'—')}</td><td class="r">${fmt(r.m[0])}</td><td class="r">${fmt(r.m[1])}</td><td class="r">${fmt(r.m[2])}</td><td class="r"><b>${fmt(r.total)}</b></td>${isS?`<td class="r">${fmt(r.reg)}</td>`:''}<td class="r">${f1(r.rate)}</td>${per?`<td class="r">${fmt(periodVal(r,false,per))}</td>`:''}<td>${esc(r.level||'Belum tier')}</td></tr>`).join(''):'<tr><td colspan="12">Tidak ada data.</td></tr>')+'</tbody></table>';
@@ -1546,13 +1555,14 @@ function rankReport(){
 function dashReport(){
   const ps=state.peserta.filter(p=>fDashMitra.has(p.mitra)), fil=r=>fDashMitra.has(r.mitra)||(!r.mitra&&fDashMitra.size()===0);
   let html=`<h1>Starlite Reward · Dashboard Q4 2026</h1><p style="margin:0 0 6px;color:#555;font-size:11px">Dicetak ${esc(nowTxt())}${state.pubAt?' · Data sheet per '+esc(new Date(state.pubAt).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})):''}${fDashMitra.size()?' · Filter mitra aktif ('+fDashMitra.size()+')':''}</p>`;
-  html+=kpiH([[fmt(ps.length),'Total pendaftar'],[fmt(ps.filter(p=>p.peran==='IKR').length),'IKR'],[fmt(ps.filter(p=>p.peran==='Sales').length),'Sales'],[fmt(new Set(ps.map(p=>p.mitra)).size),'Mitra ikut serta'],[fmt(new Set(ps.map(p=>String(p.stasiun||'').toUpperCase()).filter(Boolean)).size),'Stasiun terwakili'],[fmt(ps.filter(p=>p.posisi==='Lead').length),'Posisi Lead']]);
+  const ik=ps.filter(p=>p.peran==='IKR'), sl=ps.filter(p=>p.peran==='Sales'), ld=ps.filter(p=>p.posisi==='Lead').length;
+  html+='<div class="pkpis"><div class="kpis">'+[['Total pendaftar',ps.length,'IKR + Sales','dark'],['IKR',ik.length,`${ik.filter(p=>p.posisi==='Lead').length} lead · ${ik.filter(p=>p.posisi==='Tim').length} tim`,''],['Sales',sl.length,`${sl.filter(p=>p.posisi==='Lead').length} lead · ${sl.filter(p=>p.posisi==='Tim').length} tim`,''],['Mitra ikut serta',new Set(ps.map(p=>p.mitra)).size,'mitra yang sudah mendaftarkan',''],['Stasiun terwakili',new Set(ps.map(p=>String(p.stasiun||'').toUpperCase()).filter(Boolean)).size,'stasiun berbeda',''],['Posisi Lead',ld,`dari ${fmt(ps.length)} pendaftar`,'hot']].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('')+'</div></div>';
   ['IKR','Sales'].forEach(role=>{
     const rows=buildRank(role).filter(fil), isS=role==='Sales', m=[0,0,0], rg=[0,0,0]; rows.forEach(r=>{ r.m.forEach((x,i)=>m[i]+=x); r.regM.forEach((x,i)=>rg[i]+=x); });
     const dyM={}, drM={}; rows.forEach(r=>{ for(const k in r.dy) dyM[k]=(dyM[k]||0)+(Number(r.dy[k])||0); for(const k in r.dr) drM[k]=(drM[k]||0)+(Number(r.dr[k])||0); });
     const tot=m[0]+m[1]+m[2], dwA=dayWeek(dyM), dwR=dayWeek(drM);
-    html+=`<h3 style="font-size:14px;margin:14px 0 2px">Tim ${role} · Monitoring HC aktivasi Q4 2026</h3>`
-      +kpiH((isS?[[fmt(rg[0]+rg[1]+rg[2]),'Total registrasi']]:[]).concat([[fmt(tot),isS?'Total aktivasi':'Total HC'],[fmt(rows.filter(r=>r.total>0).length),role+' ID aktif'],[fmt(state.regs.filter(p=>p.peran===role&&fDashMitra.has(p.mitra)).length),'Terdaftar'],[rows.filter(r=>r.level==='Tier 1').length+' / '+rows.filter(r=>r.level==='Tier 2').length,'Tier 1 / Tier 2']]));
+    const st=[].concat(isS?[[fmt(rg[0]+rg[1]+rg[2]),'Total registrasi']]:[]).concat([[fmt(tot),isS?'Total aktivasi':'Total HC'],[fmt(rows.filter(r=>r.total>0).length),role+' ID aktif'],[fmt(state.regs.filter(p=>p.peran===role&&fDashMitra.has(p.mitra)).length),'Terdaftar'],[rows.filter(r=>r.level==='Tier 1').length+' / '+rows.filter(r=>r.level==='Tier 2').length,'Tier 1 / Tier 2']]);
+    html+=`<div class="pkpis"><div class="card hc-card"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p><div class="hc-stats${isS?' five':''}">${st.map(([v,l])=>`<div><b>${v}</b><span>${esc(l)}</span></div>`).join('')}</div></div></div>`;
     html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:m[i]})))}<h4 style="font-size:10px;margin:4px 0">Aktivasi per minggu</h4>${miniTbl('Minggu',dwA.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per hari</h4>${miniTbl('Hari',dwA.days.slice().reverse())}</div></div>`;
     if(isS) html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Registrasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:rg[i]})))}<h4 style="font-size:10px;margin:4px 0">Registrasi per minggu</h4>${miniTbl('Minggu',dwR.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Registrasi per hari</h4>${miniTbl('Hari',dwR.days.slice().reverse())}</div></div>`;
   });
@@ -1563,7 +1573,7 @@ function dashReport(){
   });
   return html;
 }
-$('#rkPdf').addEventListener('click',()=>printDoc(rankReport(),'Leaderboard_Starlite_Reward_'+stamp()));
+$('#rkPdf').addEventListener('click',()=>{ const html=rankReport(); renderRank(); printDoc(html,'Leaderboard_Starlite_Reward_'+stamp()); });
 $('#dashPdf').addEventListener('click',()=>printDoc(dashReport(),'Dashboard_Starlite_Reward_'+stamp()));
 function periodChanged(){ $('#rkRange').hidden=$('#rkPeriod').value!=='custom'; rkPeriod=$('#rkPeriod').value; rkLimit={Ikr:10,Sales:10}; $('#v-ranking')._fresh=true; renderRank(); }
 $('#rkPeriod').addEventListener('change',periodChanged);
