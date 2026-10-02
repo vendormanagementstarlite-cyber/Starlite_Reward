@@ -618,7 +618,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 2 Okt 2026 · 16.40</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 2 Okt 2026 · 17.05</span>
     </div>
   </aside>
 
@@ -1607,8 +1607,8 @@ function dashReport(){
   });
   [['mitra','Pencapaian per mitra'],['stasiun','Pencapaian per stasiun']].forEach(([f,t],i)=>{
     const rows=aggBy(f);
-    html+=`<h3 style="font-size:14px;margin:14px 0 2px;break-before:${i===0?'page':'auto'}">${t}</h3><table class="rp"><thead><tr><th>#</th><th>${f==='mitra'?'Mitra':'Stasiun'}</th><th class="r">IKR aktif</th><th class="r">IKR (HC)</th><th class="r">Sales aktif</th><th class="r">Sales aktivasi</th><th class="r">Sales registrasi</th></tr></thead><tbody>`
-      +(rows.length?rows.map((e,k)=>`<tr><td>${k+1}</td><td>${esc(e.name)}</td><td class="r">${fmt(e.ikrN)}</td><td class="r"><b>${fmt(e.ikr)}</b></td><td class="r">${fmt(e.salN)}</td><td class="r">${fmt(e.sAct)}</td><td class="r">${fmt(e.sReg)}</td></tr>`).join(''):'<tr><td colspan="7">Tidak ada data.</td></tr>')+'</tbody></table>';
+    html+=`<h3 style="font-size:14px;margin:14px 0 2px;break-before:${i===0?'page':'auto'}">${t} · 10 teratas</h3><table class="rp"><thead><tr><th>#</th><th>${f==='mitra'?'Mitra':'Stasiun'}</th><th class="r">IKR aktif</th><th class="r">IKR (HC)</th><th class="r">Sales aktif</th><th class="r">Sales aktivasi</th><th class="r">Sales registrasi</th></tr></thead><tbody>`
+      +(rows.length?rows.slice(0,10).map((e,k)=>`<tr><td>${k+1}</td><td>${esc(e.name)}</td><td class="r">${fmt(e.ikrN)}</td><td class="r"><b>${fmt(e.ikr)}</b></td><td class="r">${fmt(e.salN)}</td><td class="r">${fmt(e.sAct)}</td><td class="r">${fmt(e.sReg)}</td></tr>`).join(''):'<tr><td colspan="7">Tidak ada data.</td></tr>')+'</tbody></table>';
   });
   return html;
 }
