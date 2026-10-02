@@ -364,7 +364,9 @@ td .gap{display:block;margin-top:4px;font-size:11px;color:var(--muted);white-spa
 .chk-btn{position:relative}.chk-badge{display:inline-block;min-width:20px;text-align:center;border-radius:99px;padding:0 6px;margin-left:4px;font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b}.chk-badge.ok{background:#dcfce7;color:#166534}
 .daygap:empty{display:none}
 .hc-grid#perf{grid-template-columns:minmax(0,1fr)}
-.perf-card{padding:18px 20px}.perf-card h2{margin:0;font-size:17px}.perf-card .sub{color:var(--muted);font-size:12px;margin:2px 0 10px}
+.perf-card{padding:0}.perf-head{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:16px 20px;cursor:pointer}.perf-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:16px}
+.perf-head .sub{margin:2px 0 0}.perf-chev{width:20px;height:20px;flex:none;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s}.perf-card.open .perf-chev{transform:rotate(180deg)}
+.perf-body{padding:0 20px 18px}.perf-body[hidden]{display:none}.perf-card h2{margin:0;font-size:17px}.perf-card .sub{color:var(--muted);font-size:12px}
 .perf-card table{width:100%;min-width:560px;font-size:13px}.perf-card th{font-size:11px}.perf-card td small{display:block;color:var(--muted);font-size:11px}
 .perf-card .tbl-wrap{overflow:auto}.perf-more{margin-top:8px}
 .dc-item{border-top:1px solid var(--line-2);padding:8px 0;font-size:13px}.dc-item summary{cursor:pointer;display:flex;gap:10px;align-items:center;list-style:none}.dc-item summary::-webkit-details-marker{display:none}
@@ -1281,6 +1283,28 @@ $('#rkReset').addEventListener('click',()=>{ fRkTier.clear(); fRkMitra.clear(); 
 ['Ikr','Sales'].forEach(P=>$('#rkMoreBtn'+P).addEventListener('click',()=>{ rkLimit[P]+=20; renderRank(); }));
 document.querySelectorAll('#v-ranking .tabs button').forEach(b=>b.addEventListener('click',()=>{ salMode=b.dataset.m; rkLimit.Sales=10; document.querySelectorAll('#v-ranking .tabs button').forEach(x=>x.setAttribute('aria-selected',x===b)); tabInd(); $('#v-ranking')._fresh=true; renderRank(); }));
 
+
+/* ---------- Penyamaan nama mitra (sheet pencapaian vs daftar Mitra): cocokkan lewat kata kunci ---------- */
+const M_STOP=new Set(['PT','CV','TBK','PERSERO','UD','KOPERASI','KOP','PD','THE','DAN','AND','NO','NY','DEFINED']);
+const mStem=t=>t.length>5?t.replace(/(AN|N|S)$/,''):t;
+const mToks=s=>normM(s).split(' ').filter(t=>t&&!M_STOP.has(t)).map(mStem);
+function lev1(a,b){ if(a===b) return true; if(Math.abs(a.length-b.length)>1||a.length<5) return false; let i=0,j=0,e=0; while(i<a.length&&j<b.length){ if(a[i]===b[j]){i++;j++;continue;} if(++e>1) return false; if(a.length>b.length) i++; else if(a.length<b.length) j++; else {i++;j++;} } return e+(a.length-i)+(b.length-j)<=1; }
+let mCanonKey='', mMaster=[], mMemo=new Map();
+function mSetup(){ const key=mitraNames.length+'|'+mitraNames[0]+'|'+mitraNames[mitraNames.length-1]; if(key===mCanonKey) return; mCanonKey=key; mMemo=new Map(); mMaster=mitraNames.map(n=>({n,t:mToks(n)})).filter(x=>x.t.length); }
+function canonMitra(raw){
+  raw=String(raw||'').replace(/\s+/g,' ').trim(); if(!raw) return '';
+  mSetup(); if(mMemo.has(raw)) return mMemo.get(raw);
+  const nk=normM(raw); let out=raw;
+  const exact=mMaster.find(m=>normM(m.n)===nk);
+  if(exact) out=exact.n;
+  else { const A=mToks(raw); let best=null, bs=0, bs2=0;
+    if(A.length) mMaster.forEach(m=>{ const B=m.t; let inter=0; A.forEach(a=>{ if(B.some(b=>a===b||lev1(a,b))) inter++; });
+      const ov=inter/Math.min(A.length,B.length), jc=inter/(A.length+B.length-inter), need=Math.min(A.length,B.length)>=2?2:1;
+      if(inter>=need&&ov>=0.75){ const sc=jc+ov*0.5+(Math.min(A.length,B.length)>=3?0.2:0); if(sc>bs){ bs2=bs; bs=sc; best=m; } else if(sc>bs2) bs2=sc; } });
+    if(best&&bs-bs2>=0.05) out=best.n; }
+  mMemo.set(raw,out); return out;
+}
+const mKnown=raw=>{ raw=String(raw||'').trim(); if(!raw) return true; const c=canonMitra(raw); return mitraNames.includes(c); };
 const rkRowMap={IKR:new Map(),Sales:new Map()};
 function buildRank(role){
   const ach=(state.ach&&state.ach[role==='IKR'?'ikr':'sales'])||[];
@@ -1288,9 +1312,9 @@ function buildRank(role){
   const regMap=new Map(regs.map(p=>[normKey(p.uid),p]));
   const seen=new Set(); const rows=[];
   ach.forEach(a=>{ seen.add(a.key); const p=regMap.get(a.key); const m=a.act.map(x=>Number(x)||0);
-    rows.push({key:a.key,id:a.id,region:a.region||'',nama:p?p.nama:(a.name||'(tanpa nama)'),mitra:p?p.mitra:(a.mitra||''),stasiun:p?p.stasiun:(a.stasiun||''),m,dy:a.dy||{},dr:a.dr||{},role,regM:(a.reg||[0,0,0]).map(x=>Number(x)||0),reg:(a.reg||[]).reduce((s,x)=>s+(Number(x)||0),0),total:m.reduce((s,x)=>s+x,0),registered:!!p,inAch:true}); });
+    rows.push({key:a.key,id:a.id,region:a.region||'',nama:p?p.nama:(a.name||'(tanpa nama)'),mitra:canonMitra(p?p.mitra:(a.mitra||'')),mitraRaw:a.mitra||'',stasiun:p?p.stasiun:(a.stasiun||''),m,dy:a.dy||{},dr:a.dr||{},role,regM:(a.reg||[0,0,0]).map(x=>Number(x)||0),reg:(a.reg||[]).reduce((s,x)=>s+(Number(x)||0),0),total:m.reduce((s,x)=>s+x,0),registered:!!p,inAch:true}); });
   regs.forEach(p=>{ const k=normKey(p.uid); if(seen.has(k)) return; seen.add(k);
-    rows.push({key:k,id:p.uid,region:'',nama:p.nama,mitra:p.mitra,stasiun:p.stasiun,dy:{},dr:{},role,m:[0,0,0],regM:[0,0,0],reg:0,total:0,registered:true,inAch:false}); });
+    rows.push({key:k,id:p.uid,region:'',nama:p.nama,mitra:canonMitra(p.mitra),mitraRaw:p.mitra||'',stasiun:p.stasiun,dy:{},dr:{},role,m:[0,0,0],regM:[0,0,0],reg:0,total:0,registered:true,inAch:false}); });
   const T=TGT[role]; const gmax={}; rows.forEach(r=>{ const k=r.region||'—'; gmax[k]=Math.max(gmax[k]||0,r.total); });
   // hari berjalan di Q4 (1 Okt = hari ke-1), dipakai untuk rata-rata HC per hari
   const dn=Math.min(92,Math.max(1,Math.floor((Date.now()-new Date(2026,9,1).getTime())/864e5)+1));
@@ -1365,6 +1389,7 @@ function openDay(role,key){ const r=(rkRowMap[role]||new Map()).get(key); if(!r)
     return `<div class="drow${x.a||x.g?'':' z'}"><span class="dd">${lbl}</span><span class="db"><i style="width:${x.a/mx*100}%"></i></span><span class="dv">${fmt(x.a)}${isS?`<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">reg ${fmt(x.g)}</small>`:''}</span></div>`; }).join('');
   $('#dayDlg').hidden=false; $('#dayL').scrollTop=0; }
 document.addEventListener('click',e=>{ const hb=e.target.closest('[data-hcv]'); if(hb){ hcView=hb.dataset.hcv; try{ localStorage.setItem('starlite-hcv',hcView); }catch(x){} renderDash(); return; }
+  const pt=e.target.closest('[data-pt]'); if(pt){ const f=pt.dataset.pt; perfOpen[f]=!perfOpen[f]; try{ localStorage.setItem('starlite-perf',JSON.stringify(perfOpen)); }catch(x){} renderPerf(); return; }
   const pm=e.target.closest('[data-pm]'); if(pm){ const v=pm.dataset.pm; if(v.endsWith('-less')) perfLimit[v.split('-')[0]]=10; else perfLimit[v]=9999; renderPerf(); return; }
   const pf=e.target.closest('tr[data-pf]'); if(pf){ const i=pf.dataset.pf.indexOf('|'); openAgg(pf.dataset.pf.slice(0,i),pf.dataset.pf.slice(i+1)); return; }
   const tr=e.target.closest('tr[data-rk]'); if(!tr) return; const sec=tr.closest('tbody'); const role=sec&&sec.id==='rkBodySales'?'Sales':'IKR'; openDay(role,tr.dataset.rk); });
@@ -1508,10 +1533,15 @@ function renderDataCheck(){
   items.push(['ID Sales punya aktivasi tapi belum terdaftar di form',u(rS).length,u(rS).slice(0,40).map(r=>nm(r)+' · '+fmt(r.total)+' aktivasi')]);
   items.push(['IKR terdaftar tapi ID-nya tidak ditemukan di sheet pencapaian',n(rI).length,n(rI).slice(0,40).map(nm)]);
   items.push(['Sales terdaftar tapi ID-nya tidak ditemukan di sheet pencapaian',n(rS).length,n(rS).slice(0,40).map(nm)]);
+  const raws=new Map(); rI.concat(rS).forEach(r=>{ const k=String(r.mitraRaw||'').trim(); if(k&&r.inAch) raws.set(k,(raws.get(k)||0)+1); });
+  const unk=[...raws.keys()].filter(k=>!mKnown(k)), merged=[...raws.keys()].filter(k=>mKnown(k)&&canonMitra(k)!==k);
+  items.push(['Nama mitra di sheet pencapaian yang tidak cocok dengan daftar Mitra',unk.length,unk.slice(0,40).map(k=>`${k} (${raws.get(k)} ID)`)]);
+  const infoMerged=merged.length?['info',merged.length,merged.slice(0,40).map(k=>`${k}  →  ${canonMitra(k)}`)]:null;
   const bad=items.reduce((s,i)=>s+(i[1]>0?1:0),0);
+  if(infoMerged) items.push(infoMerged);
   btn.hidden=false; const bd=$('#chkBadge'); bd.textContent=bad?String(bad):'✓'; bd.classList.toggle('ok',!bad);
   $('#chkS').textContent=(bad?bad+' hal perlu dicek. Klik untuk melihat daftar.':'Semua data konsisten.')+(w?'':' Deploy code.gs terbaru untuk 4 pemeriksaan tambahan dari sheet.');
-  const html=items.map(([l,c,list])=>`<details class="dc-item"><summary><span class="dc-n${c?'':' ok'}">${fmt(c)}</span><span>${esc(l)}</span></summary>${list.length?`<div class="dc-list">${list.map(x=>esc(x)).join('<br>')}${c>list.length?'<br>…':''}</div>`:''}</details>`).join('');
+  const html=items.map(([l,c,list])=>l==='info'?`<details class="dc-item"><summary><span class="dc-n ok" style="background:#e0f2fe;color:#075985">${fmt(c)}</span><span>Nama mitra berbeda penulisan yang disamakan otomatis</span></summary><div class="dc-list">${list.map(x=>esc(x)).join('<br>')}</div></details>`:`<details class="dc-item"><summary><span class="dc-n${c?'':' ok'}">${fmt(c)}</span><span>${esc(l)}</span></summary>${list.length?`<div class="dc-list">${list.map(x=>esc(x)).join('<br>')}${c>list.length?'<br>…':''}</div>`:''}</details>`).join('');
   const body=$('#chkBody'); if(!$('#chkDlg').hidden||body._h!==html){ const open=[...body.querySelectorAll('details')].map(d=>d.open); body.innerHTML=html; body._h=html; body.querySelectorAll('details').forEach((d,i)=>{ if(open[i]) d.open=true; }); }
 }
 $('#chkBtn').addEventListener('click',()=>{ renderDataCheck(); $('#chkDlg').hidden=false; });
@@ -1520,6 +1550,7 @@ $('#chkDlg').addEventListener('click',e=>{ if(e.target.id==='chkDlg') $('#chkDlg
 
 /* ---------- Pencapaian per mitra & per stasiun (Dashboard) ---------- */
 const perfLimit={mitra:10,stasiun:10};
+let perfOpen={mitra:false,stasiun:false}; try{ Object.assign(perfOpen,JSON.parse(localStorage.getItem('starlite-perf')||'{}')); }catch(e){}
 function aggBy(field){
   const m=new Map();
   buildRank('IKR').concat(buildRank('Sales')).forEach(r=>{
@@ -1538,7 +1569,8 @@ function renderPerf(){
   const card=(field,title,sub)=>{
     const rows=aggBy(field); perfCache[field]=rows; const shown=rows.slice(0,perfLimit[field]), mx=Math.max(1,...rows.map(e=>e.ikr+e.sAct));
     const body=shown.length?shown.map((e,i)=>`<tr class="clk" data-pf="${field}|${esc(e.name)}"><td>${i+1}</td><td class="who"><b>${esc(e.name)}</b><small>${fmt(e.ikrN)} IKR · ${fmt(e.salN)} Sales aktif</small></td><td class="r num">${fmt(e.ikr)}</td><td class="r num">${fmt(e.sAct)}</td><td class="r num">${fmt(e.sReg)}</td><td style="min-width:140px"><div class="bar" style="height:10px;border-radius:99px;background:var(--line-2);overflow:hidden"><i style="display:block;height:100%;width:${(e.ikr+e.sAct)/mx*100}%;background:var(--accent);border-radius:99px"></i></div></td></tr>`).join(''):'<tr><td colspan="6"><div class="empty">Belum ada data pencapaian.</div></td></tr>';
-    return `<div class="card perf-card lift"><h2>${title}</h2><p class="sub">${sub}</p><div class="tbl-wrap"><table><thead><tr><th>#</th><th>${field==='mitra'?'Mitra':'Stasiun'}</th><th class="r">IKR (HC)</th><th class="r">Sales akt.</th><th class="r">Sales reg.</th><th></th></tr></thead><tbody>${body}</tbody></table></div>${rows.length>perfLimit[field]?`<button type="button" class="btn btn-ghost btn-sm perf-more" data-pm="${field}">Tampilkan semua (${fmt(rows.length)})</button>`:(perfLimit[field]>10&&rows.length>10?`<button type="button" class="btn btn-ghost btn-sm perf-more" data-pm="${field}-less">Ringkas</button>`:'')}</div>`; };
+    const open=!!perfOpen[field], sum=`${fmt(rows.length)} ${field} · total ${fmt(rows.reduce((s,e)=>s+e.ikr+e.sAct,0))} HC`;
+    return `<div class="card perf-card lift${open?' open':''}"><button type="button" class="perf-head" data-pt="${field}" aria-expanded="${open}"><span><h2>${title}</h2><p class="sub">${open?sub:sum}</p></span><svg viewBox="0 0 24 24" class="perf-chev" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="perf-body" ${open?'':'hidden'}><div class="tbl-wrap"><table><thead><tr><th>#</th><th>${field==='mitra'?'Mitra':'Stasiun'}</th><th class="r">IKR (HC)</th><th class="r">Sales akt.</th><th class="r">Sales reg.</th><th></th></tr></thead><tbody>${body}</tbody></table></div>${rows.length>perfLimit[field]?`<button type="button" class="btn btn-ghost btn-sm perf-more" data-pm="${field}">Tampilkan semua (${fmt(rows.length)})</button>`:(perfLimit[field]>10&&rows.length>10?`<button type="button" class="btn btn-ghost btn-sm perf-more" data-pm="${field}-less">Ringkas</button>`:'')}</div></div>`; };
   setHTML(el,card('mitra','Pencapaian per mitra','Klik baris untuk lihat pencapaian per hari')+card('stasiun','Pencapaian per stasiun','Klik baris untuk lihat pencapaian per hari'));
 }
 function openAgg(field,name){
