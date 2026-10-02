@@ -187,6 +187,18 @@ function achMonth_(v) {
   }
   return (y === 2026 && m >= 10 && m <= 12) ? m - 9 : 0;
 }
+/** Tanggal Q4 2026 sebagai 'MM-DD' (mis. '10-02'); selain itu ''. */
+function achDay_(v) {
+  if (!achMonth_(v)) return '';
+  let m, d;
+  if (v instanceof Date) { m = v.getMonth() + 1; d = v.getDate(); }
+  else {
+    const s = String(v).trim();
+    let t = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (t) { m = +t[2]; d = +t[3]; } else { t = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); m = +t[2]; d = +t[1]; }
+  }
+  return (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d;
+}
 function achId_(v) { return String(v === null || v === undefined ? '' : v).trim().replace(/\.0+$/, ''); }
 function achKey_(v) { return achId_(v).toLowerCase().replace(/\s+/g, ''); }
 
@@ -237,20 +249,20 @@ function achCompute_() {
     [['ikr', at(r, I.ikrId), at(r, I.ikrName), at(r, I.ikrMail)], ['sales', at(r, I.sal), at(r, I.salName), at(r, I.salMail)]].forEach(([kind, rawId, nm, mail]) => {
       const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) return;   // ID kosong/placeholder → tidak dihitung
       const M = maps[kind];
-      const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], sa: {}, sr: {} });
+      const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], dy: {}, dr: {}, sa: {}, sr: {} });
       if (!e.name) e.name = String(nm).trim();
       if (!e.email) e.email = String(mail).trim();
       bump(e.mit, mitra); bump(e.rgn, rgn); if (st && st.toUpperCase() !== 'NY DEFINED') bump(e.stn, st);
       // IKR  : aktivasi = ada active_date (bulan mengikuti active_date).
       // Sales: registrasi = ada registration_date; aktivasi = ada registration_date DAN active_date (dihitung 1, bulan mengikuti active_date).
       const okAct = am && (kind === 'ikr' || hasReg);
-      if (okAct && !e.sa[cust]) { e.sa[cust] = 1; e.act[am - 1]++; }
-      if (kind === 'sales' && rm && !e.sr[cust]) { e.sr[cust] = 1; e.reg[rm - 1]++; }
+      if (okAct && !e.sa[cust]) { e.sa[cust] = 1; e.act[am - 1]++; const dd = achDay_(at(r, I.act)); if (dd) e.dy[dd] = (e.dy[dd] || 0) + 1; }
+      if (kind === 'sales' && rm && !e.sr[cust]) { e.sr[cust] = 1; e.reg[rm - 1]++; const dr = achDay_(at(r, I.reg)); if (dr) e.dr[dr] = (e.dr[dr] || 0) + 1; }
     });
   });
   ['ikr', 'sales'].forEach(kind => {
     out[kind] = Object.keys(maps[kind]).map(k => { const e = maps[kind][k];
-      return { id: e.id, key: e.key, name: e.name, mitra: top(e.mit), stasiun: top(e.stn), region: top(e.rgn), act: e.act, reg: e.reg }; });
+      return { id: e.id, key: e.key, name: e.name, mitra: top(e.mit), stasiun: top(e.stn), region: top(e.rgn), act: e.act, reg: e.reg, dy: e.dy, dr: e.dr }; });
   });
   const sum = (arr, f) => arr.reduce((s, e) => s + f(e).reduce((a, b) => a + b, 0), 0);
   out.stats = { ikrIds: out.ikr.length, ikrAct: sum(out.ikr, e => e.act), salesIds: out.sales.length, salesAct: sum(out.sales, e => e.act), salesReg: sum(out.sales, e => e.reg) };
