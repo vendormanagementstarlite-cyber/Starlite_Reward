@@ -15,6 +15,7 @@
 const SHEET_DATA = 'Data';
 const SHEET_MITRA = 'Mitra';
 const SHEET_STASIUN = 'Stasiun';
+const SHEET_FINAL = 'Hasil Final';
 const SHEET_ACH = 'Ach sales ikr';   // data pencapaian (1 baris = 1 pelanggan): registration_date, active_date, customer_code, mitra, station, ikr_id, ikr_name, sales, sales_name, ...
 const HEADERS = ['NAMA MITRA','NAMA IKR','NAMA SALES','STASIUN','NAMA ACCOUNT','NO HP','ALAMAT EMAIL','POSISI','TANGGAL INPUT','ID','IKR ID / SALES ID'];
 const C = {MITRA:0, IKR:1, SALES:2, STASIUN:3, AKUN:4, HP:5, EMAIL:6, POSISI:7, TGL:8, ID:9, UID:10};
@@ -31,7 +32,7 @@ function doGet() {
 /** API untuk frontend yang di-host di luar Apps Script (mis. GitHub Pages). Body: {fn, args:[...]} (Content-Type text/plain). */
 function doPost(e) {
   const ALLOWED = { getData: getData, getDigest: getDigest, submitPeserta: submitPeserta, updatePeserta: updatePeserta,
-    addMitra: addMitra, addStasiun: addStasiun, deletePeserta: deletePeserta, checkAdminPin: checkAdminPin };
+    addMitra: addMitra, addStasiun: addStasiun, deletePeserta: deletePeserta, checkAdminPin: checkAdminPin, saveFinal: saveFinal, getFinal: getFinal };
   let out;
   try {
     const req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
@@ -148,7 +149,7 @@ function buildPub_(values) {
   const ss = SpreadsheetApp.getActive();
   const col = name => { const s = ss.getSheetByName(name), n = s.getLastRow(); return n > 1 ? s.getRange(2, 1, n - 1, 1).getValues().map(r => String(r[0]).trim()).filter(String) : []; };
   const regs = values.filter(rowHasData_).map(r => { const o = toObj_(r); return { peran: o.peran, uid: o.uid, nama: o.nama, mitra: o.mitra, stasiun: o.stasiun }; }).filter(x => x.uid);
-  return { mitra: col(SHEET_MITRA), stasiun: col(SHEET_STASIUN), ach: achData_(), regs: regs };
+  return { mitra: col(SHEET_MITRA), stasiun: col(SHEET_STASIUN), ach: achData_(), regs: regs, at: new Date().toISOString() };
 }
 
 /** Mitra (tanpa password) menerima data publik dari cache (cepat); Admin (password benar) juga menerima seluruh data peserta. */
@@ -157,7 +158,7 @@ function getData(pin) {
   let pub = getBig_('pub'), values = null;
   if (!pub || isAdmin) values = readValues_();
   if (!pub) { pub = buildPub_(values); storePub_(pub); }
-  const payload = { rows: isAdmin ? values.filter(rowHasData_).map(toObj_) : [], mitra: pub.mitra, stasiun: pub.stasiun, admin: isAdmin, ach: pub.ach, regs: pub.regs };
+  const payload = { rows: isAdmin ? values.filter(rowHasData_).map(toObj_) : [], mitra: pub.mitra, stasiun: pub.stasiun, admin: isAdmin, ach: pub.ach, regs: pub.regs, pubAt: pub.at || '' };
   payload.digest = getDigest();   // harus sama dengan nilai yang dipakai pengecekan berkala, kalau tidak web memuat ulang terus
   payload.at = new Date().toISOString();
   return payload;
@@ -215,6 +216,7 @@ function achData_() {
 }
 function achCompute_() {
   const out = { ikr: [], sales: [], found: false, rows: 0 };
+  const warn = { noIdIkr: 0, noIdSales: 0, noCust: 0, dup: [] };
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_ACH);
   if (!sh || sh.getLastRow() < 2) return out;
   out.found = true;
@@ -245,12 +247,14 @@ function achCompute_() {
     const cust = String(at(r, I.cust)).trim() || ('row' + n);
     const rm = achMonth_(at(r, I.reg)), am = achMonth_(at(r, I.act));
     const hasReg = String(at(r, I.reg)).trim() !== '';
+    if (!String(at(r, I.cust)).trim() && (am || rm)) warn.noCust++;
     const mitra = String(at(r, I.mitra)).trim(), st = String(at(r, I.st)).trim(), rgn = String(at(r, I.reg2)).trim();
     [['ikr', at(r, I.ikrId), at(r, I.ikrName), at(r, I.ikrMail)], ['sales', at(r, I.sal), at(r, I.salName), at(r, I.salMail)]].forEach(([kind, rawId, nm, mail]) => {
-      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) return;   // ID kosong/placeholder → tidak dihitung
+      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) { if (kind === 'ikr' ? am : (am || rm)) warn[kind === 'ikr' ? 'noIdIkr' : 'noIdSales']++; return; }   // ID kosong/placeholder → tidak dihitung
       const M = maps[kind];
-      const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], dy: {}, dr: {}, sa: {}, sr: {} });
+      const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], dy: {}, dr: {}, nms: {}, sa: {}, sr: {} });
       if (!e.name) e.name = String(nm).trim();
+      { const nv = String(nm).trim(); if (nv) e.nms[nv] = 1; }
       if (!e.email) e.email = String(mail).trim();
       bump(e.mit, mitra); bump(e.rgn, rgn); if (st && st.toUpperCase() !== 'NY DEFINED') bump(e.stn, st);
       // IKR  : aktivasi = ada active_date (bulan mengikuti active_date).
@@ -264,6 +268,8 @@ function achCompute_() {
     out[kind] = Object.keys(maps[kind]).map(k => { const e = maps[kind][k];
       return { id: e.id, key: e.key, name: e.name, mitra: top(e.mit), stasiun: top(e.stn), region: top(e.rgn), act: e.act, reg: e.reg, dy: e.dy, dr: e.dr }; });
   });
+  ['ikr', 'sales'].forEach(kind => Object.keys(maps[kind]).forEach(k => { const nn = Object.keys(maps[kind][k].nms); if (nn.length > 1 && warn.dup.length < 30) warn.dup.push({ kind: kind, id: maps[kind][k].id, names: nn.slice(0, 5) }); }));
+  out.warn = warn;
   const sum = (arr, f) => arr.reduce((s, e) => s + f(e).reduce((a, b) => a + b, 0), 0);
   out.stats = { ikrIds: out.ikr.length, ikrAct: sum(out.ikr, e => e.act), salesIds: out.sales.length, salesAct: sum(out.sales, e => e.act), salesReg: sum(out.sales, e => e.reg) };
   return out;
@@ -1221,11 +1227,40 @@ function addStasiun(name) { const r = addStasiun_(name); bumpV_(); return r; }
 function deletePeserta(pin, id) { const r = deletePeserta_(pin, id); bumpV_(); return r; }
 
 /** Penanda versi data (naik tiap ada tulis dari web) — dipakai getDigest tanpa harus membaca seluruh sheet. */
+/* ---------- Hasil final (dibekukan admin) ---------- */
+const FINAL_HEAD = ['peran', 'level', 'region', 'id', 'nama', 'mitra', 'stasiun', 'total_aktivasi', 'total_registrasi', 'rata2_per_hari'];
+/** Admin membekukan hasil: seluruh isi tab "Hasil Final" diganti snapshot terbaru. rows = [{peran,level,region,id,nama,mitra,stasiun,total,reg,rate}] */
+function saveFinal(pin, rows) {
+  if (!checkPin_(pin)) throw new Error('Password admin salah.');
+  rows = (rows || []).slice(0, 5000);
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const ss = SpreadsheetApp.getActive();
+    let sh = ss.getSheetByName(SHEET_FINAL); if (!sh) sh = ss.insertSheet(SHEET_FINAL);
+    sh.clearContents();
+    const at = new Date();
+    const out = [FINAL_HEAD].concat(rows.map(r => [r.peran, r.level, r.region, r.id, r.nama, r.mitra, r.stasiun, r.total, r.reg, r.rate]));
+    sh.getRange(1, 1, out.length, FINAL_HEAD.length).setNumberFormat('@').setValues(out.map(a => a.map(x => String(x === undefined || x === null ? '' : x))));
+    sh.getRange(1, FINAL_HEAD.length + 2).setValue('dibekukan');
+    sh.getRange(2, FINAL_HEAD.length + 2).setValue(at.toISOString());
+    PropertiesService.getScriptProperties().setProperty('FINAL_AT', at.toISOString());
+    return { ok: true, at: at.toISOString(), n: rows.length };
+  } finally { lock.releaseLock(); }
+}
+function getFinal(pin) {
+  if (!checkPin_(pin)) throw new Error('Password admin salah.');
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_FINAL);
+  const at = PropertiesService.getScriptProperties().getProperty('FINAL_AT') || '';
+  if (!sh || sh.getLastRow() < 2 || !at) return { at: '', rows: [] };
+  const v = sh.getRange(2, 1, sh.getLastRow() - 1, FINAL_HEAD.length).getValues();
+  return { at: at, rows: v.map(r => ({ peran: r[0], level: r[1], region: r[2], id: r[3], nama: r[4], mitra: r[5], stasiun: r[6], total: Number(r[7]) || 0, reg: Number(r[8]) || 0, rate: Number(r[9]) || 0 })) };
+}
+
 /** Simpan data publik ke cache (2 menit) dan perbarui sidik isi bila berubah. */
 function storePub_(pub) {
   putBig_('pub', pub, 120);
   try {
-    const h = digest_(JSON.stringify(pub)), P = PropertiesService.getScriptProperties();
+    const h = digest_(JSON.stringify([pub.mitra, pub.stasiun, pub.ach, pub.regs])), P = PropertiesService.getScriptProperties();
     if (P.getProperty('PUB_H') !== h) P.setProperty('PUB_H', h);
   } catch (e) {}
 }
