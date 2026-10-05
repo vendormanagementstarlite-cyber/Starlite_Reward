@@ -577,6 +577,14 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .cc-head{cursor:pointer}.cc-head .legend{align-items:center}.cc-head .perf-chev{margin-left:6px}.chart-card:not(.closed) .cc-head .perf-chev{transform:rotate(180deg)}.chart-card.closed .cc-body{display:none}
 .cc-body .perf-more{margin-top:10px}
 .chart-card.closed{align-self:start}
+
+.hc-trend{overflow-x:auto;overflow-y:hidden;padding:2px 0 8px;margin:0 -4px;scrollbar-width:thin;-webkit-overflow-scrolling:touch;cursor:grab}
+.hc-trend:active{cursor:grabbing}.hc-trend svg{display:block}
+.hc-trend .tlr{display:flex}.hc-trend .tl{display:flex;flex-direction:column;align-items:center;font-size:10.5px;color:var(--ink-2);flex:none;line-height:1.25;padding-top:4px}
+.hc-trend .tl small{color:var(--muted);font-size:9.5px;font-weight:600}.hc-trend .tl.sun b,.hc-trend .tl.sun small{color:var(--bad)}
+.trend-hint{margin:2px 0 0;font-size:10.5px;color:var(--muted)}
+
+.hc-trend2{display:flex;align-items:flex-start}.hc-trend2 .hc-ax{flex:none}.hc-trend2 .hc-trend{flex:1;min-width:0;margin:0;padding:0 0 4px}
 </style>
 </head>
 <body>
@@ -630,7 +638,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 12.45</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 13.40</span>
     </div>
   </aside>
 
@@ -1203,6 +1211,9 @@ const ccMore=(f,n)=>n<=10?'':(ccLimit[f]<n?`<button type="button" class="btn btn
 function ccApply(){ document.querySelectorAll('.cc-head').forEach(h=>{ const o=ccOpen[h.dataset.ct]!==false; h.setAttribute('aria-expanded',o); h.closest('.chart-card').classList.toggle('closed',!o); }); }
 function stackedBars(rows,max,titleFn){ return `<div class="hbars">${rows.map(([n,v],ri)=>`<div class="hbar" title="${esc(titleFn(n,v))}"><span class="nm">${esc(n)}</span><div class="track"><span class="anim-w" data-w="${v.i/max*100}%" style="width:0;transition-delay:${ri*70}ms;background:var(--s-ikr)"></span><span class="anim-w" data-w="${v.s/max*100}%" style="width:0;transition-delay:${ri*70+120}ms;background:var(--s-sales)"></span></div><span class="tv">${v.i+v.s}</span></div>`).join('')}</div>`; }
 let hcView='bln'; try{ hcView=localStorage.getItem('starlite-hcv')||'bln'; }catch(e){}
+function hcTrendInit(){ document.querySelectorAll('.hc-trend').forEach(e=>{ if(e._i) return; e._i=1; e.scrollLeft=e.scrollWidth;
+  let d=null; e.addEventListener('pointerdown',ev=>{ if(ev.pointerType==='touch') return; d={x:ev.clientX,l:e.scrollLeft}; });
+  window.addEventListener('pointermove',ev=>{ if(d) e.scrollLeft=d.l-(ev.clientX-d.x); }); window.addEventListener('pointerup',()=>{ d=null; }); }); }
 function hcBars(dayMap,monthArr,color){
   const view=hcView, MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   if(view==='bln'){ const mx=Math.max(1,...monthArr); return '<div class="hc-mon">'+['Okt','Nov','Des'].map((n,i)=>`<div class="r"><span>${n}</span><div class="bar"><i style="width:${monthArr[i]/mx*100}%;background:${color}"></i></div><b>${fmt(monthArr[i])}</b></div>`).join('')+'</div>'; }
@@ -1212,6 +1223,15 @@ function hcBars(dayMap,monthArr,color){
   if(view==='hari') items=days.map(x=>({l:DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()],v:x.v}));
   else { items=[]; for(let w=0;w*7<dn;w++){ const s=days.slice(w*7,w*7+7), a=s[0].d, z=s[s.length-1].d;
     items.push({l:'M'+(w+1)+' · '+a.getDate()+(a.getMonth()!==z.getMonth()?' '+MN[a.getMonth()]:'')+'–'+z.getDate()+' '+MN[z.getMonth()],v:s.reduce((t,x)=>t+x.v,0)}); } }
+  if(view==='hari'){
+    const n=days.length, hc0=document.getElementById('hcMon'), avail=Math.max(260,(hc0?hc0.clientWidth:900)/(innerWidth>1000?2:1)-110), W=Math.min(70,Math.max(40,Math.floor(avail/n))), H=210, Tp=20, B=30, ph=H-Tp-B, bw=Math.min(26,W*.62);
+    const vmax=Math.max(1,...days.map(x=>x.v)), step=niceStep(vmax/4), top=Math.ceil(vmax/step)*step, L=Math.max(30,fmt(top).length*6.4+12), y=v=>Tp+ph-(v/top)*ph, iw=Math.max(n*W,60);
+    let ax='', gr='';
+    for(let v=0;v<=top+0.001;v+=step){ ax+=`<text x="${L-6}" y="${y(v)+4}" text-anchor="end" style="font:500 10px var(--font);fill:var(--muted)">${fmt(v)}</text>`; gr+=`<line x1="0" x2="${iw}" y1="${y(v)}" y2="${y(v)}" style="stroke:${v?'var(--line-2)':'var(--line)'};stroke-width:1"/>`; }
+    const bars=days.map((x,i)=>{ const cx=i*W+W/2, bx=cx-bw/2, hh=Math.max(0,Tp+ph-y(x.v)), full=DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()]+': '+fmt(x.v);
+      return `<rect x="${bx}" y="${y(x.v)}" width="${bw}" height="${hh}" rx="3" style="fill:${color}"><title>${esc(full)}</title></rect>${x.v?`<text x="${cx}" y="${y(x.v)-6}" text-anchor="middle" style="font:700 10.5px var(--font);fill:var(--ink)">${fmt(x.v)}</text>`:''}<text x="${cx}" y="${H-12}" text-anchor="middle" style="font:500 10px var(--font);fill:${x.d.getDay()===0?'var(--bad)':'var(--muted)'}">${x.d.getDate()}/${x.d.getMonth()+1}</text>`; }).join('');
+    return `<div class="hc-trend2"><svg class="hc-ax" width="${L}" height="${H}" viewBox="0 0 ${L} ${H}" aria-hidden="true">${ax}</svg><div class="hc-trend" tabindex="0" aria-label="Grafik per hari, geser kiri kanan"><svg width="${iw}" height="${H}" viewBox="0 0 ${iw} ${H}" role="img">${gr}${bars}</svg></div></div><p class="trend-hint">Geser ke kiri/kanan untuk melihat hari lainnya</p>`;
+  }
   items.reverse(); const mx=Math.max(1,...items.map(x=>x.v));
   return '<div class="hc-mon wide scroll">'+items.map(x=>`<div class="r"><span>${x.l}</span><div class="bar"><i style="width:${x.v/mx*100}%;background:${color}"></i></div><b>${fmt(x.v)}</b></div>`).join('')+'</div>';
 }
@@ -1256,7 +1276,7 @@ function renderDash(){
         <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
   })();
-  renderPerf(); renderDataCheck(); ccApply();
+  renderPerf(); renderDataCheck(); ccApply(); hcTrendInit();
 
   // per mitra
   const byM={}; ps.forEach(p=>{ byM[p.mitra]=byM[p.mitra]||{i:0,s:0}; byM[p.mitra][p.peran==='IKR'?'i':'s']++; });
