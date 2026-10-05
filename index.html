@@ -587,6 +587,10 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .hc-trend2{display:flex;align-items:flex-start}.hc-trend2 .hc-ax{flex:none}.hc-trend2 .hc-trend{flex:1;min-width:0;margin:0;padding:0 0 4px}
 
 .hc-all{font-size:11px;color:var(--muted);margin:-6px 0 10px;line-height:1.5}.hc-all b{color:var(--ink-2)}
+
+.hc-stats.six{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.hc-stats.six div{padding:9px 8px}.hc-stats.six b{font-size:17px}.hc-stats.six span{font-size:10px}
+@media(max-width:520px){.hc-stats.six{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.hc-stats div.noid{background:repeating-linear-gradient(135deg,rgba(0,0,0,.035) 0 6px,transparent 6px 12px),var(--hcs,#F4F7FB);border-left-style:dashed}
 </style>
 </head>
 <body>
@@ -640,7 +644,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 15.45</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 17.10</span>
     </div>
   </aside>
 
@@ -758,7 +762,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
         <h1>Dashboard Pendaftaran</h1>
         <p class="lede" id="dashLede">Rekap IKR dan Sales yang didaftarkan mitra untuk mengikuti program reward Q4.</p>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select class="rk-sel" id="dashPeriod" aria-label="Periode"><option value="q4">Periode: Okt–Des</option><option value="today">Hari ini</option><option value="yday">Kemarin</option><option value="d7">7 hari terakhir</option><option value="okt">Oktober</option><option value="nov">November</option><option value="des">Desember</option><option value="custom">Pilih tanggal…</option></select><span class="rk-range" id="dRange" hidden><input type="date" id="dFrom" min="2026-10-01" max="2026-12-31"><span>–</span><input type="date" id="dTo" min="2026-10-01" max="2026-12-31"></span><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
       </div>
       <div class="kpis" id="kpis"></div>
       <div class="hc-grid" id="hcMon"></div>
@@ -1192,6 +1196,8 @@ const fLbMitra=MultiFilter($('#lbMitra'),{all:'Semua mitra',noun:'mitra',onChang
 const fLbStasiun=MultiFilter($('#lbStasiun'),{all:'Semua stasiun',noun:'stasiun',onChange:lbChanged});
 function lbChanged(){ $('#lbReset').hidden=!(fLbMitra.size()||fLbStasiun.size()); $('#v-leaderboard')._fresh=true; renderLB(); }
 function dashFilterUi(){ $('#dashReset').hidden=!fDashMitra.size(); }
+$('#dashPeriod').addEventListener('change',()=>{ dashPeriod=$('#dashPeriod').value; $('#dRange').hidden=dashPeriod!=='custom'; $('#v-dashboard')._fresh=true; renderDash(); });
+['#dFrom','#dTo'].forEach(s=>$(s).addEventListener('change',()=>{ $('#v-dashboard')._fresh=true; renderDash(); }));
 $('#dashReset').addEventListener('click',()=>{ fDashMitra.clear(); dashFilterUi(); $('#v-dashboard')._fresh=true; renderDash(); });
 $('#lbReset').addEventListener('click',()=>{ fLbMitra.clear(); fLbStasiun.clear(); lbChanged(); });
 
@@ -1216,9 +1222,23 @@ let hcView='bln'; try{ hcView=localStorage.getItem('starlite-hcv')||'bln'; }catc
 function hcTrendInit(){ document.querySelectorAll('.hc-trend').forEach(e=>{ if(e._i) return; e._i=1; e.scrollLeft=e.scrollWidth;
   let d=null; e.addEventListener('pointerdown',ev=>{ if(ev.pointerType==='touch') return; d={x:ev.clientX,l:e.scrollLeft}; });
   window.addEventListener('pointermove',ev=>{ if(d) e.scrollLeft=d.l-(ev.clientX-d.x); }); window.addEventListener('pointerup',()=>{ d=null; }); }); }
-function allNote(role,tot,rt){ const A=state.ach&&state.ach.all; if(!A) return '';
-  const row=(lbl,arr,mine)=>{ const t=arr[0]+arr[1]+arr[2], d=t-mine; return `<div class="hc-all"><b>${lbl}: ${fmt(t)}</b> <span>Okt ${fmt(arr[0])} · Nov ${fmt(arr[1])} · Des ${fmt(arr[2])}${d>0&&!fDashMitra.size()?` · termasuk ${fmt(d)} data tanpa ID / ganda`:''}</span></div>`; };
-  return role==='Sales'?row('Total keseluruhan · Registrasi',A.salesReg,rt)+row('Total keseluruhan · Aktivasi',A.salesAct,tot):row('Total keseluruhan · Aktivasi',A.ikr,tot); }
+function hcData(role){
+  const dp=dashPer(), inP=k=>!dp||dp.set.has(k), isS=role==='Sales';
+  const okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0);
+  const rows=buildRank(role).filter(r=>okM(r.mitra));
+  const dy={}, dr={}; let actN=0, nA=0, nR=0;
+  rows.forEach(r=>{ let a=0; for(const k in r.dy){ if(!inP(k)) continue; const n=Number(r.dy[k])||0; dy[k]=(dy[k]||0)+n; a+=n; } if(a>0) actN++;
+    if(isS) for(const k in r.dr){ if(!inP(k)) continue; dr[k]=(dr[k]||0)+(Number(r.dr[k])||0); } });
+  ((state.ach&&state.ach.noId)||[]).forEach(([t,d,mm])=>{ if(!/^1[0-2]-/.test(d)||!inP(d)||!okM(canonMitra(mm||''))) return;
+    if(t==='i'&&!isS){ dy[d]=(dy[d]||0)+1; nA++; } else if(t==='a'&&isS){ dy[d]=(dy[d]||0)+1; nA++; } else if(t==='r'&&isS){ dr[d]=(dr[d]||0)+1; nR++; } });
+  const mon=o=>{ const a=[0,0,0]; for(const k in o){ const i=(+k.slice(0,2))-10; if(i>=0&&i<3) a[i]+=o[k]; } return a; };
+  const m=mon(dy), rg=mon(dr);
+  return {dp,rows,dy,dr,m,rg,tot:m[0]+m[1]+m[2],rt:rg[0]+rg[1]+rg[2],act:actN,nA,nR,
+    reg:state.regs.filter(p=>p.peran===role&&fDashMitra.has(p.mitra)).length, belum:rows.filter(r=>r.inAch&&!r.registered).length};
+}
+function hcTiles(role,D){ const isS=role==='Sales';
+  return [].concat(isS?[[fmt(D.rt),'Total registrasi']]:[]).concat([[fmt(D.tot),isS?'Total aktivasi':'Total HC'],[fmt(D.act),role+' ID aktif'],[fmt(D.reg),'Terdaftar'],[fmt(D.belum),'Belum terdaftar'],[isS?fmt(D.nA)+' / '+fmt(D.nR):fmt(D.nA),isS?'Tanpa ID (akt / reg)':'Tanpa ID number']]); }
+const hcTileHtml=(role,D)=>hcTiles(role,D).map(([v,l],i,a)=>`<div${i===a.length-1?` class="noid" title="Baris di sheet yang ikr_number / sales_number-nya kosong. Sudah ikut dihitung di total."`:(l==='Belum terdaftar'?' title="ID ada di data pencapaian tetapi belum didaftarkan mitra"':'')}><b>${v}</b><span>${esc(l)}</span></div>`).join('');
 function hcBars(dayMap,monthArr,color){
   const view=hcView, MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   if(view==='bln'){ const mx=Math.max(1,...monthArr); return '<div class="hc-mon">'+['Okt','Nov','Des'].map((n,i)=>`<div class="r"><span>${n}</span><div class="bar"><i style="width:${monthArr[i]/mx*100}%;background:${color}"></i></div><b>${fmt(monthArr[i])}</b></div>`).join('')+'</div>'; }
@@ -1264,21 +1284,15 @@ function renderDash(){
   (function(){
     const el=$('#hcMon'); if(!el) return;
     const mk=(role,label,color)=>{
-      const rows=buildRank(role).filter(r=>fDashMitra.has(r.mitra)||(!r.mitra&&fDashMitra.size()===0));
-      const reg=state.regs.filter(p=>p.peran===role&&fDashMitra.has(p.mitra)).length;
-      const m=[0,0,0]; rows.forEach(r=>r.m.forEach((x,i)=>m[i]+=x));
-      const tot=m[0]+m[1]+m[2], act=rows.filter(r=>r.total>0).length;
-      const t1=rows.filter(r=>r.level==='Tier 1').length, t2=rows.filter(r=>r.level==='Tier 2').length;
-      const rtAll=role==='Sales'?rows.reduce((a,r)=>a+r.reg,0):0;
-      const sumMap=k=>{ const o={}; rows.forEach(r=>Object.entries(r[k]||{}).forEach(([d,n])=>o[d]=(o[d]||0)+n)); return o; };
+      const D=hcData(role), isS=role==='Sales', dp=D.dp;
       const unitTxt={bln:'bulan',mgg:'minggu',hari:'hari'}[hcView]||'bulan';
       let extra='';
-      if(role==='Sales'){ const rg=[0,0,0]; rows.forEach(r=>r.regM.forEach((x,i)=>rg[i]+=x)); const rt=rg[0]+rg[1]+rg[2];
-        extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(rt)}</div>`+hcBars(sumMap('dr'),rg,'var(--accent)'); }
+      if(isS) extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(D.rt)}</div>`+hcBars(D.dr,D.rg,'var(--accent)');
       const sw=`<div class="hcv" role="group" aria-label="Rentang">${[['bln','Bulan'],['mgg','Minggu'],['hari','Hari']].map(([k,l])=>`<button type="button" data-hcv="${k}" aria-pressed="${hcView===k}">${l}</button>`).join('')}</div>`;
-      return `<div class="card hc-card lift ${role==='Sales'?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p></div>${sw}</div>
-        <div class="hc-stats${role==='Sales'?' five':' four'}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div title="ID ada di data pencapaian tetapi belum didaftarkan mitra"><b>${fmt(rows.filter(r=>r.inAch&&!r.registered).length)}</b><span>Belum terdaftar</span></div></div>${allNote(role,tot,rtAll)}
-        <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
+      const note=(D.nA+D.nR>0)?`<p class="hc-all">Total sudah termasuk <b>${fmt(D.nA)}</b>${isS?' aktivasi dan <b>'+fmt(D.nR)+'</b> registrasi':' aktivasi'} dari baris yang ID number-nya kosong.</p>`:'';
+      return `<div class="card hc-card lift ${isS?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi · ${dp?esc(dp.label):'Q4 2026'}</p></div>${sw}</div>
+        <div class="hc-stats ${isS?'six':'five'}">${hcTileHtml(role,D)}</div>${note}
+        <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(D.dy,D.m,color)+`${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
   })();
   renderPerf(); renderDataCheck(); ccApply(); hcTrendInit();
@@ -1510,7 +1524,10 @@ function gapInfo(role,r){
   return {dn,left,rate,proj,projTier,next,kurang,perHari};
 }
 let rkPeriod='q4';
-function periodInfo(){
+function periodInfo(){ return periodFor(rkPeriod,'#rkFrom','#rkTo'); }
+let dashPeriod='q4';
+const dashPer=()=>periodFor(dashPeriod,'#dFrom','#dTo');
+function periodFor(rkPeriod,fromSel,toSel){
   if(rkPeriod==='q4') return null;
   const key=d=>pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
   const range=(a,b)=>{ const s=new Set(); for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1)) s.add(key(d)); return s; };
@@ -1522,7 +1539,7 @@ function periodInfo(){
   if(rkPeriod==='today') return {label:'Hari ini',set:range(today,today)};
   if(rkPeriod==='yday') return {label:'Kemarin',set:range(day(-1),day(-1))};
   if(rkPeriod==='d7') return {label:'7 hari terakhir',set:range(day(-6),today)};
-  const a=dm($('#rkFrom').value), b=dm($('#rkTo').value)||a;
+  const a=dm($(fromSel).value), b=dm($(toSel).value)||a;
   if(!a) return {label:'Tanggal ?',set:new Set()};
   const lo=a<=b?a:b, hi=a<=b?b:a;
   return {label:pad2(lo.getDate())+'/'+pad2(lo.getMonth()+1)+(+lo===+hi?'':'–'+pad2(hi.getDate())+'/'+pad2(hi.getMonth()+1)),set:range(lo,hi)};
@@ -1643,11 +1660,9 @@ function dashReport(){
   const ik=ps.filter(p=>p.peran==='IKR'), sl=ps.filter(p=>p.peran==='Sales'), ld=ps.filter(p=>p.posisi==='Lead').length;
   html+='<div class="pkpis"><div class="kpis">'+[['Total pendaftar',ps.length,'IKR + Sales','dark'],['IKR',ik.length,`${ik.filter(p=>p.posisi==='Lead').length} lead · ${ik.filter(p=>p.posisi==='Tim').length} tim`,'c-ikr'],['Sales',sl.length,`${sl.filter(p=>p.posisi==='Lead').length} lead · ${sl.filter(p=>p.posisi==='Tim').length} tim`,'c-sales'],['Mitra ikut serta',new Set(ps.map(p=>p.mitra)).size,'mitra yang sudah mendaftarkan','c-mitra'],['Stasiun terwakili',new Set(ps.map(p=>String(p.stasiun||'').toUpperCase()).filter(Boolean)).size,'stasiun berbeda','c-st'],['Posisi Lead',ld,`dari ${fmt(ps.length)} pendaftar`,'c-lead']].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('')+'</div></div>';
   ['IKR','Sales'].forEach(role=>{
-    const rows=buildRank(role).filter(fil), isS=role==='Sales', m=[0,0,0], rg=[0,0,0]; rows.forEach(r=>{ r.m.forEach((x,i)=>m[i]+=x); r.regM.forEach((x,i)=>rg[i]+=x); });
-    const dyM={}, drM={}; rows.forEach(r=>{ for(const k in r.dy) dyM[k]=(dyM[k]||0)+(Number(r.dy[k])||0); for(const k in r.dr) drM[k]=(drM[k]||0)+(Number(r.dr[k])||0); });
-    const tot=m[0]+m[1]+m[2], dwA=dayWeek(dyM), dwR=dayWeek(drM);
-    const st=[].concat(isS?[[fmt(rg[0]+rg[1]+rg[2]),'Total registrasi']]:[]).concat([[fmt(tot),isS?'Total aktivasi':'Total HC'],[fmt(rows.filter(r=>r.total>0).length),role+' ID aktif'],[fmt(state.regs.filter(p=>p.peran===role&&fDashMitra.has(p.mitra)).length),'Terdaftar'],[fmt(rows.filter(r=>r.inAch&&!r.registered).length),'Belum terdaftar']]);
-    html+=`<div class="pkpis"><div class="card hc-card ${isS?'hc-sales':'hc-ikr'}"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p><div class="hc-stats${isS?' five':' four'}">${st.map(([v,l])=>`<div><b>${v}</b><span>${esc(l)}</span></div>`).join('')}</div></div></div>`;
+    const D=hcData(role), isS=role==='Sales', m=D.m, rg=D.rg, dyM=D.dy, drM=D.dr;
+    const dwA=dayWeek(dyM), dwR=dayWeek(drM);
+    html+=`<div class="pkpis"><div class="card hc-card ${isS?'hc-sales':'hc-ikr'}"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi · ${D.dp?esc(D.dp.label):'Q4 2026'}${(D.nA+D.nR)?' · total sudah termasuk '+fmt(D.nA)+(isS?' aktivasi & '+fmt(D.nR)+' registrasi':' aktivasi')+' tanpa ID number':''}</p><div class="hc-stats ${isS?'six':'five'}">${hcTileHtml(role,D)}</div></div></div>`;
     html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:m[i]})))}<h4 style="font-size:10px;margin:4px 0">Aktivasi per minggu</h4>${miniTbl('Minggu',dwA.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per hari</h4>${miniTbl('Hari',dwA.days.slice().reverse())}</div></div>`;
     if(isS) html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Registrasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:rg[i]})))}<h4 style="font-size:10px;margin:4px 0">Registrasi per minggu</h4>${miniTbl('Minggu',dwR.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Registrasi per hari</h4>${miniTbl('Hari',dwR.days.slice().reverse())}</div></div>`;
   });
