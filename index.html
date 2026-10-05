@@ -573,6 +573,10 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 
 .hc-stats.four{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.hc-stats.four div{padding:10px 10px}.hc-stats.four b{font-size:19px}.hc-stats.four span{font-size:10.5px}
 @media(max-width:520px){.hc-stats.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.cc-head{cursor:pointer}.cc-head .legend{align-items:center}.cc-head .perf-chev{margin-left:6px}.chart-card:not(.closed) .cc-head .perf-chev{transform:rotate(180deg)}.chart-card.closed .cc-body{display:none}
+.cc-body .perf-more{margin-top:10px}
+.chart-card.closed{align-self:start}
 </style>
 </head>
 <body>
@@ -626,7 +630,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 12.20</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 12.45</span>
     </div>
   </aside>
 
@@ -751,14 +755,14 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       <div class="hc-grid" id="perf"></div>
       <div class="grid2">
         <div class="card chart-card lift">
-          <div class="chart-head"><div><h2>Pendaftar per mitra</h2><p>Jumlah IKR dan Sales yang didaftarkan</p></div>
-            <div class="legend"><span><i style="background:var(--s-ikr)"></i>IKR</span><span><i style="background:var(--s-sales)"></i>Sales</span></div></div>
-          <div id="chMitra"></div>
+          <div class="chart-head cc-head" data-ct="mitra" role="button" tabindex="0" aria-expanded="true"><div><h2>Pendaftar per mitra</h2><p>Jumlah IKR dan Sales yang didaftarkan</p></div>
+            <div class="legend"><span><i style="background:var(--s-ikr)"></i>IKR</span><span><i style="background:var(--s-sales)"></i>Sales</span><svg viewBox="0 0 24 24" class="perf-chev" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div></div>
+          <div id="chMitra" class="cc-body"></div>
         </div>
         <div class="card chart-card lift">
-          <div class="chart-head"><div><h2>Pendaftar per stasiun</h2><p>10 stasiun dengan pendaftar terbanyak</p></div>
-            <div class="legend"><span><i style="background:var(--s-ikr)"></i>IKR</span><span><i style="background:var(--s-sales)"></i>Sales</span></div></div>
-          <div id="chStasiun"></div>
+          <div class="chart-head cc-head" data-ct="stasiun" role="button" tabindex="0" aria-expanded="true"><div><h2>Pendaftar per stasiun</h2><p>Stasiun dengan pendaftar terbanyak</p></div>
+            <div class="legend"><span><i style="background:var(--s-ikr)"></i>IKR</span><span><i style="background:var(--s-sales)"></i>Sales</span><svg viewBox="0 0 24 24" class="perf-chev" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div></div>
+          <div id="chStasiun" class="cc-body"></div>
         </div>
         <div class="card chart-card lift">
           <div class="chart-head"><div><h2>Tren pendaftaran</h2><p>Jumlah pendaftar baru per hari (14 hari terakhir)</p></div></div>
@@ -963,7 +967,7 @@ function openPw(){ $('#pw-in').value=''; $('#pw-err').hidden=true; $('#pwDlg').h
 function closePw(){ $('#pwDlg').hidden=true; }
 $('#pw-cancel').addEventListener('click',closePw);
 $('#pwDlg').addEventListener('click',e=>{ if(e.target.id==='pwDlg') closePw(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#pwDlg').hidden) closePw(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#pwDlg').hidden) closePw(); if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('cc-head')){ e.preventDefault(); e.target.click(); } });
 $('#pwForm').addEventListener('submit',async e=>{ e.preventDefault(); const pw=$('#pw-in').value.trim(); const er=$('#pw-err'), ok=$('#pw-ok');
   if(!pw){ er.textContent='Isi password dulu.'; er.hidden=false; return; }
   ok.disabled=true; ok.textContent='Memeriksa…';
@@ -1193,6 +1197,10 @@ function fillMitraSelects(){
 }
 
 /* ---------- DASHBOARD (khusus pendaftaran) ---------- */
+const ccLimit={mitra:10,stasiun:10};
+let ccOpen={mitra:true,stasiun:true}; try{ Object.assign(ccOpen,JSON.parse(localStorage.getItem('starlite-cc')||'{}')); }catch(e){}
+const ccMore=(f,n)=>n<=10?'':(ccLimit[f]<n?`<button type="button" class="btn btn-ghost btn-sm perf-more" data-cm="${f}">Tampilkan semua (${fmt(n)})</button>`:`<button type="button" class="btn btn-ghost btn-sm perf-more" data-cm="${f}-less">Ringkas (10 teratas)</button>`);
+function ccApply(){ document.querySelectorAll('.cc-head').forEach(h=>{ const o=ccOpen[h.dataset.ct]!==false; h.setAttribute('aria-expanded',o); h.closest('.chart-card').classList.toggle('closed',!o); }); }
 function stackedBars(rows,max,titleFn){ return `<div class="hbars">${rows.map(([n,v],ri)=>`<div class="hbar" title="${esc(titleFn(n,v))}"><span class="nm">${esc(n)}</span><div class="track"><span class="anim-w" data-w="${v.i/max*100}%" style="width:0;transition-delay:${ri*70}ms;background:var(--s-ikr)"></span><span class="anim-w" data-w="${v.s/max*100}%" style="width:0;transition-delay:${ri*70+120}ms;background:var(--s-sales)"></span></div><span class="tv">${v.i+v.s}</span></div>`).join('')}</div>`; }
 let hcView='bln'; try{ hcView=localStorage.getItem('starlite-hcv')||'bln'; }catch(e){}
 function hcBars(dayMap,monthArr,color){
@@ -1248,18 +1256,18 @@ function renderDash(){
         <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
   })();
-  renderPerf(); renderDataCheck();
+  renderPerf(); renderDataCheck(); ccApply();
 
   // per mitra
   const byM={}; ps.forEach(p=>{ byM[p.mitra]=byM[p.mitra]||{i:0,s:0}; byM[p.mitra][p.peran==='IKR'?'i':'s']++; });
   const mRows=Object.entries(byM).sort((a,b)=>(b[1].i+b[1].s)-(a[1].i+a[1].s)); const mMax=Math.max(1,...mRows.map(([,v])=>v.i+v.s));
-  const chM=$('#chMitra'); const mitraHtml = mRows.length? stackedBars(mRows,mMax,(n,v)=>`${n}: ${v.i} IKR, ${v.s} Sales`) : '<div class="empty">Belum ada pendaftar. Mitra mendaftarkan dari menu Submit Data.</div>';
+  const chM=$('#chMitra'); const mitraHtml = mRows.length? stackedBars(mRows.slice(0,ccLimit.mitra),mMax,(n,v)=>`${n}: ${v.i} IKR, ${v.s} Sales`)+ccMore('mitra',mRows.length) : '<div class="empty">Belum ada pendaftar. Mitra mendaftarkan dari menu Submit Data.</div>';
   if(setHTML(chM,mitraHtml)||fresh) { if(fresh&&chM._h===mitraHtml){ chM.innerHTML=mitraHtml; } growBars(chM); }
 
   // per stasiun (top 10)
   const byS={}; ps.forEach(p=>{ const k=String(p.stasiun||'').toUpperCase(); if(!k) return; byS[k]=byS[k]||{i:0,s:0}; byS[k][p.peran==='IKR'?'i':'s']++; });
-  const sRows=Object.entries(byS).sort((a,b)=>(b[1].i+b[1].s)-(a[1].i+a[1].s)||a[0].localeCompare(b[0])).slice(0,10); const sMax=Math.max(1,...sRows.map(([,v])=>v.i+v.s));
-  const chS=$('#chStasiun'); const stHtml = sRows.length? stackedBars(sRows,sMax,(n,v)=>`${n}: ${v.i} IKR, ${v.s} Sales`) : '<div class="empty">Belum ada data stasiun.</div>';
+  const sRows=Object.entries(byS).sort((a,b)=>(b[1].i+b[1].s)-(a[1].i+a[1].s)||a[0].localeCompare(b[0])); const sMax=Math.max(1,...sRows.map(([,v])=>v.i+v.s));
+  const chS=$('#chStasiun'); const stHtml = sRows.length? stackedBars(sRows.slice(0,ccLimit.stasiun),sMax,(n,v)=>`${n}: ${v.i} IKR, ${v.s} Sales`)+ccMore('stasiun',sRows.length) : '<div class="empty">Belum ada data stasiun.</div>';
   if(setHTML(chS,stHtml)||fresh){ if(fresh) chS.innerHTML=stHtml; growBars(chS); }
 
   // tren pendaftaran 14 hari
@@ -1444,6 +1452,8 @@ function openDay(role,key){ const r=(rkRowMap[role]||new Map()).get(key); if(!r)
   $('#dayDlg').hidden=false; $('#dayL').scrollTop=0; }
 document.addEventListener('click',e=>{ const hb=e.target.closest('[data-hcv]'); if(hb){ hcView=hb.dataset.hcv; try{ localStorage.setItem('starlite-hcv',hcView); }catch(x){} renderDash(); return; }
   const pt=e.target.closest('[data-pt]'); if(pt){ const f=pt.dataset.pt; perfOpen[f]=!perfOpen[f]; try{ localStorage.setItem('starlite-perf',JSON.stringify(perfOpen)); }catch(x){} renderPerf(); return; }
+  const cm=e.target.closest('[data-cm]'); if(cm){ const v=cm.dataset.cm; if(v.endsWith('-less')) ccLimit[v.split('-')[0]]=10; else ccLimit[v]=9999; renderDash(); return; }
+  const ch=e.target.closest('[data-ct]'); if(ch){ const f=ch.dataset.ct; ccOpen[f]=ccOpen[f]===false; try{ localStorage.setItem('starlite-cc',JSON.stringify(ccOpen)); }catch(x){} ccApply(); return; }
   const pm=e.target.closest('[data-pm]'); if(pm){ const v=pm.dataset.pm; if(v.endsWith('-less')) perfLimit[v.split('-')[0]]=10; else perfLimit[v]=9999; renderPerf(); return; }
   const pf=e.target.closest('tr[data-pf]'); if(pf){ const i=pf.dataset.pf.indexOf('|'); openAgg(pf.dataset.pf.slice(0,i),pf.dataset.pf.slice(i+1)); return; }
   const tr=e.target.closest('tr[data-rk]'); if(!tr) return; const sec=tr.closest('tbody'); const role=sec&&sec.id==='rkBodySales'?'Sales':'IKR'; openDay(role,tr.dataset.rk); });
