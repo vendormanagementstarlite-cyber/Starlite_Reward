@@ -604,6 +604,21 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .hc-stats.two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:0}.hc-stats.two div{padding:10px 10px}.hc-stats.two b{font-size:19px}.hc-stats.two span{font-size:10.5px}
 .hc-split{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:16px}.hc-grp{min-width:0;padding:0 14px}.hc-grp:first-child{padding-left:0;border-right:1.5px solid var(--line);}.hc-grp:last-child{padding-right:0}
 .hc-split{align-items:stretch}.hc-grp{display:flex;flex-direction:column}.hc-grp .hc-stats.two{flex:1;grid-auto-rows:1fr;align-items:stretch}.hc-grp .hc-stats span{line-height:1.3;display:block}.hc-grp .hc-stats div{display:flex;flex-direction:column;justify-content:center}
+.hc-mon .pick,.hc-trend .pick{cursor:pointer}.hc-mon .r.pick:hover span,.hc-mon .r.pick.sel span{color:var(--hc,var(--accent));font-weight:700}.hc-mon .r.pick.sel .bar{box-shadow:0 0 0 2px var(--hcs,#dbe7f5)}
+.hc-trend .pick:hover rect{fill:rgba(0,0,0,.04)}.hc-trend g.sel rect{fill:var(--hcs,#e6f0fb)}
+.hc-drill{margin-top:10px;border:1px solid var(--line-2);border-left:3px solid var(--hc,var(--accent));border-radius:12px;background:var(--hcs,#F4F7FB);padding:10px 12px}
+.hc-drill[hidden]{display:none}
+.hc-drill .dh{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px}.hc-drill .dh b{display:block;font-size:13px;color:var(--hc,var(--ink))}.hc-drill .dh span{font-size:11px;color:var(--muted)}
+.hc-drill .dx{border:0;background:rgba(255,255,255,.7);border-radius:99px;width:24px;height:24px;cursor:pointer;color:var(--muted);font-size:11px;flex:none}
+.hc-drill ul{list-style:none;margin:0;padding:0}.hc-drill .dl{max-height:320px;overflow:auto;padding-right:4px}
+.hc-drill .dm{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:14px minmax(0,1.3fr) minmax(40px,1fr) 44px;gap:8px;align-items:center;padding:6px 4px;font-size:12px;cursor:pointer;border-radius:8px}
+.hc-drill .dm:hover,.hc-drill .dm:focus-visible{background:rgba(255,255,255,.7)}
+.hc-drill .dm .car{font-size:10px;color:var(--muted);transition:transform .15s}.hc-drill .dm[aria-expanded=true] .car{transform:rotate(90deg)}
+.hc-drill .dm .nm{font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hc-drill .dm .bar{height:8px;border-radius:99px;background:rgba(255,255,255,.8);overflow:hidden}.hc-drill .dm .bar i{display:block;height:100%;background:var(--hc,var(--accent));border-radius:99px;min-width:2px}
+.hc-drill .dm b{text-align:right;font-variant-numeric:tabular-nums}
+.hc-drill .dp{margin:2px 0 6px 22px;border-left:2px solid rgba(0,0,0,.08);padding-left:10px}.hc-drill .dp li{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:3px 0;color:var(--ink-2)}.hc-drill .dp li.x{color:var(--muted);font-style:italic}.hc-drill .dp b{font-variant-numeric:tabular-nums}
+.hc-drill .dn{margin:6px 0 0;font-size:10.5px;color:var(--muted)}
 .hc-dist{margin:8px 0 0;font-size:11px;color:var(--muted);line-height:1.4}.hc-dist b{color:var(--ink-2)}
 .hc-grp h5{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--hc,var(--muted));font-weight:700}
 @media(max-width:520px){.hc-split{grid-template-columns:1fr;gap:14px}.hc-grp{padding:0}.hc-grp:first-child{border-right:0;border-bottom:1.5px solid var(--line);padding-bottom:14px}}
@@ -662,7 +677,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 23.00</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 24.00</span>
     </div>
   </aside>
 
@@ -1278,27 +1293,66 @@ const hcOne=(arr)=>arr.map(([v,l],i,a)=>`<div${i===a.length-1?` class="noid" tit
 const hcTileHtml=(role,D)=>{ const t=hcTiles(role,D); return role==='Sales'
   ? `<section class="hc-grp"><h5>Registrasi</h5><div class="hc-stats two">${hcOne(t[0])}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(D.tR)}</b> · belum <b>${fmt(D.bR)}</b></p></section><section class="hc-grp"><h5>Aktivasi</h5><div class="hc-stats two">${hcOne(t[1])}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(D.tA)}</b> · belum <b>${fmt(D.bA)}</b></p></section>`
   : hcOne(t); };
-function hcBars(dayMap,monthArr,color){
+function hcBars(dayMap,monthArr,color,role,kind){
+  const dz=`<div class="hc-drill" data-dz="${role}|${kind}" hidden></div>`;
+  const mkKeys=m=>{ const n=new Date(2026,m,0).getDate(); return Array.from({length:n},(_,i)=>pad2(m)+'-'+pad2(i+1)); };
+  const att=(it)=>{ const id=role+'|'+kind+'|'+it.keys[0]+'|'+it.keys.length; return ` class="r pick" data-sel="${id}" data-role="${role}" data-kind="${kind}" data-keys="${it.keys.join(',')}" data-lbl="${esc(it.l)}" tabindex="0" role="button"`; };
   const view=hcView==='all'?'bln':hcView, MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  if(view==='bln'){ const mx=Math.max(1,...monthArr); return '<div class="hc-mon">'+['Okt','Nov','Des'].map((n,i)=>`<div class="r"><span>${n}</span><div class="bar"><i style="width:${monthArr[i]/mx*100}%;background:${color}"></i></div><b>${fmt(monthArr[i])}</b></div>`).join('')+'</div>'; }
+  if(view==='bln'){ const mx=Math.max(1,...monthArr); return '<div class="hc-mon">'+['Okt','Nov','Des'].map((n,i)=>`<div${att({l:n,keys:mkKeys(10+i)})}><span>${n}</span><div class="bar"><i style="width:${monthArr[i]/mx*100}%;background:${color}"></i></div><b>${fmt(monthArr[i])}</b></div>`).join('')+'</div>'+dz; }
   const dn=Math.min(92,Math.max(1,Math.floor((Date.now()-new Date(2026,9,1).getTime())/864e5)+1)), days=[];
-  for(let i=0;i<dn;i++){ const d=new Date(2026,9,1+i); days.push({d,v:(dayMap||{})[String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')]||0}); }
+  for(let i=0;i<dn;i++){ const d=new Date(2026,9,1+i); const k=pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); days.push({d,k,v:(dayMap||{})[k]||0}); }
   let items;
-  if(view==='hari') items=days.map(x=>({l:DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()],v:x.v}));
+  if(view==='hari') items=days.map(x=>({l:DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()],v:x.v,keys:[x.k]}));
   else { items=[]; for(let w=0;w*7<dn;w++){ const s=days.slice(w*7,w*7+7), a=s[0].d, z=s[s.length-1].d;
-    items.push({l:'M'+(w+1)+' · '+a.getDate()+(a.getMonth()!==z.getMonth()?' '+MN[a.getMonth()]:'')+'–'+z.getDate()+' '+MN[z.getMonth()],v:s.reduce((t,x)=>t+x.v,0)}); } }
+    items.push({l:'M'+(w+1)+' · '+a.getDate()+(a.getMonth()!==z.getMonth()?' '+MN[a.getMonth()]:'')+'–'+z.getDate()+' '+MN[z.getMonth()],v:s.reduce((t,x)=>t+x.v,0),keys:s.map(x=>x.k)}); } }
   if(view==='hari'){
     const n=days.length, W=40, H=130, Tp=16, B=22, ph=H-Tp-B, bw=18, cw=(100/n).toFixed(4)+'%';
     const vmax=Math.max(1,...days.map(x=>x.v)), step=niceStep(vmax/3), top=Math.ceil(vmax/step)*step, y=v=>Tp+ph-(v/top)*ph, L=Math.max(30,fmt(top).length*5.6+10);
     let ax='', gr='';
     for(let v=0;v<=top+0.001;v+=step){ ax+=`<text x="${L-6}" y="${y(v)+4}" text-anchor="end" style="font:500 9px var(--font);fill:var(--muted)">${fmt(v)}</text>`; gr+=`<line x1="0" x2="100%" y1="${y(v)}" y2="${y(v)}" style="stroke:${v?'var(--line-2)':'var(--line)'};stroke-width:1"/>`; }
-    const bars=days.map((x,i)=>{ const full=DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()]+': '+fmt(x.v), hh=Math.max(0,Tp+ph-y(x.v));
-      return `<svg x="${(i*100/n).toFixed(4)}%" y="0" width="${cw}" height="${H}" style="overflow:visible"><rect x="50%" y="${y(x.v)}" width="${bw}" height="${hh}" rx="3" transform="translate(${-bw/2} 0)" style="fill:${color}"><title>${esc(full)}</title></rect>${x.v?`<text x="50%" y="${y(x.v)-4}" text-anchor="middle" style="font:700 9.5px var(--font);fill:var(--ink)">${fmt(x.v)}</text>`:''}<text x="50%" y="${H-8}" text-anchor="middle" style="font:500 9px var(--font);fill:${x.d.getDay()===0?'var(--bad)':'var(--muted)'}">${x.d.getDate()}/${x.d.getMonth()+1}</text></svg>`; }).join('');
-    return `<div class="hc-trend2"><svg class="hc-ax" width="${L}" height="${H}" viewBox="0 0 ${L} ${H}" aria-hidden="true">${ax}</svg><div class="hc-trend" tabindex="0" aria-label="Grafik per hari, geser kiri kanan"><svg width="100%" height="${H}" style="min-width:${n*W}px" role="img">${gr}${bars}</svg></div></div><p class="trend-hint">Geser ke kiri/kanan untuk melihat hari lainnya</p>`;
+    const bars=days.map((x,i)=>{ const it={l:DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()],keys:[x.k]}; const full=DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()]+': '+fmt(x.v), hh=Math.max(0,Tp+ph-y(x.v));
+      return `<svg x="${(i*100/n).toFixed(4)}%" y="0" width="${cw}" height="${H}" style="overflow:visible"><g${att(it).replace('class="r pick"','class="pick"')}><rect x="0" y="0" width="100%" height="${H}" fill="transparent"/><rect x="50%" y="${y(x.v)}" width="${bw}" height="${hh}" rx="3" transform="translate(${-bw/2} 0)" style="fill:${color}"><title>${esc(full)}</title></rect>${x.v?`<text x="50%" y="${y(x.v)-4}" text-anchor="middle" style="font:700 9.5px var(--font);fill:var(--ink)">${fmt(x.v)}</text>`:''}<text x="50%" y="${H-8}" text-anchor="middle" style="font:500 9px var(--font);fill:${x.d.getDay()===0?'var(--bad)':'var(--muted)'}">${x.d.getDate()}/${x.d.getMonth()+1}</text></g></svg>`; }).join('');
+    return `<div class="hc-trend2"><svg class="hc-ax" width="${L}" height="${H}" viewBox="0 0 ${L} ${H}" aria-hidden="true">${ax}</svg><div class="hc-trend" tabindex="0" aria-label="Grafik per hari, geser kiri kanan"><svg width="100%" height="${H}" style="min-width:${n*W}px" role="img">${gr}${bars}</svg></div></div><p class="trend-hint">Klik batang untuk melihat rincian mitra · geser kiri/kanan untuk hari lainnya</p>${dz}`;
   }
   items.reverse(); const mx=Math.max(1,...items.map(x=>x.v));
-  return '<div class="hc-mon wide scroll">'+items.map(x=>`<div class="r"><span>${x.l}</span><div class="bar"><i style="width:${x.v/mx*100}%;background:${color}"></i></div><b>${fmt(x.v)}</b></div>`).join('')+'</div>';
+  return '<div class="hc-mon wide scroll">'+items.map(x=>`<div${att(x)}><span>${x.l}</span><div class="bar"><i style="width:${x.v/mx*100}%;background:${color}"></i></div><b>${fmt(x.v)}</b></div>`).join('')+'</div>'+dz;
 }
+
+// ===== rincian per batang: klik batang → mitra → tim =====
+let hcSel=null;
+function hcDrillData(role,kind,keys){
+  const ks=new Set(keys), dp=dashPer(), okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0), M=new Map();
+  const add=(mitra,nama,n)=>{ if(!n) return; const key=mitra||'(Tanpa mitra)'; let o=M.get(key); if(!o){ o={name:key,total:0,people:[]}; M.set(key,o); } o.total+=n; o.people.push({nama,n}); };
+  buildRank(role).filter(r=>okM(r.mitra)).forEach(r=>{ const src=kind==='reg'?r.dr:r.dy; let n=0; for(const k in src){ if(ks.has(k)&&(!dp||dp.set.has(k))) n+=Number(src[k])||0; } add(r.mitra,r.nama,n); });
+  const want=kind==='reg'?'r':(role==='Sales'?'a':'i'), noid=new Map();
+  ((state.ach&&state.ach.noId)||[]).forEach(([t,d,mm])=>{ if(t!==want||!ks.has(d)||(dp&&!dp.set.has(d))) return; const m=canonMitra(mm||''); if(!okM(m)) return; noid.set(m,(noid.get(m)||0)+1); });
+  noid.forEach((n,m)=>add(m,'Tanpa ID number',n));
+  const list=[...M.values()]; list.forEach(o=>o.people.sort((a,b)=>b.n-a.n||a.nama.localeCompare(b.nama)));
+  list.sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
+  return list;
+}
+function hcDrillHtml(){
+  const sel=hcSel, list=sel.list=hcDrillData(sel.role,sel.kind,sel.keys), tot=list.reduce((t,o)=>t+o.total,0), mx=Math.max(1,...list.map(o=>o.total));
+  const rows=list.map((o,i)=>{ const open=sel.open.has(o.name);
+    return `<li><button type="button" class="dm" data-mi="${i}" aria-expanded="${open}"><span class="car">▸</span><span class="nm">${esc(o.name)}</span><span class="bar"><i style="width:${o.total/mx*100}%"></i></span><b>${fmt(o.total)}</b></button>${open?`<ul class="dp">${o.people.map(p=>`<li${p.nama==='Tanpa ID number'?' class="x"':''}><span>${esc(p.nama)}</span><b>${fmt(p.n)}</b></li>`).join('')}</ul>`:''}</li>`; }).join('');
+  return `<div class="dh"><div><b>${sel.kind==='reg'?'Registrasi':'Aktivasi'} · ${esc(sel.lbl)}</b><span>Tim ${sel.role} · total ${fmt(tot)} · ${list.length} mitra</span></div><button type="button" class="dx" aria-label="Tutup rincian">✕</button></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">Klik nama mitra untuk melihat anggota timnya.</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
+}
+function hcDrillPaint(){
+  const root=$('#hcMon'); if(!root) return;
+  if(hcSel&&!root.querySelector('[data-sel="'+hcSel.id+'"]')) hcSel=null;
+  root.querySelectorAll('.hc-drill').forEach(z=>{ const [role,kind]=z.dataset.dz.split('|'); const on=hcSel&&hcSel.role===role&&hcSel.kind===kind; z.hidden=!on; z.innerHTML=on?hcDrillHtml():''; });
+  root.querySelectorAll('[data-sel]').forEach(e=>e.classList.toggle('sel',!!hcSel&&e.dataset.sel===hcSel.id));
+}
+(function(){ const root=document.getElementById('hcMon'); if(!root) return;
+  const pick=e=>{ const el=e.target.closest('[data-sel]'); if(!el) return false;
+    if(hcSel&&hcSel.id===el.dataset.sel) hcSel=null; else hcSel={id:el.dataset.sel,role:el.dataset.role,kind:el.dataset.kind,keys:el.dataset.keys.split(','),lbl:el.dataset.lbl,open:new Set()};
+    hcDrillPaint(); if(hcSel){ const z=root.querySelector('.hc-drill:not([hidden])'); if(z) z.scrollIntoView({block:'nearest',behavior:RM?'auto':'smooth'}); } return true; };
+  root.addEventListener('click',e=>{
+    if(e.target.closest('.dx')){ hcSel=null; hcDrillPaint(); return; }
+    const dm=e.target.closest('.dm'); if(dm&&hcSel){ const o=hcSel.list[+dm.dataset.mi]; if(o){ hcSel.open.has(o.name)?hcSel.open.delete(o.name):hcSel.open.add(o.name); hcDrillPaint(); } return; }
+    pick(e); });
+  root.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-sel]')){ e.preventDefault(); pick(e); } });
+})();
 function renderDash(){
   if($('#v-dashboard').hidden) return;
   const sc=dashScope(), psAll=state.peserta.filter(p=>fDashMitra.has(p.mitra)), ps=psAll.filter(p=>!sc||sc.set.has(pKey(p)));
@@ -1328,13 +1382,13 @@ function renderDash(){
       const D=hcData(role), isS=role==='Sales', dp=D.dp;
       const unitTxt={bln:'bulan',mgg:'minggu',hari:'hari'}[hcView]||'bulan';
       let extra='';
-      if(isS) extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(D.rt)}</div>`+hcBars(D.dr,D.rg,'var(--accent)');
+      if(isS) extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(D.rt)}</div>`+hcBars(D.dr,D.rg,'var(--accent)','Sales','reg');
       const dist=isS?'':`<p class="hc-all">Jumlah ID (distinct): terdaftar <b>${fmt(D.tA)}</b> · belum terdaftar <b>${fmt(D.bA)}</b>.</p>`;
-      const note=dist+((D.nA+D.nR>0)?`<p class="hc-all">Total sudah termasuk <b>${fmt(D.nA)}</b>${isS?' aktivasi dan <b>'+fmt(D.nR)+'</b> registrasi':' aktivasi'} dari baris yang ID number-nya kosong.</p>`:'');
+      const note=dist;
       return `<div class="card hc-card lift ${isS?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi · ${D.bk?esc(D.bk.label):'Q4 2026'}</p></div></div>
         <div class="${isS?'hc-split':'hc-stats four'}">${hcTileHtml(role,D)}</div>${note}
-        <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(D.dy,D.m,color)+`${extra}</div>`; };
-    setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
+        <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(D.dy,D.m,color,role,'akt')+`${extra}</div>`; };
+    setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)')); hcDrillPaint();
   })();
   renderPerf(); renderDataCheck(); ccApply(); hcTrendInit();
 
