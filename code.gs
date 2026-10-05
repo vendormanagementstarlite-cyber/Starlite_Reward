@@ -226,6 +226,9 @@ function achData_() {
 function achCompute_() {
   const out = { ikr: [], sales: [], found: false, rows: 0 };
   const warn = { noIdIkr: 0, noIdSales: 0, noCust: 0, dup: [] };
+  const ALL = { ikr: [0, 0, 0], salesAct: [0, 0, 0], salesReg: [0, 0, 0] };
+  const NOID = [];   // baris tanpa ID: [jenis ('i' aktivasi IKR, 'a' aktivasi Sales, 'r' registrasi Sales), 'MM-DD', mitra]
+  const pushNoId = (t, d, m) => { if (d && NOID.length < 20000) NOID.push([t, d, m]); };
   const R = { rows: 0, actFilled: 0, actOut: 0, actBad: 0, regFilled: 0, regOut: 0, regBad: 0, ikrNoId: 0, ikrDup: 0, salActNoId: 0, salActNoReg: 0, salActDup: 0, salRegNoId: 0, salRegDup: 0, badSamples: [] };
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_ACH);
   if (!sh || sh.getLastRow() < 2) return out;
@@ -257,13 +260,16 @@ function achCompute_() {
     const cust = String(at(r, I.cust)).trim() || ('row' + n);
     const rm = achMonth_(at(r, I.reg)), am = achMonth_(at(r, I.act));
     const hasReg = String(at(r, I.reg)).trim() !== '';
+    if (am) ALL.ikr[am - 1]++;
+    if (am && hasReg) ALL.salesAct[am - 1]++;
+    if (rm) ALL.salesReg[rm - 1]++;
     { R.rows++; const sa_ = achState_(at(r, I.act)), sr_ = achState_(at(r, I.reg));
       if (sa_) { R.actFilled++; if (sa_ === 'out') R.actOut++; if (sa_ === 'bad') { R.actBad++; if (R.badSamples.length < 5) R.badSamples.push(String(at(r, I.act))); } }
       if (sr_) { R.regFilled++; if (sr_ === 'out') R.regOut++; if (sr_ === 'bad') { R.regBad++; if (R.badSamples.length < 5) R.badSamples.push(String(at(r, I.reg))); } } }
     if (!String(at(r, I.cust)).trim() && (am || rm)) warn.noCust++;
     const mitra = String(at(r, I.mitra)).trim(), st = String(at(r, I.st)).trim(), rgn = String(at(r, I.reg2)).trim();
     [['ikr', at(r, I.ikrId), at(r, I.ikrName), at(r, I.ikrMail)], ['sales', at(r, I.sal), at(r, I.salName), at(r, I.salMail)]].forEach(([kind, rawId, nm, mail]) => {
-      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) { if (kind === 'ikr' ? am : (am || rm)) warn[kind === 'ikr' ? 'noIdIkr' : 'noIdSales']++; if (kind === 'ikr') { if (am) R.ikrNoId++; } else { if (am && hasReg) R.salActNoId++; if (rm) R.salRegNoId++; } return; }   // ID kosong/placeholder → tidak dihitung
+      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) { if (kind === 'ikr' ? am : (am || rm)) warn[kind === 'ikr' ? 'noIdIkr' : 'noIdSales']++; if (kind === 'ikr') { if (am) { R.ikrNoId++; pushNoId('i', achDay_(at(r, I.act)), mitra); } } else { if (am && hasReg) { R.salActNoId++; pushNoId('a', achDay_(at(r, I.act)), mitra); } if (rm) { R.salRegNoId++; pushNoId('r', achDay_(at(r, I.reg)), mitra); } } return; }   // ID kosong/placeholder → tidak dihitung
       const M = maps[kind];
       const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], dy: {}, dr: {}, nms: {}, sa: {}, sr: {} });
       if (!e.name) e.name = String(nm).trim();
@@ -287,6 +293,8 @@ function achCompute_() {
   ['ikr', 'sales'].forEach(kind => Object.keys(maps[kind]).forEach(k => { const nn = Object.keys(maps[kind][k].nms); if (nn.length > 1 && warn.dup.length < 30) warn.dup.push({ kind: kind, id: maps[kind][k].id, names: nn.slice(0, 5) }); }));
   out.warn = warn;
   out.recon = R;
+  out.all = ALL;
+  out.noId = NOID;
   const sum = (arr, f) => arr.reduce((s, e) => s + f(e).reduce((a, b) => a + b, 0), 0);
   out.stats = { ikrIds: out.ikr.length, ikrAct: sum(out.ikr, e => e.act), salesIds: out.sales.length, salesAct: sum(out.sales, e => e.act), salesReg: sum(out.sales, e => e.reg) };
   return out;
