@@ -188,6 +188,15 @@ function achMonth_(v) {
   }
   return (y === 2026 && m >= 10 && m <= 12) ? m - 9 : 0;
 }
+/** Status sel tanggal: '' (kosong), 'ok' (terbaca & Q4 2026), 'out' (terbaca tapi di luar Q4 2026), 'bad' (format tidak terbaca). */
+function achState_(v) {
+  if (v === '' || v === null || v === undefined) return '';
+  if (typeof v === 'string' && v.trim() === '') return '';
+  if (achMonth_(v)) return 'ok';
+  if (v instanceof Date) return 'out';
+  const s = String(v).trim();
+  return (/^(\d{4})-(\d{1,2})-(\d{1,2})/.test(s) || /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.test(s)) ? 'out' : 'bad';
+}
 /** Tanggal Q4 2026 sebagai 'MM-DD' (mis. '10-02'); selain itu ''. */
 function achDay_(v) {
   if (!achMonth_(v)) return '';
@@ -217,6 +226,7 @@ function achData_() {
 function achCompute_() {
   const out = { ikr: [], sales: [], found: false, rows: 0 };
   const warn = { noIdIkr: 0, noIdSales: 0, noCust: 0, dup: [] };
+  const R = { rows: 0, actFilled: 0, actOut: 0, actBad: 0, regFilled: 0, regOut: 0, regBad: 0, ikrNoId: 0, ikrDup: 0, salActNoId: 0, salActNoReg: 0, salActDup: 0, salRegNoId: 0, salRegDup: 0, badSamples: [] };
   const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_ACH);
   if (!sh || sh.getLastRow() < 2) return out;
   out.found = true;
@@ -247,10 +257,13 @@ function achCompute_() {
     const cust = String(at(r, I.cust)).trim() || ('row' + n);
     const rm = achMonth_(at(r, I.reg)), am = achMonth_(at(r, I.act));
     const hasReg = String(at(r, I.reg)).trim() !== '';
+    { R.rows++; const sa_ = achState_(at(r, I.act)), sr_ = achState_(at(r, I.reg));
+      if (sa_) { R.actFilled++; if (sa_ === 'out') R.actOut++; if (sa_ === 'bad') { R.actBad++; if (R.badSamples.length < 5) R.badSamples.push(String(at(r, I.act))); } }
+      if (sr_) { R.regFilled++; if (sr_ === 'out') R.regOut++; if (sr_ === 'bad') { R.regBad++; if (R.badSamples.length < 5) R.badSamples.push(String(at(r, I.reg))); } } }
     if (!String(at(r, I.cust)).trim() && (am || rm)) warn.noCust++;
     const mitra = String(at(r, I.mitra)).trim(), st = String(at(r, I.st)).trim(), rgn = String(at(r, I.reg2)).trim();
     [['ikr', at(r, I.ikrId), at(r, I.ikrName), at(r, I.ikrMail)], ['sales', at(r, I.sal), at(r, I.salName), at(r, I.salMail)]].forEach(([kind, rawId, nm, mail]) => {
-      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) { if (kind === 'ikr' ? am : (am || rm)) warn[kind === 'ikr' ? 'noIdIkr' : 'noIdSales']++; return; }   // ID kosong/placeholder → tidak dihitung
+      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) { if (kind === 'ikr' ? am : (am || rm)) warn[kind === 'ikr' ? 'noIdIkr' : 'noIdSales']++; if (kind === 'ikr') { if (am) R.ikrNoId++; } else { if (am && hasReg) R.salActNoId++; if (rm) R.salRegNoId++; } return; }   // ID kosong/placeholder → tidak dihitung
       const M = maps[kind];
       const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], dy: {}, dr: {}, nms: {}, sa: {}, sr: {} });
       if (!e.name) e.name = String(nm).trim();
@@ -260,6 +273,9 @@ function achCompute_() {
       // IKR  : aktivasi = ada active_date (bulan mengikuti active_date).
       // Sales: registrasi = ada registration_date; aktivasi = ada registration_date DAN active_date (dihitung 1, bulan mengikuti active_date).
       const okAct = am && (kind === 'ikr' || hasReg);
+      if (am && !okAct) R.salActNoReg++;
+      if (okAct && e.sa[cust]) { if (kind === 'ikr') R.ikrDup++; else R.salActDup++; }
+      if (kind === 'sales' && rm && e.sr[cust]) R.salRegDup++;
       if (okAct && !e.sa[cust]) { e.sa[cust] = 1; e.act[am - 1]++; const dd = achDay_(at(r, I.act)); if (dd) e.dy[dd] = (e.dy[dd] || 0) + 1; }
       if (kind === 'sales' && rm && !e.sr[cust]) { e.sr[cust] = 1; e.reg[rm - 1]++; const dr = achDay_(at(r, I.reg)); if (dr) e.dr[dr] = (e.dr[dr] || 0) + 1; }
     });
@@ -270,6 +286,7 @@ function achCompute_() {
   });
   ['ikr', 'sales'].forEach(kind => Object.keys(maps[kind]).forEach(k => { const nn = Object.keys(maps[kind][k].nms); if (nn.length > 1 && warn.dup.length < 30) warn.dup.push({ kind: kind, id: maps[kind][k].id, names: nn.slice(0, 5) }); }));
   out.warn = warn;
+  out.recon = R;
   const sum = (arr, f) => arr.reduce((s, e) => s + f(e).reduce((a, b) => a + b, 0), 0);
   out.stats = { ikrIds: out.ikr.length, ikrAct: sum(out.ikr, e => e.act), salesIds: out.sales.length, salesAct: sum(out.sales, e => e.act), salesReg: sum(out.sales, e => e.reg) };
   return out;
