@@ -638,7 +638,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 14.00</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 14.20</span>
     </div>
   </aside>
 
@@ -1224,13 +1224,13 @@ function hcBars(dayMap,monthArr,color){
   else { items=[]; for(let w=0;w*7<dn;w++){ const s=days.slice(w*7,w*7+7), a=s[0].d, z=s[s.length-1].d;
     items.push({l:'M'+(w+1)+' · '+a.getDate()+(a.getMonth()!==z.getMonth()?' '+MN[a.getMonth()]:'')+'–'+z.getDate()+' '+MN[z.getMonth()],v:s.reduce((t,x)=>t+x.v,0)}); } }
   if(view==='hari'){
-    const n=days.length, hc0=document.getElementById('hcMon'), avail=Math.max(260,(hc0?hc0.clientWidth:900)/(innerWidth>1000?2:1)-110), W=Math.min(46,Math.max(30,Math.floor(avail/n))), H=130, Tp=16, B=22, ph=H-Tp-B, bw=Math.min(18,W*.6);
-    const vmax=Math.max(1,...days.map(x=>x.v)), step=niceStep(vmax/3), top=Math.ceil(vmax/step)*step, L=Math.max(30,fmt(top).length*5.6+10), y=v=>Tp+ph-(v/top)*ph, iw=Math.max(n*W,60);
+    const n=days.length, W=40, H=130, Tp=16, B=22, ph=H-Tp-B, bw=18, cw=(100/n).toFixed(4)+'%';
+    const vmax=Math.max(1,...days.map(x=>x.v)), step=niceStep(vmax/3), top=Math.ceil(vmax/step)*step, y=v=>Tp+ph-(v/top)*ph, L=Math.max(30,fmt(top).length*5.6+10);
     let ax='', gr='';
-    for(let v=0;v<=top+0.001;v+=step){ ax+=`<text x="${L-6}" y="${y(v)+4}" text-anchor="end" style="font:500 9px var(--font);fill:var(--muted)">${fmt(v)}</text>`; gr+=`<line x1="0" x2="${iw}" y1="${y(v)}" y2="${y(v)}" style="stroke:${v?'var(--line-2)':'var(--line)'};stroke-width:1"/>`; }
-    const bars=days.map((x,i)=>{ const cx=i*W+W/2, bx=cx-bw/2, hh=Math.max(0,Tp+ph-y(x.v)), full=DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()]+': '+fmt(x.v);
-      return `<rect x="${bx}" y="${y(x.v)}" width="${bw}" height="${hh}" rx="3" style="fill:${color}"><title>${esc(full)}</title></rect>${x.v?`<text x="${cx}" y="${y(x.v)-4}" text-anchor="middle" style="font:700 9.5px var(--font);fill:var(--ink)">${fmt(x.v)}</text>`:''}<text x="${cx}" y="${H-8}" text-anchor="middle" style="font:500 9px var(--font);fill:${x.d.getDay()===0?'var(--bad)':'var(--muted)'}">${x.d.getDate()}/${x.d.getMonth()+1}</text>`; }).join('');
-    return `<div class="hc-trend2"><svg class="hc-ax" width="${L}" height="${H}" viewBox="0 0 ${L} ${H}" aria-hidden="true">${ax}</svg><div class="hc-trend" tabindex="0" aria-label="Grafik per hari, geser kiri kanan"><svg width="${iw}" height="${H}" viewBox="0 0 ${iw} ${H}" role="img">${gr}${bars}</svg></div></div><p class="trend-hint">Geser ke kiri/kanan untuk melihat hari lainnya</p>`;
+    for(let v=0;v<=top+0.001;v+=step){ ax+=`<text x="${L-6}" y="${y(v)+4}" text-anchor="end" style="font:500 9px var(--font);fill:var(--muted)">${fmt(v)}</text>`; gr+=`<line x1="0" x2="100%" y1="${y(v)}" y2="${y(v)}" style="stroke:${v?'var(--line-2)':'var(--line)'};stroke-width:1"/>`; }
+    const bars=days.map((x,i)=>{ const full=DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()]+': '+fmt(x.v), hh=Math.max(0,Tp+ph-y(x.v));
+      return `<svg x="${(i*100/n).toFixed(4)}%" y="0" width="${cw}" height="${H}" style="overflow:visible"><rect x="50%" y="${y(x.v)}" width="${bw}" height="${hh}" rx="3" transform="translate(${-bw/2} 0)" style="fill:${color}"><title>${esc(full)}</title></rect>${x.v?`<text x="50%" y="${y(x.v)-4}" text-anchor="middle" style="font:700 9.5px var(--font);fill:var(--ink)">${fmt(x.v)}</text>`:''}<text x="50%" y="${H-8}" text-anchor="middle" style="font:500 9px var(--font);fill:${x.d.getDay()===0?'var(--bad)':'var(--muted)'}">${x.d.getDate()}/${x.d.getMonth()+1}</text></svg>`; }).join('');
+    return `<div class="hc-trend2"><svg class="hc-ax" width="${L}" height="${H}" viewBox="0 0 ${L} ${H}" aria-hidden="true">${ax}</svg><div class="hc-trend" tabindex="0" aria-label="Grafik per hari, geser kiri kanan"><svg width="100%" height="${H}" style="min-width:${n*W}px" role="img">${gr}${bars}</svg></div></div><p class="trend-hint">Geser ke kiri/kanan untuk melihat hari lainnya</p>`;
   }
   items.reverse(); const mx=Math.max(1,...items.map(x=>x.v));
   return '<div class="hc-mon wide scroll">'+items.map(x=>`<div class="r"><span>${x.l}</span><div class="bar"><i style="width:${x.v/mx*100}%;background:${color}"></i></div><b>${fmt(x.v)}</b></div>`).join('')+'</div>';
