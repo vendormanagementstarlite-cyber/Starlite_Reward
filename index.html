@@ -568,6 +568,8 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 
 /* kolom angka rata tengah */
 #perf td.r,#perf th.r,#rkHeadIkr th.r,#rkBodyIkr td.r,#rkHeadSales th.r,#rkBodySales td.r{text-align:center}
+
+.hc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}.hc-top .sub{margin-bottom:14px}.hc-top .hcv{margin:0;flex:none}
 </style>
 </head>
 <body>
@@ -621,7 +623,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 11.35</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 12.00</span>
     </div>
   </aside>
 
@@ -1238,9 +1240,9 @@ function renderDash(){
       if(role==='Sales'){ const rg=[0,0,0]; rows.forEach(r=>r.regM.forEach((x,i)=>rg[i]+=x)); const rt=rg[0]+rg[1]+rg[2];
         extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(rt)}</div>`+hcBars(sumMap('dr'),rg,'var(--accent)'); }
       const sw=`<div class="hcv" role="group" aria-label="Rentang">${[['bln','Bulan'],['mgg','Minggu'],['hari','Hari']].map(([k,l])=>`<button type="button" data-hcv="${k}" aria-pressed="${hcView===k}">${l}</button>`).join('')}</div>`;
-      return `<div class="card hc-card lift ${role==='Sales'?'hc-sales':'hc-ikr'}"><h2>${label}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p>
+      return `<div class="card hc-card lift ${role==='Sales'?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p></div>${sw}</div>
         <div class="hc-stats${role==='Sales'?' five':''}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div title="ID ada di data pencapaian tetapi belum didaftarkan mitra"><b>${fmt(rows.filter(r=>r.inAch&&!r.registered).length)}</b><span>Belum terdaftar</span></div></div>
-        ${sw}<div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
+        <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
   })();
   renderPerf(); renderDataCheck();
