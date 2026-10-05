@@ -570,6 +570,9 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 #perf td.r,#perf th.r,#rkHeadIkr th.r,#rkBodyIkr td.r,#rkHeadSales th.r,#rkBodySales td.r{text-align:center}
 
 .hc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}.hc-top .sub{margin-bottom:14px}.hc-top .hcv{margin:0;flex:none}
+
+.hc-stats.four{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.hc-stats.four div{padding:10px 10px}.hc-stats.four b{font-size:19px}.hc-stats.four span{font-size:10.5px}
+@media(max-width:520px){.hc-stats.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -623,7 +626,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 12.00</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 12.20</span>
     </div>
   </aside>
 
@@ -1241,7 +1244,7 @@ function renderDash(){
         extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(rt)}</div>`+hcBars(sumMap('dr'),rg,'var(--accent)'); }
       const sw=`<div class="hcv" role="group" aria-label="Rentang">${[['bln','Bulan'],['mgg','Minggu'],['hari','Hari']].map(([k,l])=>`<button type="button" data-hcv="${k}" aria-pressed="${hcView===k}">${l}</button>`).join('')}</div>`;
       return `<div class="card hc-card lift ${role==='Sales'?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p></div>${sw}</div>
-        <div class="hc-stats${role==='Sales'?' five':''}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div title="ID ada di data pencapaian tetapi belum didaftarkan mitra"><b>${fmt(rows.filter(r=>r.inAch&&!r.registered).length)}</b><span>Belum terdaftar</span></div></div>
+        <div class="hc-stats${role==='Sales'?' five':' four'}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div title="ID ada di data pencapaian tetapi belum didaftarkan mitra"><b>${fmt(rows.filter(r=>r.inAch&&!r.registered).length)}</b><span>Belum terdaftar</span></div></div>
         <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
   })();
@@ -1609,7 +1612,7 @@ function dashReport(){
     const dyM={}, drM={}; rows.forEach(r=>{ for(const k in r.dy) dyM[k]=(dyM[k]||0)+(Number(r.dy[k])||0); for(const k in r.dr) drM[k]=(drM[k]||0)+(Number(r.dr[k])||0); });
     const tot=m[0]+m[1]+m[2], dwA=dayWeek(dyM), dwR=dayWeek(drM);
     const st=[].concat(isS?[[fmt(rg[0]+rg[1]+rg[2]),'Total registrasi']]:[]).concat([[fmt(tot),isS?'Total aktivasi':'Total HC'],[fmt(rows.filter(r=>r.total>0).length),role+' ID aktif'],[fmt(state.regs.filter(p=>p.peran===role&&fDashMitra.has(p.mitra)).length),'Terdaftar'],[fmt(rows.filter(r=>r.inAch&&!r.registered).length),'Belum terdaftar']]);
-    html+=`<div class="pkpis"><div class="card hc-card ${isS?'hc-sales':'hc-ikr'}"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p><div class="hc-stats${isS?' five':''}">${st.map(([v,l])=>`<div><b>${v}</b><span>${esc(l)}</span></div>`).join('')}</div></div></div>`;
+    html+=`<div class="pkpis"><div class="card hc-card ${isS?'hc-sales':'hc-ikr'}"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p><div class="hc-stats${isS?' five':' four'}">${st.map(([v,l])=>`<div><b>${v}</b><span>${esc(l)}</span></div>`).join('')}</div></div></div>`;
     html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:m[i]})))}<h4 style="font-size:10px;margin:4px 0">Aktivasi per minggu</h4>${miniTbl('Minggu',dwA.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per hari</h4>${miniTbl('Hari',dwA.days.slice().reverse())}</div></div>`;
     if(isS) html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Registrasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:rg[i]})))}<h4 style="font-size:10px;margin:4px 0">Registrasi per minggu</h4>${miniTbl('Minggu',dwR.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Registrasi per hari</h4>${miniTbl('Hari',dwR.days.slice().reverse())}</div></div>`;
   });
