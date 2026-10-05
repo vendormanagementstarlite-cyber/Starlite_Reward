@@ -603,6 +603,8 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 
 .hc-stats.two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:0}.hc-stats.two div{padding:10px 10px}.hc-stats.two b{font-size:19px}.hc-stats.two span{font-size:10.5px}
 .hc-split{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:16px}.hc-grp{min-width:0;padding:0 14px}.hc-grp:first-child{padding-left:0;border-right:1.5px solid var(--line);}.hc-grp:last-child{padding-right:0}
+.hc-split{align-items:stretch}.hc-grp{display:flex;flex-direction:column}.hc-grp .hc-stats.two{flex:1;grid-auto-rows:1fr;align-items:stretch}.hc-grp .hc-stats span{line-height:1.3;display:block}.hc-grp .hc-stats div{display:flex;flex-direction:column;justify-content:center}
+.hc-dist{margin:8px 0 0;font-size:11px;color:var(--muted);line-height:1.4}.hc-dist b{color:var(--ink-2)}
 .hc-grp h5{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--hc,var(--muted));font-weight:700}
 @media(max-width:520px){.hc-split{grid-template-columns:1fr;gap:14px}.hc-grp{padding:0}.hc-grp:first-child{border-right:0;border-bottom:1.5px solid var(--line);padding-bottom:14px}}
 .hc-stats.seven{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.hc-stats.seven div{padding:10px 10px}.hc-stats.seven b{font-size:19px}.hc-stats.seven span{font-size:10.5px}
@@ -660,7 +662,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 22.00</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 23.00</span>
     </div>
   </aside>
 
@@ -1269,12 +1271,12 @@ function hcData(role,all){
     tA,tR,bA,bR,hTA,hTR,hBA,hBR};
 }
 function hcTiles(role,D){ const isS=role==='Sales';
-  return isS?[[[fmt(D.rt),'Total registrasi'],[fmt(D.hTR),'ID terdaftar'],[fmt(D.hBR),'ID belum terdaftar'],[fmt(D.nR),'Tanpa ID number']],
-              [[fmt(D.tot),'Total aktivasi'],[fmt(D.hTA),'ID terdaftar'],[fmt(D.hBA),'ID belum terdaftar'],[fmt(D.nA),'Tanpa ID number']]]
+  return isS?[[[fmt(D.rt),'Total'],[fmt(D.hTR),'ID terdaftar'],[fmt(D.hBR),'ID belum terdaftar'],[fmt(D.nR),'Tanpa ID number']],
+              [[fmt(D.tot),'Total'],[fmt(D.hTA),'ID terdaftar'],[fmt(D.hBA),'ID belum terdaftar'],[fmt(D.nA),'Tanpa ID number']]]
    :[[fmt(D.tot),'Total HC'],[fmt(D.hTA),'ID terdaftar'],[fmt(D.hBA),'ID belum terdaftar'],[fmt(D.nA),'Tanpa ID number']]; }
 const hcOne=(arr)=>arr.map(([v,l],i,a)=>`<div${i===a.length-1?` class="noid" title="Baris di sheet yang ikr_number / sales_number-nya kosong. Sudah ikut dihitung di total."`:(l.startsWith('ID belum terdaftar')?' title="ID yang punya aktivitas di periode ini tetapi belum didaftarkan mitra lewat Submit Data. Angka = jumlah aktivasi/registrasi, bukan jumlah ID."':(l.startsWith('ID terdaftar')?' title="ID yang punya aktivitas di periode ini dan sudah didaftarkan mitra lewat Submit Data. Angka = jumlah aktivasi/registrasi, bukan jumlah ID."':''))}><b>${v}</b><span>${esc(l)}</span></div>`).join('');
 const hcTileHtml=(role,D)=>{ const t=hcTiles(role,D); return role==='Sales'
-  ? `<section class="hc-grp"><h5>Registrasi</h5><div class="hc-stats two">${hcOne(t[0])}</div></section><section class="hc-grp"><h5>Aktivasi</h5><div class="hc-stats two">${hcOne(t[1])}</div></section>`
+  ? `<section class="hc-grp"><h5>Registrasi</h5><div class="hc-stats two">${hcOne(t[0])}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(D.tR)}</b> · belum <b>${fmt(D.bR)}</b></p></section><section class="hc-grp"><h5>Aktivasi</h5><div class="hc-stats two">${hcOne(t[1])}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(D.tA)}</b> · belum <b>${fmt(D.bA)}</b></p></section>`
   : hcOne(t); };
 function hcBars(dayMap,monthArr,color){
   const view=hcView==='all'?'bln':hcView, MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -1327,7 +1329,7 @@ function renderDash(){
       const unitTxt={bln:'bulan',mgg:'minggu',hari:'hari'}[hcView]||'bulan';
       let extra='';
       if(isS) extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(D.rt)}</div>`+hcBars(D.dr,D.rg,'var(--accent)');
-      const dist=isS?`<p class="hc-all">Jumlah ID (distinct): terdaftar <b>${fmt(D.tR)}</b> registrasi / <b>${fmt(D.tA)}</b> aktivasi · belum terdaftar <b>${fmt(D.bR)}</b> registrasi / <b>${fmt(D.bA)}</b> aktivasi.</p>`:`<p class="hc-all">Jumlah ID (distinct): terdaftar <b>${fmt(D.tA)}</b> · belum terdaftar <b>${fmt(D.bA)}</b>.</p>`;
+      const dist=isS?'':`<p class="hc-all">Jumlah ID (distinct): terdaftar <b>${fmt(D.tA)}</b> · belum terdaftar <b>${fmt(D.bA)}</b>.</p>`;
       const note=dist+((D.nA+D.nR>0)?`<p class="hc-all">Total sudah termasuk <b>${fmt(D.nA)}</b>${isS?' aktivasi dan <b>'+fmt(D.nR)+'</b> registrasi':' aktivasi'} dari baris yang ID number-nya kosong.</p>`:'');
       return `<div class="card hc-card lift ${isS?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi · ${D.bk?esc(D.bk.label):'Q4 2026'}</p></div></div>
         <div class="${isS?'hc-split':'hc-stats four'}">${hcTileHtml(role,D)}</div>${note}
