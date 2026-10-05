@@ -621,7 +621,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 2 Okt 2026 · 17.40</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 11.10</span>
     </div>
   </aside>
 
@@ -831,7 +831,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
         <button type="button" class="btn btn-ghost btn-sm" id="lbCsv">Unduh CSV</button>
       </div>
       <div class="tbl-wrap"><table style="min-width:560px">
-        <thead><tr><th>#</th><th>Nama</th><th>Mitra · Stasiun</th><th>Posisi</th></tr></thead>
+        <thead><tr><th>#</th><th>Nama</th><th>Mitra · Stasiun</th><th>Posisi</th><th>Status ID</th></tr></thead>
         <tbody id="lbBody"></tbody>
       </table></div>
     </section>
@@ -1295,12 +1295,14 @@ function renderLB(){
     .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))||a.nama.localeCompare(b.nama));
   const lfresh=!!$('#v-leaderboard')._fresh; $('#v-leaderboard')._fresh=false;
   const tb=$('#lbBody');
-  if(!rows.length){ tb._h=null; tb.innerHTML=`<tr><td colspan="4"><div class="empty">Belum ada ${lbRole} ${fm||fs?'yang cocok dengan filter':'terdaftar'}. ${fm||fs?'Ubah filter di atas.':'Mitra mendaftarkan dari menu Submit Data.'}</div></td></tr>`; return; }
+  if(!rows.length){ tb._h=null; tb.innerHTML=`<tr><td colspan="5"><div class="empty">Belum ada ${lbRole} ${fm||fs?'yang cocok dengan filter':'terdaftar'}. ${fm||fs?'Ubah filter di atas.':'Mitra mendaftarkan dari menu Submit Data.'}</div></td></tr>`; return; }
+  const achKeys=new Set(((state.ach&&state.ach[lbRole==='IKR'?'ikr':'sales'])||[]).map(x=>x.key)), hasAch=!!(state.ach&&state.ach.found!==false&&(state.ach.ikr||state.ach.sales));
   const lbHtml=rows.map((p,i)=>`<tr style="--i:${Math.min(i,15)}">
       <td><span class="rank">${i+1}</span></td>
       <td class="who"><b>${esc(p.nama)}</b><small>${p.uid?esc(p.uid)+' · ':''}${esc(p.akun)}</small></td>
       <td class="who"><b style="font-weight:600">${esc(p.mitra)}</b><small>${esc(p.stasiun)}</small></td>
-      <td>${esc(p.posisi)}</td></tr>`).join('');
+      <td>${esc(p.posisi)}</td>
+      <td>${!hasAch?'<span class="chip none" style="padding:1px 8px">—</span>':(p.uid&&achKeys.has(normKey(p.uid)))?'<span class="chip good" style="padding:1px 8px" title="ID ditemukan di data pencapaian">Sudah terdaftar</span>':'<span class="chip none" style="padding:1px 8px" title="ID belum ditemukan di data pencapaian">Belum terdaftar</span>'}</td></tr>`).join('');
   if(setHTML(tb,lbHtml)||lfresh){ if(lfresh) tb.innerHTML=lbHtml; tb.classList.remove('play'); void tb.offsetWidth; tb.classList.add('play'); }
 }
 
@@ -1505,8 +1507,9 @@ function exportRank(){
   dlCsv('leaderboard_'+role.toLowerCase()+'_'+stamp()+'.csv',[head].concat(data));
 }
 function exportPeserta(){
-  const head=['Tanggal input','Peran','Posisi','Nama','Mitra','Stasiun','ID (ikr_number/sales_number)','Akun','No. HP','Email'];
-  const data=state.peserta.slice().sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))).map(p=>[p.createdAt?String(p.createdAt).slice(0,10):'',p.peran,p.posisi,p.nama,p.mitra,p.stasiun,p.uid,p.akun,p.hp?'="'+p.hp+'"':'',p.email]);
+  const head=['Tanggal input','Peran','Posisi','Nama','Mitra','Stasiun','ID (ikr_number/sales_number)','Akun','No. HP','Email','Status ID'];
+  const ak={IKR:new Set(((state.ach&&state.ach.ikr)||[]).map(x=>x.key)),Sales:new Set(((state.ach&&state.ach.sales)||[]).map(x=>x.key))};
+  const data=state.peserta.slice().sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt))).map(p=>[p.createdAt?String(p.createdAt).slice(0,10):'',p.peran,p.posisi,p.nama,p.mitra,p.stasiun,p.uid,p.akun,p.hp?'="'+p.hp+'"':'',p.email,(p.uid&&ak[p.peran]&&ak[p.peran].has(normKey(p.uid)))?'Sudah terdaftar':'Belum terdaftar']);
   dlCsv('pendaftar_'+stamp()+'.csv',[head].concat(data));
 }
 function finLive(){
