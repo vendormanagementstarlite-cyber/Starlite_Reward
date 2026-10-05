@@ -606,6 +606,8 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .hc-split{align-items:stretch}.hc-grp{display:flex;flex-direction:column}.hc-grp .hc-stats.two{flex:1;grid-auto-rows:1fr;align-items:stretch}.hc-grp .hc-stats span{line-height:1.3;display:block}.hc-grp .hc-stats div{display:flex;flex-direction:column;justify-content:center}
 .hc-mon .pick,.hc-trend .pick{cursor:pointer}.hc-mon .r.pick:hover span,.hc-mon .r.pick.sel span{color:var(--hc,var(--accent));font-weight:700}.hc-mon .r.pick.sel .bar{box-shadow:0 0 0 2px var(--hcs,#dbe7f5)}
 .hc-trend .pick:hover rect{fill:rgba(0,0,0,.04)}.hc-trend g.sel rect{fill:var(--hcs,#e6f0fb)}
+.hc-modal{position:fixed;inset:0;z-index:300;background:rgba(14,26,43,.45);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}.hc-modal[hidden]{display:none}body.hc-lock{overflow:hidden}
+.hc-modal .hc-pop{--hc:var(--accent);width:min(560px,100%);max-height:min(82vh,720px);overflow:auto;margin:0;background:var(--card,#fff);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.28);padding:16px 18px;border-left:0;border:1px solid var(--line-2)}.hc-modal .hc-pop .dl{max-height:none}.hc-modal .hc-pop .dh b{font-size:15px}
 .hc-drill{margin-top:10px;border:1px solid var(--line-2);border-left:3px solid var(--hc,var(--accent));border-radius:12px;background:var(--hcs,#F4F7FB);padding:10px 12px}
 .hc-drill[hidden]{display:none}
 .hc-drill .dh{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:6px}.hc-drill .dh b{display:block;font-size:13px;color:var(--hc,var(--ink))}.hc-drill .dh span{font-size:11px;color:var(--muted)}
@@ -677,7 +679,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 24.00</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 25.00</span>
     </div>
   </aside>
 
@@ -1294,7 +1296,7 @@ const hcTileHtml=(role,D)=>{ const t=hcTiles(role,D); return role==='Sales'
   ? `<section class="hc-grp"><h5>Registrasi</h5><div class="hc-stats two">${hcOne(t[0])}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(D.tR)}</b> · belum <b>${fmt(D.bR)}</b></p></section><section class="hc-grp"><h5>Aktivasi</h5><div class="hc-stats two">${hcOne(t[1])}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(D.tA)}</b> · belum <b>${fmt(D.bA)}</b></p></section>`
   : hcOne(t); };
 function hcBars(dayMap,monthArr,color,role,kind){
-  const dz=`<div class="hc-drill" data-dz="${role}|${kind}" hidden></div>`;
+  const dz='';
   const mkKeys=m=>{ const n=new Date(2026,m,0).getDate(); return Array.from({length:n},(_,i)=>pad2(m)+'-'+pad2(i+1)); };
   const att=(it)=>{ const id=role+'|'+kind+'|'+it.keys[0]+'|'+it.keys.length; return ` class="r pick" data-sel="${id}" data-role="${role}" data-kind="${kind}" data-keys="${it.keys.join(',')}" data-lbl="${esc(it.l)}" tabindex="0" role="button"`; };
   const view=hcView==='all'?'bln':hcView, MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -1335,22 +1337,26 @@ function hcDrillHtml(){
   const sel=hcSel, list=sel.list=hcDrillData(sel.role,sel.kind,sel.keys), tot=list.reduce((t,o)=>t+o.total,0), mx=Math.max(1,...list.map(o=>o.total));
   const rows=list.map((o,i)=>{ const open=sel.open.has(o.name);
     return `<li><button type="button" class="dm" data-mi="${i}" aria-expanded="${open}"><span class="car">▸</span><span class="nm">${esc(o.name)}</span><span class="bar"><i style="width:${o.total/mx*100}%"></i></span><b>${fmt(o.total)}</b></button>${open?`<ul class="dp">${o.people.map(p=>`<li${p.nama==='Tanpa ID number'?' class="x"':''}><span>${esc(p.nama)}</span><b>${fmt(p.n)}</b></li>`).join('')}</ul>`:''}</li>`; }).join('');
-  return `<div class="dh"><div><b>${sel.kind==='reg'?'Registrasi':'Aktivasi'} · ${esc(sel.lbl)}</b><span>Tim ${sel.role} · total ${fmt(tot)} · ${list.length} mitra</span></div><button type="button" class="dx" aria-label="Tutup rincian">✕</button></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">Klik nama mitra untuk melihat anggota timnya.</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
+  return `<div class="dh"><div><b>${sel.kind==='reg'?'Registrasi':'Aktivasi'} · ${esc(sel.lbl)}</b><span>Tim ${sel.role} · total ${fmt(tot)} · ${list.length} mitra</span></div><button type="button" class="dx" aria-label="Tutup rincian">✕</button></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">Klik nama mitra untuk melihat anggota timnya. Tekan Esc atau klik di luar untuk menutup.</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
 }
 function hcDrillPaint(){
   const root=$('#hcMon'); if(!root) return;
   if(hcSel&&!root.querySelector('[data-sel="'+hcSel.id+'"]')) hcSel=null;
-  root.querySelectorAll('.hc-drill').forEach(z=>{ const [role,kind]=z.dataset.dz.split('|'); const on=hcSel&&hcSel.role===role&&hcSel.kind===kind; z.hidden=!on; z.innerHTML=on?hcDrillHtml():''; });
+  let m=document.getElementById('hcModal');
+  if(!m){ m=document.createElement('div'); m.id='hcModal'; m.className='hc-modal'; m.hidden=true; m.innerHTML='<div class="hc-pop hc-drill" role="dialog" aria-modal="true" aria-label="Rincian mitra"></div>'; document.body.appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target===m||e.target.closest('.dx')){ hcSel=null; hcDrillPaint(); return; }
+      const dm=e.target.closest('.dm'); if(dm&&hcSel){ const o=hcSel.list[+dm.dataset.mi]; if(o){ hcSel.open.has(o.name)?hcSel.open.delete(o.name):hcSel.open.add(o.name); hcDrillPaint(); } } });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&hcSel){ hcSel=null; hcDrillPaint(); } }); }
+  const pop=m.firstChild, was=pop.scrollTop, lst=pop.querySelector('.dl'), ls=lst?lst.scrollTop:0;
+  m.hidden=!hcSel; document.body.classList.toggle('hc-lock',!!hcSel);
+  if(hcSel){ pop.innerHTML=hcDrillHtml(); const l2=pop.querySelector('.dl'); if(l2) l2.scrollTop=ls; pop.scrollTop=was; } else pop.innerHTML='';
   root.querySelectorAll('[data-sel]').forEach(e=>e.classList.toggle('sel',!!hcSel&&e.dataset.sel===hcSel.id));
 }
 (function(){ const root=document.getElementById('hcMon'); if(!root) return;
   const pick=e=>{ const el=e.target.closest('[data-sel]'); if(!el) return false;
     if(hcSel&&hcSel.id===el.dataset.sel) hcSel=null; else hcSel={id:el.dataset.sel,role:el.dataset.role,kind:el.dataset.kind,keys:el.dataset.keys.split(','),lbl:el.dataset.lbl,open:new Set()};
-    hcDrillPaint(); if(hcSel){ const z=root.querySelector('.hc-drill:not([hidden])'); if(z) z.scrollIntoView({block:'nearest',behavior:RM?'auto':'smooth'}); } return true; };
-  root.addEventListener('click',e=>{
-    if(e.target.closest('.dx')){ hcSel=null; hcDrillPaint(); return; }
-    const dm=e.target.closest('.dm'); if(dm&&hcSel){ const o=hcSel.list[+dm.dataset.mi]; if(o){ hcSel.open.has(o.name)?hcSel.open.delete(o.name):hcSel.open.add(o.name); hcDrillPaint(); } return; }
-    pick(e); });
+    hcDrillPaint(); return true; };
+  root.addEventListener('click',pick);
   root.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-sel]')){ e.preventDefault(); pick(e); } });
 })();
 function renderDash(){
