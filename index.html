@@ -638,7 +638,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 14.20</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 15.00</span>
     </div>
   </aside>
 
@@ -1789,7 +1789,9 @@ function renderDataCheck(){
   if(infoMerged) items.push(infoMerged);
   btn.hidden=false; const bd=$('#chkBadge'); bd.textContent=bad?String(bad):'✓'; bd.classList.toggle('ok',!bad);
   $('#chkS').textContent=(bad?bad+' hal perlu dicek. Klik untuk melihat daftar.':'Semua data konsisten.')+(w?'':' Deploy code.gs terbaru untuk 4 pemeriksaan tambahan dari sheet.');
-  const html=items.map(([l,c,list])=>l==='info'?`<details class="dc-item"><summary><span class="dc-n ok" style="background:#e0f2fe;color:#075985">${fmt(c)}</span><span>Nama mitra berbeda penulisan yang disamakan otomatis</span></summary><div class="dc-list">${list.map(x=>esc(x)).join('<br>')}</div></details>`:`<details class="dc-item"><summary><span class="dc-n${c?'':' ok'}">${fmt(c)}</span><span>${esc(l)}</span></summary>${list.length?`<div class="dc-list">${list.map(x=>esc(x)).join('<br>')}${c>list.length?'<br>…':''}</div>`:''}</details>`).join('');
+  const RC=state.ach.recon, st=state.ach.stats||{};
+  const reconHtml=RC?(()=>{ const L=[`Baris data di sheet: ${fmt(RC.rows)}`,'',`AKTIVASI IKR — baris ber-active_date: ${fmt(RC.actFilled)}`,`  → masuk hitungan: ${fmt(st.ikrAct)} (inilah Total HC)`,`  → tanpa ikr_number: ${fmt(RC.ikrNoId)}`,`  → customer_code ganda untuk ID yang sama: ${fmt(RC.ikrDup)}`,`  → tanggal di luar Okt–Des 2026: ${fmt(RC.actOut)} · format tanggal tidak terbaca: ${fmt(RC.actBad)}`,'',`AKTIVASI SALES — baris ber-active_date & registration_date`,`  → masuk hitungan: ${fmt(st.salesAct)} (Total aktivasi)`,`  → active_date terisi tapi registration_date kosong (tidak dihitung): ${fmt(RC.salActNoReg)}`,`  → tanpa sales_number: ${fmt(RC.salActNoId)} · customer_code ganda: ${fmt(RC.salActDup)}`,'',`REGISTRASI SALES — baris ber-registration_date: ${fmt(RC.regFilled)}`,`  → masuk hitungan: ${fmt(st.salesReg)} (Total registrasi)`,`  → tanpa sales_number: ${fmt(RC.salRegNoId)} · customer_code ganda: ${fmt(RC.salRegDup)}`,`  → tanggal di luar Okt–Des 2026: ${fmt(RC.regOut)} · format tanggal tidak terbaca: ${fmt(RC.regBad)}`]; if((RC.badSamples||[]).length) L.push('','Contoh tanggal yang tidak terbaca: '+RC.badSamples.join(' | ')); return `<details class="dc-item" open><summary><span class="dc-n ok" style="background:#e0f2fe;color:#075985">Σ</span><span>Rekonsiliasi angka dengan Google Sheet</span></summary><div class="dc-list" style="white-space:pre-wrap">${L.map(x=>esc(x)).join('\n')}</div></details>`; })():'';
+  const html=reconHtml+items.map(([l,c,list])=>l==='info'?`<details class="dc-item"><summary><span class="dc-n ok" style="background:#e0f2fe;color:#075985">${fmt(c)}</span><span>Nama mitra berbeda penulisan yang disamakan otomatis</span></summary><div class="dc-list">${list.map(x=>esc(x)).join('<br>')}</div></details>`:`<details class="dc-item"><summary><span class="dc-n${c?'':' ok'}">${fmt(c)}</span><span>${esc(l)}</span></summary>${list.length?`<div class="dc-list">${list.map(x=>esc(x)).join('<br>')}${c>list.length?'<br>…':''}</div>`:''}</details>`).join('');
   const body=$('#chkBody'); if(!$('#chkDlg').hidden||body._h!==html){ const open=[...body.querySelectorAll('details')].map(d=>d.open); body.innerHTML=html; body._h=html; body.querySelectorAll('details').forEach((d,i)=>{ if(open[i]) d.open=true; }); }
 }
 $('#chkBtn').addEventListener('click',()=>{ renderDataCheck(); $('#chkDlg').hidden=false; });
