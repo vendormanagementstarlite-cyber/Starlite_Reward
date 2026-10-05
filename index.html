@@ -585,6 +585,8 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .trend-hint{margin:2px 0 0;font-size:10.5px;color:var(--muted)}
 
 .hc-trend2{display:flex;align-items:flex-start}.hc-trend2 .hc-ax{flex:none}.hc-trend2 .hc-trend{flex:1;min-width:0;margin:0;padding:0 0 4px}
+
+.hc-all{font-size:11px;color:var(--muted);margin:-6px 0 10px;line-height:1.5}.hc-all b{color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -638,7 +640,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 15.00</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 15.45</span>
     </div>
   </aside>
 
@@ -1214,6 +1216,9 @@ let hcView='bln'; try{ hcView=localStorage.getItem('starlite-hcv')||'bln'; }catc
 function hcTrendInit(){ document.querySelectorAll('.hc-trend').forEach(e=>{ if(e._i) return; e._i=1; e.scrollLeft=e.scrollWidth;
   let d=null; e.addEventListener('pointerdown',ev=>{ if(ev.pointerType==='touch') return; d={x:ev.clientX,l:e.scrollLeft}; });
   window.addEventListener('pointermove',ev=>{ if(d) e.scrollLeft=d.l-(ev.clientX-d.x); }); window.addEventListener('pointerup',()=>{ d=null; }); }); }
+function allNote(role,tot,rt){ const A=state.ach&&state.ach.all; if(!A) return '';
+  const row=(lbl,arr,mine)=>{ const t=arr[0]+arr[1]+arr[2], d=t-mine; return `<div class="hc-all"><b>${lbl}: ${fmt(t)}</b> <span>Okt ${fmt(arr[0])} · Nov ${fmt(arr[1])} · Des ${fmt(arr[2])}${d>0&&!fDashMitra.size()?` · termasuk ${fmt(d)} data tanpa ID / ganda`:''}</span></div>`; };
+  return role==='Sales'?row('Total keseluruhan · Registrasi',A.salesReg,rt)+row('Total keseluruhan · Aktivasi',A.salesAct,tot):row('Total keseluruhan · Aktivasi',A.ikr,tot); }
 function hcBars(dayMap,monthArr,color){
   const view=hcView, MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   if(view==='bln'){ const mx=Math.max(1,...monthArr); return '<div class="hc-mon">'+['Okt','Nov','Des'].map((n,i)=>`<div class="r"><span>${n}</span><div class="bar"><i style="width:${monthArr[i]/mx*100}%;background:${color}"></i></div><b>${fmt(monthArr[i])}</b></div>`).join('')+'</div>'; }
@@ -1272,7 +1277,7 @@ function renderDash(){
         extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(rt)}</div>`+hcBars(sumMap('dr'),rg,'var(--accent)'); }
       const sw=`<div class="hcv" role="group" aria-label="Rentang">${[['bln','Bulan'],['mgg','Minggu'],['hari','Hari']].map(([k,l])=>`<button type="button" data-hcv="${k}" aria-pressed="${hcView===k}">${l}</button>`).join('')}</div>`;
       return `<div class="card hc-card lift ${role==='Sales'?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi Q4 2026</p></div>${sw}</div>
-        <div class="hc-stats${role==='Sales'?' five':' four'}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div title="ID ada di data pencapaian tetapi belum didaftarkan mitra"><b>${fmt(rows.filter(r=>r.inAch&&!r.registered).length)}</b><span>Belum terdaftar</span></div></div>
+        <div class="hc-stats${role==='Sales'?' five':' four'}">${role==='Sales'?`<div><b>${fmt(rtAll)}</b><span>Total registrasi</span></div>`:''}<div><b>${fmt(tot)}</b><span>${role==='Sales'?'Total aktivasi':'Total HC'}</span></div><div><b>${fmt(act)}</b><span>${role} ID aktif</span></div><div><b>${fmt(reg)}</b><span>Terdaftar</span></div><div title="ID ada di data pencapaian tetapi belum didaftarkan mitra"><b>${fmt(rows.filter(r=>r.inAch&&!r.registered).length)}</b><span>Belum terdaftar</span></div></div>${allNote(role,tot,rtAll)}
         <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(sumMap('dy'),m,color)+`${extra}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)'));
   })();
@@ -1790,7 +1795,7 @@ function renderDataCheck(){
   btn.hidden=false; const bd=$('#chkBadge'); bd.textContent=bad?String(bad):'✓'; bd.classList.toggle('ok',!bad);
   $('#chkS').textContent=(bad?bad+' hal perlu dicek. Klik untuk melihat daftar.':'Semua data konsisten.')+(w?'':' Deploy code.gs terbaru untuk 4 pemeriksaan tambahan dari sheet.');
   const RC=state.ach.recon, st=state.ach.stats||{};
-  const reconHtml=RC?(()=>{ const L=[`Baris data di sheet: ${fmt(RC.rows)}`,'',`AKTIVASI IKR — baris ber-active_date: ${fmt(RC.actFilled)}`,`  → masuk hitungan: ${fmt(st.ikrAct)} (inilah Total HC)`,`  → tanpa ikr_number: ${fmt(RC.ikrNoId)}`,`  → customer_code ganda untuk ID yang sama: ${fmt(RC.ikrDup)}`,`  → tanggal di luar Okt–Des 2026: ${fmt(RC.actOut)} · format tanggal tidak terbaca: ${fmt(RC.actBad)}`,'',`AKTIVASI SALES — baris ber-active_date & registration_date`,`  → masuk hitungan: ${fmt(st.salesAct)} (Total aktivasi)`,`  → active_date terisi tapi registration_date kosong (tidak dihitung): ${fmt(RC.salActNoReg)}`,`  → tanpa sales_number: ${fmt(RC.salActNoId)} · customer_code ganda: ${fmt(RC.salActDup)}`,'',`REGISTRASI SALES — baris ber-registration_date: ${fmt(RC.regFilled)}`,`  → masuk hitungan: ${fmt(st.salesReg)} (Total registrasi)`,`  → tanpa sales_number: ${fmt(RC.salRegNoId)} · customer_code ganda: ${fmt(RC.salRegDup)}`,`  → tanggal di luar Okt–Des 2026: ${fmt(RC.regOut)} · format tanggal tidak terbaca: ${fmt(RC.regBad)}`]; if((RC.badSamples||[]).length) L.push('','Contoh tanggal yang tidak terbaca: '+RC.badSamples.join(' | ')); return `<details class="dc-item" open><summary><span class="dc-n ok" style="background:#e0f2fe;color:#075985">Σ</span><span>Rekonsiliasi angka dengan Google Sheet</span></summary><div class="dc-list" style="white-space:pre-wrap">${L.map(x=>esc(x)).join('\n')}</div></details>`; })():'';
+  const reconHtml=RC?(()=>{ const AL=state.ach.all||{ikr:[0,0,0],salesAct:[0,0,0],salesReg:[0,0,0]}, sm=a=>a[0]+a[1]+a[2], L=[`Baris data di sheet: ${fmt(RC.rows)}`,`TOTAL KESELURUHAN Okt–Des 2026 (semua data, tanpa melihat ID): aktivasi IKR ${fmt(sm(AL.ikr))} · aktivasi Sales ${fmt(sm(AL.salesAct))} · registrasi Sales ${fmt(sm(AL.salesReg))}`,'',`AKTIVASI IKR — baris ber-active_date: ${fmt(RC.actFilled)}`,`  → masuk hitungan: ${fmt(st.ikrAct)} (inilah Total HC)`,`  → tanpa ikr_number: ${fmt(RC.ikrNoId)}`,`  → customer_code ganda untuk ID yang sama: ${fmt(RC.ikrDup)}`,`  → tanggal di luar Okt–Des 2026: ${fmt(RC.actOut)} · format tanggal tidak terbaca: ${fmt(RC.actBad)}`,'',`AKTIVASI SALES — baris ber-active_date & registration_date`,`  → masuk hitungan: ${fmt(st.salesAct)} (Total aktivasi)`,`  → active_date terisi tapi registration_date kosong (tidak dihitung): ${fmt(RC.salActNoReg)}`,`  → tanpa sales_number: ${fmt(RC.salActNoId)} · customer_code ganda: ${fmt(RC.salActDup)}`,'',`REGISTRASI SALES — baris ber-registration_date: ${fmt(RC.regFilled)}`,`  → masuk hitungan: ${fmt(st.salesReg)} (Total registrasi)`,`  → tanpa sales_number: ${fmt(RC.salRegNoId)} · customer_code ganda: ${fmt(RC.salRegDup)}`,`  → tanggal di luar Okt–Des 2026: ${fmt(RC.regOut)} · format tanggal tidak terbaca: ${fmt(RC.regBad)}`]; if((RC.badSamples||[]).length) L.push('','Contoh tanggal yang tidak terbaca: '+RC.badSamples.join(' | ')); return `<details class="dc-item" open><summary><span class="dc-n ok" style="background:#e0f2fe;color:#075985">Σ</span><span>Rekonsiliasi angka dengan Google Sheet</span></summary><div class="dc-list" style="white-space:pre-wrap">${L.map(x=>esc(x)).join('\n')}</div></details>`; })():'';
   const html=reconHtml+items.map(([l,c,list])=>l==='info'?`<details class="dc-item"><summary><span class="dc-n ok" style="background:#e0f2fe;color:#075985">${fmt(c)}</span><span>Nama mitra berbeda penulisan yang disamakan otomatis</span></summary><div class="dc-list">${list.map(x=>esc(x)).join('<br>')}</div></details>`:`<details class="dc-item"><summary><span class="dc-n${c?'':' ok'}">${fmt(c)}</span><span>${esc(l)}</span></summary>${list.length?`<div class="dc-list">${list.map(x=>esc(x)).join('<br>')}${c>list.length?'<br>…':''}</div>`:''}</details>`).join('');
   const body=$('#chkBody'); if(!$('#chkDlg').hidden||body._h!==html){ const open=[...body.querySelectorAll('details')].map(d=>d.open); body.innerHTML=html; body._h=html; body.querySelectorAll('details').forEach((d,i)=>{ if(open[i]) d.open=true; }); }
 }
