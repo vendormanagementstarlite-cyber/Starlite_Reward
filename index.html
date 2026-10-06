@@ -621,6 +621,22 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .hc-drill .dm b{text-align:right;font-variant-numeric:tabular-nums}
 .hc-drill .dp{margin:2px 0 6px 22px;border-left:2px solid rgba(0,0,0,.08);padding-left:10px}.hc-drill .dp li{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:3px 0;color:var(--ink-2)}.hc-drill .dp li.x{color:var(--muted);font-style:italic}.hc-drill .dp b{font-variant-numeric:tabular-nums}
 .hc-drill .dn{margin:6px 0 0;font-size:10.5px;color:var(--muted)}
+/* popup rincian — rapi & simetris */
+.hc-modal .hc-pop{display:flex;flex-direction:column;overflow:hidden;padding:0;background:#fff;border:1px solid var(--line);border-radius:18px;width:min(580px,100%);max-height:min(84vh,740px)}
+.hc-modal .hc-pop .dh{margin:0;padding:16px 18px 12px;border-bottom:1px solid var(--line-2);align-items:center;flex:none}
+.hc-modal .hc-pop .dh b{font-size:16px;line-height:1.25;color:var(--hc)}.hc-modal .hc-pop .dh span{display:block;margin-top:3px;font-size:12px}
+.hc-modal .hc-pop .dx{width:32px;height:32px;background:var(--line-2);font-size:13px;display:grid;place-items:center;transition:background .15s}.hc-modal .hc-pop .dx:hover{background:var(--line)}
+.hc-modal .hc-pop .dl{flex:1;min-height:0;max-height:none;overflow:auto;padding:8px 10px;scrollbar-width:thin}
+.hc-modal .hc-pop .dl>li+li{border-top:1px solid var(--line-2)}
+.hc-modal .hc-pop .dm{grid-template-columns:16px minmax(0,1fr) 120px 56px;gap:10px;padding:10px 8px;border-radius:10px;font-size:13px}
+.hc-modal .hc-pop .dm:hover,.hc-modal .hc-pop .dm[aria-expanded=true]{background:var(--hcs,#F4F7FB)}
+.hc-modal .hc-pop .dm .bar{height:8px;background:var(--line-2)}.hc-modal .hc-pop .dm b{font-size:13px}
+.hc-modal .hc-pop .dp{margin:0 0 8px;padding:4px 8px 6px;border:0;background:var(--hcs,#F4F7FB);border-radius:10px}
+.hc-modal .hc-pop .dp li{display:grid;grid-template-columns:16px minmax(0,1fr) 56px;gap:10px;padding:5px 0;font-size:12.5px;align-items:center}
+.hc-modal .hc-pop .dp li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--hc);opacity:.55;justify-self:center}
+.hc-modal .hc-pop .dp li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hc-modal .hc-pop .dp li b{text-align:right}
+.hc-modal .hc-pop .dn{flex:none;margin:0;padding:10px 18px;border-top:1px solid var(--line-2);font-size:11.5px;text-align:center;background:#fff}
+@media(max-width:520px){.hc-modal{padding:10px}.hc-modal .hc-pop .dm{grid-template-columns:14px minmax(0,1fr) 64px 48px;gap:8px}.hc-modal .hc-pop .dp li{grid-template-columns:14px minmax(0,1fr) 48px}}
 .hc-dist{margin:8px 0 0;font-size:11px;color:var(--muted);line-height:1.4}.hc-dist b{color:var(--ink-2)}
 .hc-grp h5{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--hc,var(--muted));font-weight:700}
 @media(max-width:520px){.hc-split{grid-template-columns:1fr;gap:14px}.hc-grp{padding:0}.hc-grp:first-child{border-right:0;border-bottom:1.5px solid var(--line);padding-bottom:14px}}
@@ -679,7 +695,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
       <span>Periode <b>Q4 · Okt–Des 2026</b></span>
-      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 5 Okt 2026 · 25.00</span>
+      <span class="hk">25 hari kerja × 3 bulan</span><span class="ver" id="appVer">versi 6 Okt 2026 · 09.00</span>
     </div>
   </aside>
 
@@ -1336,7 +1352,7 @@ function hcDrillData(role,kind,keys){
 function hcDrillHtml(){
   const sel=hcSel, list=sel.list=hcDrillData(sel.role,sel.kind,sel.keys), tot=list.reduce((t,o)=>t+o.total,0), mx=Math.max(1,...list.map(o=>o.total));
   const rows=list.map((o,i)=>{ const open=sel.open.has(o.name);
-    return `<li><button type="button" class="dm" data-mi="${i}" aria-expanded="${open}"><span class="car">▸</span><span class="nm">${esc(o.name)}</span><span class="bar"><i style="width:${o.total/mx*100}%"></i></span><b>${fmt(o.total)}</b></button>${open?`<ul class="dp">${o.people.map(p=>`<li${p.nama==='Tanpa ID number'?' class="x"':''}><span>${esc(p.nama)}</span><b>${fmt(p.n)}</b></li>`).join('')}</ul>`:''}</li>`; }).join('');
+    return `<li><button type="button" class="dm" data-mi="${i}" aria-expanded="${open}"><span class="car">▸</span><span class="nm" title="${esc(o.name)}">${esc(o.name)}</span><span class="bar"><i style="width:${o.total/mx*100}%"></i></span><b>${fmt(o.total)}</b></button>${open?`<ul class="dp">${o.people.map(p=>`<li${p.nama==='Tanpa ID number'?' class="x"':''}><span title="${esc(p.nama)}">${esc(p.nama)}</span><b>${fmt(p.n)}</b></li>`).join('')}</ul>`:''}</li>`; }).join('');
   return `<div class="dh"><div><b>${sel.kind==='reg'?'Registrasi':'Aktivasi'} · ${esc(sel.lbl)}</b><span>Tim ${sel.role} · total ${fmt(tot)} · ${list.length} mitra</span></div><button type="button" class="dx" aria-label="Tutup rincian">✕</button></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">Klik nama mitra untuk melihat anggota timnya. Tekan Esc atau klik di luar untuk menutup.</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
 }
 function hcDrillPaint(){
