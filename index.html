@@ -686,6 +686,12 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .ps-tbl thead .nmc{z-index:3;background:var(--surface-2,#f6f7f9)}
 .ps-tbl .tot{font-weight:800;background:var(--surface-2,#f6f7f9)}
 .ps-tbl td.z{color:var(--muted);opacity:.45}
+.ps-det{margin-top:6px}
+.ps-det>summary{cursor:pointer;font-weight:700;font-size:15px;padding:12px 4px;list-style:none;display:flex;align-items:center;gap:8px}
+.ps-det>summary::-webkit-details-marker{display:none}
+.ps-det>summary::before{content:"▾";transition:transform .2s;display:inline-block}
+.ps-det:not([open])>summary::before{transform:rotate(-90deg)}
+.ps-tbl tr.ps-hit td{background:#fff3b0!important;box-shadow:0 0 0 2px #f2b600 inset}
 </style>
 </head>
 <body>
@@ -901,7 +907,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <span class="rk-range" title="Filter tanggal. Kosongkan untuk semua periode"><input type="date" id="psFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="psTo" aria-label="Sampai tanggal"></span>
     <select id="psMitra" aria-label="Filter mitra"><option value="">Semua mitra</option></select>
     <select id="psStasiun" aria-label="Filter stasiun"><option value="">Semua stasiun</option></select>
-    <input type="search" id="psQ" placeholder="Cari nama Psd…" aria-label="Cari nama">
+    <input type="search" id="psQ" list="psNameList" placeholder="Cari nama Psd lalu pilih…" aria-label="Cari nama" autocomplete="off"><datalist id="psNameList"></datalist>
     <button type="button" class="ps-reset" id="psReset" hidden>Reset</button>
   </div>
   <div class="kpis" id="psKpis"></div>
@@ -909,8 +915,6 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
         <div style="grid-column:1/-1;display:flex"><div class="ps-tog" id="psTog" role="group" aria-label="Periode"><button type="button" data-p="day" aria-pressed="true">Harian</button><button type="button" data-p="week" aria-pressed="false">Mingguan</button><button type="button" data-p="month" aria-pressed="false">Bulanan</button></div></div>
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>IKR (Psd)</h2><p>Aktivasi per periode</p></div></div><div id="psChIkr" class="ps-chart"></div></div>
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Sales (Psd)</h2><p id="psSwSub">Aktivasi per periode</p></div><div class="hcv hcv-top" id="psSw" role="group" aria-label="Tampilkan registrasi atau aktivasi"><button type="button" data-sw="reg" aria-pressed="false">Registrasi</button><button type="button" data-sw="act" aria-pressed="true">Aktivasi</button></div></div><div id="psChSal" class="ps-chart"></div></div>
-    <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama IKR (Psd…)</h2><p>Aktivasi per nama</p></div></div><div id="psIkrNames"></div></div>
-        <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama Sales (Psd…)</h2><p>Registrasi dan aktivasi per nama</p></div></div><div id="psSalNames"></div></div>
       
       <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Pencapaian per nama Psd</h2><p id="psNmSub">Per periode · ikuti tombol Harian / Mingguan / Bulanan di atas</p></div><div class="hcv hcv-top" id="psNmSw" role="group" aria-label="Metrik"><button type="button" data-nm="ikr" aria-pressed="true">IKR Aktivasi</button><button type="button" data-nm="reg" aria-pressed="false">Sales Registrasi</button><button type="button" data-nm="act" aria-pressed="false">Sales Aktivasi</button></div></div><div id="psNmTbl" class="ps-tblwrap"></div></div>
       </div>
@@ -918,6 +922,10 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       <div class="card chart-card lift"><div class="chart-head"><div><h2>🏆 High Performance</h2><p>Di atas atau sama dengan rata-rata aktivasi · maks 5 teratas</p></div></div><div id="psHigh"></div></div>
       <div class="card chart-card lift"><div class="chart-head"><div><h2>⚠️ Low Performance</h2><p>Di bawah rata-rata aktivasi · maks 5 terendah</p></div></div><div id="psLow"></div></div>
     </div>
+    <details class="ps-det" open><summary>Daftar nama IKR &amp; Sales (Psd)</summary><div class="grid2">
+    <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama IKR (Psd…)</h2><p>Aktivasi per nama</p></div></div><div id="psIkrNames"></div></div>
+        <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama Sales (Psd…)</h2><p>Registrasi dan aktivasi per nama</p></div></div><div id="psSalNames"></div></div>
+    </div></details>
     </section>
 
     <!-- LEADERBOARD PENCAPAIAN -->
@@ -2176,7 +2184,8 @@ function psChart1(box,o,color,name){
   Object.keys(o).forEach(k=>{ const bk=psBucket(k,p); agg[bk]=(agg[bk]||0)+o[k]; });
   const keys=Object.keys(agg).sort();
   if(!keys.length){ box.innerHTML='<div class="empty">Belum ada data pada filter ini.</div>'; return; }
-  const gw=p==='day'?40:p==='week'?64:90, H=230, top=20, bot=40, left=34, bw=Math.min(26,gw-14);
+  const cw=box.clientWidth||600, left=34, H=230, top=20, bot=40;
+  const gw=Math.max(p==='day'?40:p==='week'?64:90,(cw-left-8)/keys.length), bw=Math.min(44,gw*.6);
   const mx=Math.max(1,...keys.map(k=>agg[k]));
   const step=Math.pow(10,Math.floor(Math.log10(mx))), nice=[1,2,5,10].map(x=>x*step).find(v=>mx/v<=5)||step*10;
   const ymax=Math.ceil(mx/nice)*nice, ph=H-top-bot, W=Math.max(left+keys.length*gw+8,300);
@@ -2230,16 +2239,16 @@ function psFillOpts(rows){
 function renderPersada(){
   const rows=((state.ach&&state.ach.persada&&state.ach.persada.rows)||[]);
   psFillOpts(rows);
-  const f=$('#psFrom').value, t=$('#psTo').value, mi=$('#psMitra').value, st=$('#psStasiun').value, q=$('#psQ').value.trim().toLowerCase();
-  $('#psReset').hidden=!(f||t||mi||st||q);
+  const f=$('#psFrom').value, t=$('#psTo').value, mi=$('#psMitra').value, st=$('#psStasiun').value;
+  $('#psReset').hidden=!(f||t||mi||st);
   const inR=d=>d&&(!f||d>=f)&&(!t||d<=t);
   const I={tot:0,dy:{},nm:{}}, S={tot:0,dy:{},nm:{},regTot:0,regDy:{},regNm:{}};
   const bump=(o,k)=>{ o[k]=(o[k]||0)+1; };
   const ND={ikr:{},reg:{},act:{}}; const nb=(t,n,d)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); };
   rows.forEach(([reg,act,ni,ns,m,s])=>{
     if(mi&&m!==mi) return; if(st&&s!==st) return;
-    if(PS_RE.test(ni)&&(!q||ni.toLowerCase().includes(q))&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); nb('ikr',ni,act); }
-    if(PS_RE.test(ns)&&(!q||ns.toLowerCase().includes(q))){
+    if(PS_RE.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); nb('ikr',ni,act); }
+    if(PS_RE.test(ns)){
       if(inR(reg)){ S.regTot++; bump(S.regNm,ns); bump(S.regDy,reg); nb('reg',ns,reg); }
       if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); bump(S.dy,act); nb('act',ns,act); }
     }
@@ -2253,13 +2262,32 @@ function renderPersada(){
     ['Tim Sales',tS.size,'jumlah nama Sales Psd','c-ikr']
   ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
   psChart(I.dy,S.regDy,S.dy);
-  psNameTable(ND);
+  psND=ND; psNameTable(ND); psNameList(rows);
   $('#psIkrNames').innerHTML=psNames(I.nm,'var(--s-ikr)');
   $('#psSalNames').innerHTML=psNames(S.nm,'var(--s-sales)');
   psPerf(I,S);
 }
 ['#psFrom','#psTo','#psMitra','#psStasiun'].forEach(s=>$(s).addEventListener('change',renderPersada));
-$('#psQ').addEventListener('input',renderPersada);
+let psND=null;
+function psNameList(rows){
+  const set=[...new Set(rows.flatMap(r=>[r[2],r[3]]).filter(x=>PS_RE.test(x)))].sort((a,b)=>a.localeCompare(b,'id'));
+  const dl=$('#psNameList'), sig=set.join('|'); if(dl._sig===sig) return; dl._sig=sig;
+  dl.innerHTML=set.map(n=>`<option value="${esc(n)}"></option>`).join('');
+}
+function psJump(scroll){
+  document.querySelectorAll('#psNmTbl tr.ps-hit').forEach(r=>r.classList.remove('ps-hit'));
+  const q=$('#psQ').value.trim().toLowerCase(); if(!q||!psND) return;
+  const has=m=>Object.keys(psND[m]||{}).some(n=>n.toLowerCase().includes(q));
+  const m=[psNm,'ikr','reg','act'].find(has); if(!m) return;
+  if(m!==psNm){ psNm=m; document.querySelectorAll('#psNmSw button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.nm===m)); psNameTable(psND); }
+  const rows=[...document.querySelectorAll('#psNmTbl tbody tr')].filter(r=>{ const c=r.querySelector('.nmc'); return c&&!c.classList.contains('tot')&&c.textContent.toLowerCase().includes(q); });
+  const row=rows.find(r=>r.querySelector('.nmc').textContent.toLowerCase()===q)||rows[0]; if(!row) return;
+  row.classList.add('ps-hit');
+  const wrap=$('#psNmTbl'); wrap.scrollTop=Math.max(0,row.offsetTop-wrap.clientHeight/2+row.offsetHeight/2);
+  if(scroll) wrap.closest('.card').scrollIntoView({behavior:'smooth',block:'center'});
+}
+let psQt; $('#psQ').addEventListener('input',()=>{ clearTimeout(psQt); psQt=setTimeout(()=>psJump(true),250); });
+$('#psQ').addEventListener('change',()=>psJump(true));
 $('#psReset').addEventListener('click',()=>{ ['#psFrom','#psTo','#psMitra','#psStasiun','#psQ'].forEach(s=>$(s).value=''); renderPersada(); });
 /* ---------- DATA ---------- */
 function refreshAll(){ fillMitraSelects(); syncSteps(); renderDash(); renderLB(); renderRank();
