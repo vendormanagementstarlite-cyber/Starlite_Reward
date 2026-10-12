@@ -666,6 +666,17 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
   .nav .grp .sub{display:contents!important}
 }
 .nav .grp[hidden]{display:none!important}
+.ps-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 14px}
+.ps-bar input,.ps-bar select{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:auto;min-height:0;height:34px}
+.ps-bar select{max-width:170px}.ps-bar input[type=search]{width:150px}
+.ps-reset{font:inherit;font-size:13px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);cursor:pointer}
+.ps-reset[hidden]{display:none}
+.ps-tog{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.ps-tog button{font:inherit;font-size:13px;padding:6px 12px;border:0;background:#fff;cursor:pointer;color:var(--muted)}
+.ps-tog button[aria-pressed="true"]{background:var(--s-ikr);color:#fff}
+.ps-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:6px 0 4px}
+.ps-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.ps-chart{overflow-x:auto;padding-bottom:4px}
 </style>
 </head>
 <body>
@@ -877,18 +888,17 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
         <h1>Persada Project</h1>
         <p class="lede">Pencapaian IKR dan Sales dengan nama berawalan “Psd” dari sheet Ach sales ikr, semua periode. Gunakan filter untuk mempersempit.</p>
       </div></div>
-      <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px">
+      <div class="ps-bar">
     <span class="rk-range" title="Filter tanggal. Kosongkan untuk semua periode"><input type="date" id="psFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="psTo" aria-label="Sampai tanggal"></span>
-    <select id="psMitra" class="field" aria-label="Filter mitra"><option value="">Semua mitra</option></select>
-    <select id="psStasiun" class="field" aria-label="Filter stasiun"><option value="">Semua stasiun</option></select>
-    <input type="search" id="psQ" class="field" placeholder="Cari nama Psd…" aria-label="Cari nama">
-    <button type="button" class="btn" id="psReset" hidden>Reset</button>
+    <select id="psMitra" aria-label="Filter mitra"><option value="">Semua mitra</option></select>
+    <select id="psStasiun" aria-label="Filter stasiun"><option value="">Semua stasiun</option></select>
+    <input type="search" id="psQ" placeholder="Cari nama Psd…" aria-label="Cari nama">
+    <button type="button" class="ps-reset" id="psReset" hidden>Reset</button>
   </div>
   <div class="kpis" id="psKpis"></div>
       <div class="grid2">
-        <div class="card chart-card lift"><div class="chart-head"><div><h2>Aktivasi IKR per hari</h2><p>Hanya hari yang ada aktivasi</p></div></div><div id="psIkrDays"></div></div>
-        <div class="card chart-card lift"><div class="chart-head"><div><h2>Sales per hari</h2><p>Registrasi · aktivasi per tanggal</p></div></div><div id="psSalDays"></div></div>
-        <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama IKR (Psd…)</h2><p>Aktivasi per nama</p></div></div><div id="psIkrNames"></div></div>
+        <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Tren Persada</h2><p>IKR Psd aktivasi · Sales Psd registrasi &amp; aktivasi</p></div><div class="ps-tog" id="psTog" role="group" aria-label="Periode"><button type="button" data-p="day" aria-pressed="true">Harian</button><button type="button" data-p="week" aria-pressed="false">Mingguan</button><button type="button" data-p="month" aria-pressed="false">Bulanan</button></div></div><div class="ps-leg"><span><i style="background:var(--s-ikr)"></i>Aktivasi IKR</span><span><i style="background:var(--s-sales)"></i>Registrasi Sales</span><span><i style="background:#1f9d6b"></i>Aktivasi Sales</span></div><div id="psChart" class="ps-chart"></div></div>
+    <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama IKR (Psd…)</h2><p>Aktivasi per nama</p></div></div><div id="psIkrNames"></div></div>
         <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama Sales (Psd…)</h2><p>Registrasi dan aktivasi per nama</p></div></div><div id="psSalNames"></div></div>
       </div>
       <div class="grid2">
@@ -2131,6 +2141,41 @@ function psPerf(I,S){
   $('#psHigh').innerHTML=(a.hi+b.hi)||none;
   $('#psLow').innerHTML=(a.lo+b.lo)||none;
 }
+let psPeriod='day';
+function psBucket(iso,p){
+  if(p==='month') return iso.slice(0,7);
+  if(p==='week'){ const [y,m,d]=iso.split('-').map(Number), dt=new Date(Date.UTC(y,m-1,d)); const w=(dt.getUTCDay()+6)%7; dt.setUTCDate(dt.getUTCDate()-w); return dt.toISOString().slice(0,10); }
+  return iso;
+}
+function psBLabel(k,p){
+  const mo=i=>MONTHS[i];
+  if(p==='month'){ const [y,m]=k.split('-').map(Number); return mo(m-1)+' '+y; }
+  const [y,m,d]=k.split('-').map(Number);
+  if(p==='week'){ const e=new Date(Date.UTC(y,m-1,d+6)); return d+' '+mo(m-1)+'–'+e.getUTCDate()+' '+mo(e.getUTCMonth()); }
+  return d+' '+mo(m-1);
+}
+function psChart(a,b,c){
+  const p=psPeriod, agg={};
+  [[a,0],[b,1],[c,2]].forEach(([o,i])=>Object.keys(o).forEach(k=>{ const bk=psBucket(k,p); (agg[bk]=agg[bk]||[0,0,0])[i]+=o[k]; }));
+  const keys=Object.keys(agg).sort();
+  const box=$('#psChart');
+  if(!keys.length){ box.innerHTML='<div class="empty">Belum ada data pada filter ini.</div>'; return; }
+  const cols=['var(--s-ikr)','var(--s-sales)','#1f9d6b'];
+  const gw=p==='day'?44:p==='week'?64:90, H=240, top=18, bot=44, left=34, bw=Math.min(14,(gw-10)/3);
+  const mx=Math.max(1,...keys.map(k=>Math.max(...agg[k])));
+  const step=Math.pow(10,Math.floor(Math.log10(mx))), nice=[1,2,5,10].map(x=>x*step/ (x===10?1:1)).find(v=>mx/v<=5)||step*10;
+  const ymax=Math.ceil(mx/nice)*nice, ph=H-top-bot, W=left+keys.length*gw+8;
+  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tren Persada">`;
+  for(let v=0;v<=ymax;v+=nice){ const y=top+ph-(v/ymax)*ph; s+=`<line x1="${left}" x2="${W}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">${fmt(v)}</text>`; }
+  keys.forEach((k,i)=>{
+    const x0=left+i*gw+(gw-bw*3)/2;
+    agg[k].forEach((v,j)=>{ const h=v/ymax*ph, x=x0+j*bw; s+=`<rect x="${x}" y="${top+ph-h}" width="${bw-1}" height="${h}" rx="2" fill="${cols[j]}"><title>${psBLabel(k,p)} · ${['Aktivasi IKR','Registrasi Sales','Aktivasi Sales'][j]}: ${fmt(v)}</title></rect>`;
+      if(gw>=64&&v) s+=`<text x="${x+bw/2}" y="${top+ph-h-3}" text-anchor="middle" font-size="9" fill="currentColor" opacity=".75">${fmt(v)}</text>`; });
+    s+=`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(psBLabel(k,p))}</text>`;
+  });
+  box.innerHTML=s+'</svg>';
+}
+$('#psTog').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; psPeriod=b.dataset.p; document.querySelectorAll('#psTog button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderPersada(); });
 function psFillOpts(rows){
   [['#psMitra',4,'Semua mitra'],['#psStasiun',5,'Semua stasiun']].forEach(([sel,i,all])=>{
     const el=$(sel), cur=el.value, set=[...new Set(rows.map(r=>r[i]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
@@ -2161,9 +2206,7 @@ function renderPersada(){
     ['Registrasi Sales',S.regTot,'baris registrasi Sales Psd','c-sales'],
     ['Aktivasi Sales',S.tot,'registrasi & aktif Sales Psd','c-st']
   ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
-  $('#psIkrDays').innerHTML=psDayRows(I.dy);
-  const pair={}; new Set([...Object.keys(S.regDy),...Object.keys(S.dy)]).forEach(k=>{ pair[k]={reg:S.regDy[k]||0,act:S.dy[k]||0}; });
-  $('#psSalDays').innerHTML=psDayRows(pair,'pair');
+  psChart(I.dy,S.regDy,S.dy);
   $('#psIkrNames').innerHTML=psNames(I.nm,'var(--s-ikr)');
   $('#psSalNames').innerHTML=psNames(S.nm,'var(--s-sales)');
   psPerf(I,S);
