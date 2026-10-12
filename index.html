@@ -651,6 +651,21 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .hc-stats.four.row b{font-size:19px}
 .hc-stats.four.row span{font-size:10.5px;display:block;line-height:1.3}
 @media(max-width:520px){.hc-stats.four.row{gap:6px}.hc-stats.four.row b{font-size:15px}.hc-stats.four.row span{font-size:9.5px}}
+.nav .grp{display:flex;flex-direction:column;gap:4px}
+.nav .grp-head{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;border:0;border-radius:999px;background:transparent;color:var(--side-fg);font-weight:600;font-size:14px;cursor:pointer}
+.nav .grp-head:hover{background:var(--side-hover)}
+.nav .grp-head svg{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
+.nav .grp-head .grp-chev{margin-left:auto;width:16px;height:16px;transition:transform .25s}
+.nav .grp.closed .grp-chev{transform:rotate(-90deg)}
+.nav .grp .sub{display:flex;flex-direction:column;gap:4px;margin:2px 0 0 18px;padding-left:14px;border-left:2px solid rgba(255,255,255,.18)}
+.nav .grp .sub[hidden]{display:none}
+.nav .grp .sub button{padding:9px 14px;font-size:13.5px}
+@media (max-width:760px){
+  .nav .grp{display:contents}
+  .nav .grp-head{display:none}
+  .nav .grp .sub{display:contents!important}
+}
+.nav .grp[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -697,7 +712,13 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       <div class="nav-label">Menu</div>
       <span class="nav-ind" id="navInd" aria-hidden="true"></span>
       <button data-view="submit" aria-current="page"><svg viewBox="0 0 24 24"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg><span class="lbl">Submit Data</span></button>
-      <button data-view="dashboard"><svg viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span class="lbl">Dashboard</span></button>
+      <div class="grp" id="dashGrp">
+        <button type="button" class="grp-head" id="dashHead" aria-expanded="true" aria-controls="dashSub"><svg viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span class="lbl">Dashboard</span><svg class="grp-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="sub" id="dashSub">
+          <button data-view="dashboard"><span class="lbl">Reward Mitra</span></button>
+          <button data-view="persada"><span class="lbl">Persada Project</span></button>
+        </div>
+      </div>
       <button data-view="ranking"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg><span class="lbl">Leaderboard</span></button>
       <button data-view="leaderboard"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-1a6 6 0 0 1 12 0v1"/><path d="M15 15a5 5 0 0 1 6 4.5V20"/></svg><span class="lbl">Pendaftar</span></button>
     </nav>
@@ -819,7 +840,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <section class="view" id="v-dashboard" hidden>
       <div class="page-head"><div>
         <div class="eyebrow">Admin · FTTH Starlite · Registrasi Q4</div>
-        <h1>Dashboard Pendaftaran</h1>
+        <h1>Reward Mitra</h1>
         <p class="lede" id="dashLede">Rekap IKR dan Sales yang didaftarkan mitra untuk mengikuti program reward Q4.</p>
       </div>
       
@@ -848,6 +869,32 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
           <div id="chComp"></div>
         </div>
       </div>
+    </section>
+
+    <section class="view" id="v-persada" hidden>
+      <div class="page-head"><div>
+        <div class="eyebrow">Admin · Persada Project</div>
+        <h1>Persada Project</h1>
+        <p class="lede">Pencapaian IKR dan Sales dengan nama berawalan “Psd” dari sheet Ach sales ikr, semua periode. Gunakan filter untuk mempersempit.</p>
+      </div></div>
+      <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px">
+    <span class="rk-range" title="Filter tanggal. Kosongkan untuk semua periode"><input type="date" id="psFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="psTo" aria-label="Sampai tanggal"></span>
+    <select id="psMitra" class="field" aria-label="Filter mitra"><option value="">Semua mitra</option></select>
+    <select id="psStasiun" class="field" aria-label="Filter stasiun"><option value="">Semua stasiun</option></select>
+    <input type="search" id="psQ" class="field" placeholder="Cari nama Psd…" aria-label="Cari nama">
+    <button type="button" class="btn" id="psReset" hidden>Reset</button>
+  </div>
+  <div class="kpis" id="psKpis"></div>
+      <div class="grid2">
+        <div class="card chart-card lift"><div class="chart-head"><div><h2>Aktivasi IKR per hari</h2><p>Hanya hari yang ada aktivasi</p></div></div><div id="psIkrDays"></div></div>
+        <div class="card chart-card lift"><div class="chart-head"><div><h2>Sales per hari</h2><p>Registrasi · aktivasi per tanggal</p></div></div><div id="psSalDays"></div></div>
+        <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama IKR (Psd…)</h2><p>Aktivasi per nama</p></div></div><div id="psIkrNames"></div></div>
+        <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama Sales (Psd…)</h2><p>Registrasi dan aktivasi per nama</p></div></div><div id="psSalNames"></div></div>
+      </div>
+      <div class="grid2">
+      <div class="card chart-card lift"><div class="chart-head"><div><h2>🏆 High Performance</h2><p>Di atas atau sama dengan rata-rata aktivasi · maks 5 teratas</p></div></div><div id="psHigh"></div></div>
+      <div class="card chart-card lift"><div class="chart-head"><div><h2>⚠️ Low Performance</h2><p>Di bawah rata-rata aktivasi · maks 5 terendah</p></div></div><div id="psLow"></div></div>
+    </div>
     </section>
 
     <!-- LEADERBOARD PENCAPAIAN -->
@@ -1016,8 +1063,8 @@ window.addEventListener('resize',()=>{navInd();tabInd();onScroll();});
 $('#toTop').addEventListener('click',()=>window.scrollTo({top:0,behavior:RM?'auto':'smooth'}));
 
 /* ---------- NAV ---------- */
-const views=['submit','dashboard','ranking','leaderboard'];
-const MODE_VIEWS={mitra:['submit','ranking'],admin:['dashboard','ranking','leaderboard']};
+const views=['submit','dashboard','persada','ranking','leaderboard'];
+const MODE_VIEWS={mitra:['submit','ranking'],admin:['dashboard','persada','ranking','leaderboard']};
 let mode='mitra', adminPw='';
 function go(v){ const allow=MODE_VIEWS[mode]; if(!allow.includes(v)) v=allow[0];
   views.forEach(x=>{ $('#v-'+x).hidden = x!==v; });
@@ -1025,13 +1072,15 @@ function go(v){ const allow=MODE_VIEWS[mode]; if(!allow.includes(v)) v=allow[0];
   try{localStorage.setItem('starlite-view-'+mode,v)}catch(e){}
   window.scrollTo({top:0,behavior:'auto'});
   if(v==='dashboard'){ $('#v-dashboard')._fresh=true; renderDash(); } if(v==='leaderboard'){ $('#v-leaderboard')._fresh=true; renderLB(); } if(v==='ranking'){ $('#v-ranking')._fresh=true; renderRank(); }
+  if(v==='persada') renderPersada();
   requestAnimationFrame(()=>{ navInd(); tabInd(); playView($('#v-'+v)); onScroll(); });
 }
-document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));
+document.querySelectorAll('.nav [data-view]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.view)));
 function setMode(m){ mode=m; const app=document.querySelector('.app'); app.dataset.mode=m; document.body.dataset.mode=m;
   const btn=$('#modeBtn'); btn.setAttribute('aria-checked',m==='admin'); $('#modeName').textContent=m==='admin'?'Admin':'Mitra';
   btn.title = m==='admin' ? 'Klik untuk keluar dari mode Admin' : 'Klik untuk masuk mode Admin (perlu password)';
-  document.querySelectorAll('.nav button').forEach(b=>b.hidden=!MODE_VIEWS[m].includes(b.dataset.view));
+  document.querySelectorAll('.nav [data-view]').forEach(b=>b.hidden=!MODE_VIEWS[m].includes(b.dataset.view));
+  document.querySelector('#dashGrp').hidden=!MODE_VIEWS[m].includes('dashboard');
   try{ sessionStorage.setItem('starlite-mode',m); if(m==='admin') sessionStorage.setItem('starlite-pin',adminPw); else sessionStorage.removeItem('starlite-pin'); }catch(e){}
   if(m==='mitra'){ state.peserta=[]; }
   let v='submit'; try{ v=localStorage.getItem('starlite-view-'+m)||MODE_VIEWS[m][0]; }catch(e){}
@@ -2047,8 +2096,84 @@ function renderRankSection(role,P,metric,rows,found,lfresh){
   if(setHTML(tb,html)||lfresh){ if(lfresh) tb.innerHTML=html; tb.classList.remove('play'); void tb.offsetWidth; tb.classList.add('play'); growBars(tb); }
 }
 
+/* ---------- PERSADA PROJECT (nama berawalan Psd, semua periode) ---------- */
+const PS_RE=/^psd/i;
+function psLbl(iso){ const [y,m,d]=iso.split('-').map(Number), dt=new Date(y,m-1,d); return DOW[dt.getDay()]+', '+d+' '+MONTHS[m-1]+' '+y; }
+function psDayRows(map,mode){
+  const keys=Object.keys(map||{}).sort().reverse();
+  if(!keys.length) return '<div class="empty">Belum ada data pada filter ini.</div>';
+  const val=k=>mode==='pair'?map[k].reg:map[k];
+  const mx=Math.max(1,...keys.map(k=>mode==='pair'?Math.max(map[k].reg,map[k].act):map[k]));
+  return '<div style="max-height:420px;overflow:auto">'+keys.map(k=>{
+    const txt=mode==='pair'?fmt(map[k].reg)+' · '+fmt(map[k].act):fmt(map[k]);
+    const w=(mode==='pair'?Math.max(map[k].reg,map[k].act):map[k])/mx*100;
+    return `<div class="drow"><span class="dd">${psLbl(k)}</span><span class="db"><i style="width:${w}%"></i></span><span class="dv">${txt}</span></div>`;
+  }).join('')+'</div>';
+}
+function psNames(o,color){
+  const a=Object.entries(o||{}).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0],'id'));
+  if(!a.length) return '<div class="empty">Belum ada nama berawalan Psd.</div>';
+  const mx=Math.max(1,a[0][1]);
+  return '<div class="hbars" style="max-height:420px;overflow:auto">'+a.map(([n,v])=>`<div class="hbar"><span class="nm" title="${esc(n)}">${esc(n)}</span><div class="track"><span style="width:${v/mx*100}%;background:${color}"></span></div><span class="tv">${fmt(v)}</span></div>`).join('')+'</div>';
+}
+function psPerf(I,S){
+  const grp=(o,label,color)=>{
+    const a=Object.entries(o||{}).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0],'id'));
+    if(!a.length) return {hi:'',lo:''};
+    const avg=a.reduce((s,e)=>s+e[1],0)/a.length;
+    const hi=a.filter(e=>e[1]>=avg).slice(0,5), lo=a.filter(e=>e[1]<avg).slice(-5).reverse();
+    const mk=list=>list.length?'<div class="hbars">'+list.map(([n,v])=>`<div class="hbar"><span class="nm" title="${esc(n)}">${esc(n)}</span><div class="track"><span style="width:${v/a[0][1]*100}%;background:${color}"></span></div><span class="tv">${fmt(v)}</span></div>`).join('')+'</div>':'<div class="empty">Tidak ada.</div>';
+    const head=`<div class="eyebrow" style="margin:8px 0 4px">${label} · rata-rata ${avg.toFixed(1)}</div>`;
+    return {hi:head+mk(hi),lo:head+mk(lo)};
+  };
+  const a=grp(I.nm,'IKR','var(--s-ikr)'), b=grp(S.nm,'Sales','var(--s-sales)');
+  const none='<div class="empty">Belum ada data.</div>';
+  $('#psHigh').innerHTML=(a.hi+b.hi)||none;
+  $('#psLow').innerHTML=(a.lo+b.lo)||none;
+}
+function psFillOpts(rows){
+  [['#psMitra',4,'Semua mitra'],['#psStasiun',5,'Semua stasiun']].forEach(([sel,i,all])=>{
+    const el=$(sel), cur=el.value, set=[...new Set(rows.map(r=>r[i]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+    const sig=set.join('|'); if(el._sig===sig) return; el._sig=sig;
+    el.innerHTML='<option value="">'+all+'</option>'+set.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+    el.value=set.includes(cur)?cur:'';
+  });
+}
+function renderPersada(){
+  const rows=((state.ach&&state.ach.persada&&state.ach.persada.rows)||[]);
+  psFillOpts(rows);
+  const f=$('#psFrom').value, t=$('#psTo').value, mi=$('#psMitra').value, st=$('#psStasiun').value, q=$('#psQ').value.trim().toLowerCase();
+  $('#psReset').hidden=!(f||t||mi||st||q);
+  const inR=d=>d&&(!f||d>=f)&&(!t||d<=t);
+  const I={tot:0,dy:{},nm:{}}, S={tot:0,dy:{},nm:{},regTot:0,regDy:{},regNm:{}};
+  const bump=(o,k)=>{ o[k]=(o[k]||0)+1; };
+  rows.forEach(([reg,act,ni,ns,m,s])=>{
+    if(mi&&m!==mi) return; if(st&&s!==st) return;
+    if(PS_RE.test(ni)&&(!q||ni.toLowerCase().includes(q))&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); }
+    if(PS_RE.test(ns)&&(!q||ns.toLowerCase().includes(q))){
+      if(inR(reg)){ S.regTot++; bump(S.regNm,ns); bump(S.regDy,reg); }
+      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); bump(S.dy,act); }
+    }
+  });
+  $('#psKpis').innerHTML=[
+    ['Aktivasi IKR',I.tot,'baris IKR Psd','c-ikr'],
+    ['Nama IKR',Object.keys(I.nm).length,'nama IKR berawalan Psd','c-mitra'],
+    ['Registrasi Sales',S.regTot,'baris registrasi Sales Psd','c-sales'],
+    ['Aktivasi Sales',S.tot,'registrasi & aktif Sales Psd','c-st']
+  ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
+  $('#psIkrDays').innerHTML=psDayRows(I.dy);
+  const pair={}; new Set([...Object.keys(S.regDy),...Object.keys(S.dy)]).forEach(k=>{ pair[k]={reg:S.regDy[k]||0,act:S.dy[k]||0}; });
+  $('#psSalDays').innerHTML=psDayRows(pair,'pair');
+  $('#psIkrNames').innerHTML=psNames(I.nm,'var(--s-ikr)');
+  $('#psSalNames').innerHTML=psNames(S.nm,'var(--s-sales)');
+  psPerf(I,S);
+}
+['#psFrom','#psTo','#psMitra','#psStasiun'].forEach(s=>$(s).addEventListener('change',renderPersada));
+$('#psQ').addEventListener('input',renderPersada);
+$('#psReset').addEventListener('click',()=>{ ['#psFrom','#psTo','#psMitra','#psStasiun','#psQ'].forEach(s=>$(s).value=''); renderPersada(); });
 /* ---------- DATA ---------- */
-function refreshAll(){ fillMitraSelects(); syncSteps(); renderDash(); renderLB(); renderRank(); }
+function refreshAll(){ fillMitraSelects(); syncSteps(); renderDash(); renderLB(); renderRank();
+  if(!$('#v-persada').hidden) renderPersada(); }
 function setLive(on,txt){ $('#live').classList.toggle('on',on); $('#liveTxt').textContent=txt; }
 
 /* ---------- GOOGLE SHEETS SYNC ---------- */
@@ -2107,6 +2232,15 @@ function init(){
   if(m==='mitra'){ try{ const c=JSON.parse(localStorage.getItem('starlite-cache')||'null'); if(c&&c.mitra){ state.mitra=c.mitra.map(n=>({nama:n})); state.stasiun=c.stasiun||[]; state.ach=c.ach||null; state.regs=c.regs||[]; refreshAll(); setLive(false,'Memperbarui data…'); } }catch(e){} }
   load().then(()=>{ pollTimer=setTimeout(poll,10000); });
 }
+const dashHead=$('#dashHead'), dashSub=$('#dashSub');
+function setDashGrp(open){
+  dashSub.hidden=!open; $('#dashGrp').classList.toggle('closed',!open);
+  dashHead.setAttribute('aria-expanded',String(open));
+  try{ localStorage.setItem('starlite-grp',open?'1':'0'); }catch(e){}
+  requestAnimationFrame(navInd);
+}
+dashHead.addEventListener('click',()=>setDashGrp(dashSub.hidden));
+try{ setDashGrp(localStorage.getItem('starlite-grp')!=='0'); }catch(e){ setDashGrp(true); }
 init();
 })();
 </script>
