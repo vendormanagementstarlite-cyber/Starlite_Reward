@@ -273,7 +273,7 @@ function achCompute_() {
     const rm = achMonth_(at(r, I.reg)), am = achMonth_(at(r, I.act));
     const hasReg = String(at(r, I.reg)).trim() !== '';
     const pI = String(at(r, I.ikrName)).trim(), pS = String(at(r, I.salName)).trim();
-    if (/^psd/i.test(pI) || /^psd/i.test(pS)) PSDROWS.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim()]);
+    if (/^(psd|pnm2k|gmt2k)/i.test(pI) || /^(psd|pnm2k|gmt2k)/i.test(pS)) PSDROWS.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim()]);
     if (am) ALL.ikr[am - 1]++;
     if (am && hasReg) ALL.salesAct[am - 1]++;
     if (rm) ALL.salesReg[rm - 1]++;
