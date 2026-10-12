@@ -209,6 +209,17 @@ function achDay_(v) {
   }
   return (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d;
 }
+/** Tanggal -> 'YYYY-MM-DD' (semua tahun), '' bila kosong / tak terbaca. */
+function achIso_(v) {
+  if (v === '' || v === null || v === undefined) return '';
+  const p = n => (n < 10 ? '0' : '') + n;
+  if (v instanceof Date) return v.getFullYear() + '-' + p(v.getMonth() + 1) + '-' + p(v.getDate());
+  const s = String(v).trim();
+  let t = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (t) return t[1] + '-' + p(+t[2]) + '-' + p(+t[3]);
+  t = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return t ? t[3] + '-' + p(+t[2]) + '-' + p(+t[1]) : '';
+}
 function achId_(v) { return String(v === null || v === undefined ? '' : v).trim().replace(/\.0+$/, ''); }
 function achKey_(v) { return achId_(v).toLowerCase().replace(/\s+/g, ''); }
 
@@ -227,6 +238,7 @@ function achCompute_() {
   const out = { ikr: [], sales: [], found: false, rows: 0 };
   const warn = { noIdIkr: 0, noIdSales: 0, noCust: 0, dup: [] };
   const ALL = { ikr: [0, 0, 0], salesAct: [0, 0, 0], salesReg: [0, 0, 0] };
+  const PSDROWS = [];
   const NOID = [];   // baris tanpa ID: [jenis ('i' aktivasi IKR, 'a' aktivasi Sales, 'r' registrasi Sales), 'MM-DD', mitra]
   const pushNoId = (t, d, m) => { if (d && NOID.length < 20000) NOID.push([t, d, m]); };
   const R = { rows: 0, actFilled: 0, actOut: 0, actBad: 0, regFilled: 0, regOut: 0, regBad: 0, ikrNoId: 0, ikrDup: 0, salActNoId: 0, salActNoReg: 0, salActDup: 0, salRegNoId: 0, salRegDup: 0, badSamples: [] };
@@ -260,6 +272,8 @@ function achCompute_() {
     const cust = String(at(r, I.cust)).trim() || ('row' + n);
     const rm = achMonth_(at(r, I.reg)), am = achMonth_(at(r, I.act));
     const hasReg = String(at(r, I.reg)).trim() !== '';
+    const pI = String(at(r, I.ikrName)).trim(), pS = String(at(r, I.salName)).trim();
+    if (/^psd/i.test(pI) || /^psd/i.test(pS)) PSDROWS.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim()]);
     if (am) ALL.ikr[am - 1]++;
     if (am && hasReg) ALL.salesAct[am - 1]++;
     if (rm) ALL.salesReg[rm - 1]++;
@@ -297,6 +311,7 @@ function achCompute_() {
   out.noId = NOID;
   const sum = (arr, f) => arr.reduce((s, e) => s + f(e).reduce((a, b) => a + b, 0), 0);
   out.stats = { ikrIds: out.ikr.length, ikrAct: sum(out.ikr, e => e.act), salesIds: out.sales.length, salesAct: sum(out.sales, e => e.act), salesReg: sum(out.sales, e => e.reg) };
+  out.persada = { rows: PSDROWS };
   return out;
 }
 
