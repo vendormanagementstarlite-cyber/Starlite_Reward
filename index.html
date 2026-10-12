@@ -897,9 +897,9 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
   </div>
   <div class="kpis" id="psKpis"></div>
       <div class="grid2">
-        <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Aktivasi IKR (Psd)</h2><p>Jumlah aktivasi per periode</p></div><div class="ps-tog" id="psTog" role="group" aria-label="Periode"><button type="button" data-p="day" aria-pressed="true">Harian</button><button type="button" data-p="week" aria-pressed="false">Mingguan</button><button type="button" data-p="month" aria-pressed="false">Bulanan</button></div></div><div id="psChIkr" class="ps-chart"></div></div>
-    <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Registrasi Sales (Psd)</h2><p>Jumlah registrasi per periode</p></div></div><div id="psChReg" class="ps-chart"></div></div>
-    <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Aktivasi Sales (Psd)</h2><p>Jumlah aktivasi per periode</p></div></div><div id="psChAct" class="ps-chart"></div></div>
+        <div style="grid-column:1/-1;display:flex"><div class="ps-tog" id="psTog" role="group" aria-label="Periode"><button type="button" data-p="day" aria-pressed="true">Harian</button><button type="button" data-p="week" aria-pressed="false">Mingguan</button><button type="button" data-p="month" aria-pressed="false">Bulanan</button></div></div>
+    <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>IKR (Psd)</h2><p>Aktivasi per periode</p></div></div><div id="psChIkr" class="ps-chart"></div></div>
+    <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Sales (Psd)</h2><p id="psSwSub">Aktivasi per periode</p></div><div class="hcv hcv-top" id="psSw" role="group" aria-label="Tampilkan registrasi atau aktivasi"><button type="button" data-sw="reg" aria-pressed="false">Registrasi</button><button type="button" data-sw="act" aria-pressed="true">Aktivasi</button></div></div><div id="psChSal" class="ps-chart"></div></div>
     <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama IKR (Psd…)</h2><p>Aktivasi per nama</p></div></div><div id="psIkrNames"></div></div>
         <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama Sales (Psd…)</h2><p>Registrasi dan aktivasi per nama</p></div></div><div id="psSalNames"></div></div>
       </div>
@@ -2175,11 +2175,15 @@ function psChart1(box,o,color,name){
   });
   box.innerHTML=s+'</svg>';
 }
+let psSal='act', psLast=null;
 function psChart(a,b,c){
+  psLast=[a,b,c];
   psChart1($('#psChIkr'),a,'var(--s-ikr)','Aktivasi IKR');
-  psChart1($('#psChReg'),b,'var(--s-sales)','Registrasi Sales');
-  psChart1($('#psChAct'),c,'#1f9d6b','Aktivasi Sales');
+  const reg=psSal==='reg';
+  $('#psSwSub').textContent=(reg?'Registrasi':'Aktivasi')+' per periode';
+  psChart1($('#psChSal'),reg?b:c,reg?'var(--s-sales)':'#1f9d6b',reg?'Registrasi Sales':'Aktivasi Sales');
 }
+$('#psSw').addEventListener('click',e=>{ const b=e.target.closest('button[data-sw]'); if(!b) return; psSal=b.dataset.sw; document.querySelectorAll('#psSw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderPersada(); });
 $('#psTog').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; psPeriod=b.dataset.p; document.querySelectorAll('#psTog button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderPersada(); });
 function psFillOpts(rows){
   [['#psMitra',4,'Semua mitra'],['#psStasiun',5,'Semua stasiun']].forEach(([sel,i,all])=>{
