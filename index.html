@@ -2131,7 +2131,7 @@ function renderRankSection(role,P,metric,rows,found,lfresh){
 }
 
 /* ---------- PERSADA PROJECT (nama berawalan Psd, semua periode) ---------- */
-const PS_RE=/^psd(2k|1m)/i;
+const PS_RE=/^psd(2k|1m)/i, PS_SAL=/^psd1m/i;
 const psCanon={};
 function psNorm(n){ const t=String(n||'').replace(/\s+/g,' ').trim(), k=t.toLowerCase(); return k?(psCanon[k]||(psCanon[k]=t)):''; }
 function psLbl(iso){ const [y,m,d]=iso.split('-').map(Number), dt=new Date(y,m-1,d); return DOW[dt.getDay()]+', '+d+' '+MONTHS[m-1]+' '+y; }
@@ -2254,7 +2254,7 @@ function renderPersada(){
     const ni=psNorm(ni0), ns=psNorm(ns0);
     if(mi&&m!==mi) return; if(st&&s!==st) return;
     if(PS_RE.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); nb('ikr',ni,act); }
-    if(PS_RE.test(ns)){
+    if(PS_SAL.test(ns)){
       if(inR(reg)){ S.regTot++; bump(S.regNm,ns); bump(S.regDy,reg); nb('reg',ns,reg); }
       if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); bump(S.dy,act); nb('act',ns,act); }
     }
@@ -2276,7 +2276,7 @@ function renderPersada(){
 ['#psFrom','#psTo','#psMitra','#psStasiun'].forEach(s=>$(s).addEventListener('change',renderPersada));
 let psND=null;
 function psNameList(rows){
-  const set=[...new Set(rows.flatMap(r=>[psNorm(r[2]),psNorm(r[3])]).filter(x=>PS_RE.test(x)))].sort((a,b)=>a.localeCompare(b,'id'));
+  const set=[...new Set(rows.flatMap(r=>[PS_RE.test(psNorm(r[2]))?psNorm(r[2]):'',PS_SAL.test(psNorm(r[3]))?psNorm(r[3]):'']).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
   const dl=$('#psNameList'), sig=set.join('|'); if(dl._sig===sig) return; dl._sig=sig;
   dl.innerHTML=set.map(n=>`<option value="${esc(n)}"></option>`).join('');
 }
