@@ -2317,10 +2317,10 @@ function renderProj(){
   rows.forEach(([reg,act,ni0,ns0,m,s])=>{
     const ni=psNorm(ni0), ns=psNorm(ns0);
     if(mi&&m!==mi) return; if(st&&s!==st) return;
-    if(RE_IKR.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); nb('ikr',ni,act); }
+    if(RE_IKR.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); if(act){ bump(I.dy,act); nb('ikr',ni,act); } }
     if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){
-      if(inR(reg)){ S.regTot++; bump(S.regNm,ns); bump(S.regDy,reg); nb('reg',ns,reg); }
-      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); bump(S.dy,act); nb('act',ns,act); }
+      if(inR(reg)){ S.regTot++; bump(S.regNm,ns); if(reg){ bump(S.regDy,reg); nb('reg',ns,reg); } }
+      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); if(act){ bump(S.dy,act); nb('act',ns,act); } }
     }
   });
   const tS=new Set([...Object.keys(S.regNm),...Object.keys(S.nm)]);
