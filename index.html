@@ -897,7 +897,9 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
   </div>
   <div class="kpis" id="psKpis"></div>
       <div class="grid2">
-        <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Tren Persada</h2><p>IKR Psd aktivasi · Sales Psd registrasi &amp; aktivasi</p></div><div class="ps-tog" id="psTog" role="group" aria-label="Periode"><button type="button" data-p="day" aria-pressed="true">Harian</button><button type="button" data-p="week" aria-pressed="false">Mingguan</button><button type="button" data-p="month" aria-pressed="false">Bulanan</button></div></div><div class="ps-leg"><span><i style="background:var(--s-ikr)"></i>Aktivasi IKR</span><span><i style="background:var(--s-sales)"></i>Registrasi Sales</span><span><i style="background:#1f9d6b"></i>Aktivasi Sales</span></div><div id="psChart" class="ps-chart"></div></div>
+        <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Aktivasi IKR (Psd)</h2><p>Jumlah aktivasi per periode</p></div><div class="ps-tog" id="psTog" role="group" aria-label="Periode"><button type="button" data-p="day" aria-pressed="true">Harian</button><button type="button" data-p="week" aria-pressed="false">Mingguan</button><button type="button" data-p="month" aria-pressed="false">Bulanan</button></div></div><div id="psChIkr" class="ps-chart"></div></div>
+    <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Registrasi Sales (Psd)</h2><p>Jumlah registrasi per periode</p></div></div><div id="psChReg" class="ps-chart"></div></div>
+    <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Aktivasi Sales (Psd)</h2><p>Jumlah aktivasi per periode</p></div></div><div id="psChAct" class="ps-chart"></div></div>
     <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama IKR (Psd…)</h2><p>Aktivasi per nama</p></div></div><div id="psIkrNames"></div></div>
         <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama Sales (Psd…)</h2><p>Registrasi dan aktivasi per nama</p></div></div><div id="psSalNames"></div></div>
       </div>
@@ -2154,26 +2156,29 @@ function psBLabel(k,p){
   if(p==='week'){ const e=new Date(Date.UTC(y,m-1,d+6)); return d+' '+mo(m-1)+'–'+e.getUTCDate()+' '+mo(e.getUTCMonth()); }
   return d+' '+mo(m-1);
 }
-function psChart(a,b,c){
+function psChart1(box,o,color,name){
   const p=psPeriod, agg={};
-  [[a,0],[b,1],[c,2]].forEach(([o,i])=>Object.keys(o).forEach(k=>{ const bk=psBucket(k,p); (agg[bk]=agg[bk]||[0,0,0])[i]+=o[k]; }));
+  Object.keys(o).forEach(k=>{ const bk=psBucket(k,p); agg[bk]=(agg[bk]||0)+o[k]; });
   const keys=Object.keys(agg).sort();
-  const box=$('#psChart');
   if(!keys.length){ box.innerHTML='<div class="empty">Belum ada data pada filter ini.</div>'; return; }
-  const cols=['var(--s-ikr)','var(--s-sales)','#1f9d6b'];
-  const gw=p==='day'?44:p==='week'?64:90, H=240, top=18, bot=44, left=34, bw=Math.min(14,(gw-10)/3);
-  const mx=Math.max(1,...keys.map(k=>Math.max(...agg[k])));
-  const step=Math.pow(10,Math.floor(Math.log10(mx))), nice=[1,2,5,10].map(x=>x*step/ (x===10?1:1)).find(v=>mx/v<=5)||step*10;
-  const ymax=Math.ceil(mx/nice)*nice, ph=H-top-bot, W=left+keys.length*gw+8;
-  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tren Persada">`;
+  const gw=p==='day'?40:p==='week'?64:90, H=230, top=20, bot=40, left=34, bw=Math.min(26,gw-14);
+  const mx=Math.max(1,...keys.map(k=>agg[k]));
+  const step=Math.pow(10,Math.floor(Math.log10(mx))), nice=[1,2,5,10].map(x=>x*step).find(v=>mx/v<=5)||step*10;
+  const ymax=Math.ceil(mx/nice)*nice, ph=H-top-bot, W=Math.max(left+keys.length*gw+8,300);
+  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${name}">`;
   for(let v=0;v<=ymax;v+=nice){ const y=top+ph-(v/ymax)*ph; s+=`<line x1="${left}" x2="${W}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">${fmt(v)}</text>`; }
   keys.forEach((k,i)=>{
-    const x0=left+i*gw+(gw-bw*3)/2;
-    agg[k].forEach((v,j)=>{ const h=v/ymax*ph, x=x0+j*bw; s+=`<rect x="${x}" y="${top+ph-h}" width="${bw-1}" height="${h}" rx="2" fill="${cols[j]}"><title>${psBLabel(k,p)} · ${['Aktivasi IKR','Registrasi Sales','Aktivasi Sales'][j]}: ${fmt(v)}</title></rect>`;
-      if(gw>=64&&v) s+=`<text x="${x+bw/2}" y="${top+ph-h-3}" text-anchor="middle" font-size="9" fill="currentColor" opacity=".75">${fmt(v)}</text>`; });
+    const v=agg[k], h=v/ymax*ph, x=left+i*gw+(gw-bw)/2;
+    s+=`<rect x="${x}" y="${top+ph-h}" width="${bw}" height="${h}" rx="3" fill="${color}"><title>${esc(psBLabel(k,p))} · ${name}: ${fmt(v)}</title></rect>`;
+    if(v) s+=`<text x="${x+bw/2}" y="${top+ph-h-4}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">${fmt(v)}</text>`;
     s+=`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(psBLabel(k,p))}</text>`;
   });
   box.innerHTML=s+'</svg>';
+}
+function psChart(a,b,c){
+  psChart1($('#psChIkr'),a,'var(--s-ikr)','Aktivasi IKR');
+  psChart1($('#psChReg'),b,'var(--s-sales)','Registrasi Sales');
+  psChart1($('#psChAct'),c,'#1f9d6b','Aktivasi Sales');
 }
 $('#psTog').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; psPeriod=b.dataset.p; document.querySelectorAll('#psTog button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderPersada(); });
 function psFillOpts(rows){
