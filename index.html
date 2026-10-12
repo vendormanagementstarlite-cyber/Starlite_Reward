@@ -2131,7 +2131,9 @@ function renderRankSection(role,P,metric,rows,found,lfresh){
 }
 
 /* ---------- PERSADA PROJECT (nama berawalan Psd, semua periode) ---------- */
-const PS_RE=/^psd/i;
+const PS_RE=/^psd(2k|1m)/i;
+const psCanon={};
+function psNorm(n){ const t=String(n||'').replace(/\s+/g,' ').trim(), k=t.toLowerCase(); return k?(psCanon[k]||(psCanon[k]=t)):''; }
 function psLbl(iso){ const [y,m,d]=iso.split('-').map(Number), dt=new Date(y,m-1,d); return DOW[dt.getDay()]+', '+d+' '+MONTHS[m-1]+' '+y; }
 function psDayRows(map,mode){
   const keys=Object.keys(map||{}).sort().reverse();
@@ -2248,7 +2250,8 @@ function renderPersada(){
   const I={tot:0,dy:{},nm:{}}, S={tot:0,dy:{},nm:{},regTot:0,regDy:{},regNm:{}};
   const bump=(o,k)=>{ o[k]=(o[k]||0)+1; };
   const ND={ikr:{},reg:{},act:{}}; const nb=(t,n,d)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); };
-  rows.forEach(([reg,act,ni,ns,m,s])=>{
+  rows.forEach(([reg,act,ni0,ns0,m,s])=>{
+    const ni=psNorm(ni0), ns=psNorm(ns0);
     if(mi&&m!==mi) return; if(st&&s!==st) return;
     if(PS_RE.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); nb('ikr',ni,act); }
     if(PS_RE.test(ns)){
@@ -2273,7 +2276,7 @@ function renderPersada(){
 ['#psFrom','#psTo','#psMitra','#psStasiun'].forEach(s=>$(s).addEventListener('change',renderPersada));
 let psND=null;
 function psNameList(rows){
-  const set=[...new Set(rows.flatMap(r=>[r[2],r[3]]).filter(x=>PS_RE.test(x)))].sort((a,b)=>a.localeCompare(b,'id'));
+  const set=[...new Set(rows.flatMap(r=>[psNorm(r[2]),psNorm(r[3])]).filter(x=>PS_RE.test(x)))].sort((a,b)=>a.localeCompare(b,'id'));
   const dl=$('#psNameList'), sig=set.join('|'); if(dl._sig===sig) return; dl._sig=sig;
   dl.innerHTML=set.map(n=>`<option value="${esc(n)}"></option>`).join('');
 }
