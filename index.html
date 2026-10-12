@@ -642,6 +642,15 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 @media(max-width:520px){.hc-split{grid-template-columns:1fr;gap:14px}.hc-grp{padding:0}.hc-grp:first-child{border-right:0;border-bottom:1.5px solid var(--line);padding-bottom:14px}}
 .hc-stats.seven{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.hc-stats.seven div{padding:10px 10px}.hc-stats.seven b{font-size:19px}.hc-stats.seven span{font-size:10.5px}
 @media(max-width:520px){.hc-stats.seven{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Tim Sales: satu baris, mengikuti toggle Registrasi/Aktivasi */
+.hc-single{margin-bottom:16px}
+.hc-grp.hc-one{padding:0;border:0}
+.hc-stats.four.row{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.hc-stats.four.row div{padding:10px 10px}
+.hc-stats.four.row b{font-size:19px}
+.hc-stats.four.row span{font-size:10.5px;display:block;line-height:1.3}
+@media(max-width:520px){.hc-stats.four.row{gap:6px}.hc-stats.four.row b{font-size:15px}.hc-stats.four.row span{font-size:9.5px}}
 </style>
 </head>
 <body>
@@ -1308,9 +1317,16 @@ function hcTiles(role,D){ const isS=role==='Sales';
               [[fmt(D.tot),'Total'],[fmt(D.hTA),'ID terdaftar'],[fmt(D.hBA),'ID belum terdaftar'],[fmt(D.nA),'Tanpa ID number']]]
    :[[fmt(D.tot),'Total HC'],[fmt(D.hTA),'ID terdaftar'],[fmt(D.hBA),'ID belum terdaftar'],[fmt(D.nA),'Tanpa ID number']]; }
 const hcOne=(arr)=>arr.map(([v,l],i,a)=>`<div${i===a.length-1?` class="noid" title="Baris di sheet yang ikr_number / sales_number-nya kosong. Sudah ikut dihitung di total."`:(l.startsWith('ID belum terdaftar')?' title="ID yang punya aktivitas di periode ini tetapi belum didaftarkan mitra lewat Submit Data. Angka = jumlah aktivasi/registrasi, bukan jumlah ID."':(l.startsWith('ID terdaftar')?' title="ID yang punya aktivitas di periode ini dan sudah didaftarkan mitra lewat Submit Data. Angka = jumlah aktivasi/registrasi, bukan jumlah ID."':''))}><b>${v}</b><span>${esc(l)}</span></div>`).join('');
-const hcTileHtml=(role,D)=>{ const t=hcTiles(role,D); return role==='Sales'
+const hcTileAll=(role,D)=>{ const t=hcTiles(role,D); return role==='Sales'
   ? `<section class="hc-grp"><h5>Registrasi</h5><div class="hc-stats two">${hcOne(t[0])}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(D.tR)}</b> · belum <b>${fmt(D.bR)}</b></p></section><section class="hc-grp"><h5>Aktivasi</h5><div class="hc-stats two">${hcOne(t[1])}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(D.tA)}</b> · belum <b>${fmt(D.bA)}</b></p></section>`
   : hcOne(t); };
+
+let salView='reg'; try{ salView=localStorage.getItem('starlite-salview')==='act'?'act':'reg'; }catch(e){}
+const hcTileHtml=(role,D)=>{
+  if(role!=='Sales') return hcOne(hcTiles(role,D));
+  const t=hcTiles(role,D), act=salView==='act', x=act?t[1]:t[0];
+  return `<section class="hc-grp hc-one"><h5>${act?'Aktivasi':'Registrasi'}</h5><div class="hc-stats four row">${hcOne(x)}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(act?D.tA:D.tR)}</b> · belum <b>${fmt(act?D.bA:D.bR)}</b></p></section>`;
+};
 function hcBars(dayMap,monthArr,color,role,kind){
   const dz='';
   const mkKeys=m=>{ const n=new Date(2026,m,0).getDate(); return Array.from({length:n},(_,i)=>pad2(m)+'-'+pad2(i+1)); };
@@ -1401,15 +1417,15 @@ function renderDash(){
   (function(){
     const el=$('#hcMon'); if(!el) return;
     const mk=(role,label,color)=>{
-      const D=hcData(role), isS=role==='Sales', dp=D.dp;
+      const D=hcData(role), isS=role==='Sales';
       const unitTxt={bln:'bulan',mgg:'minggu',hari:'hari'}[hcView]||'bulan';
-      let extra='';
-      if(isS) extra=`<div class="hc-sub" style="margin-top:14px">Registrasi per ${unitTxt} · total ${fmt(D.rt)}</div>`+hcBars(D.dr,D.rg,'var(--accent)','Sales','reg');
       const dist=isS?'':`<p class="hc-all">Jumlah ID (distinct): terdaftar <b>${fmt(D.tA)}</b> · belum terdaftar <b>${fmt(D.bA)}</b>.</p>`;
-      const note=dist;
-      return `<div class="card hc-card lift ${isS?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi · ${D.bk?esc(D.bk.label):'Q4 2026'}</p></div></div>
-        <div class="${isS?'hc-split':'hc-stats four'}">${hcTileHtml(role,D)}</div>${note}
-        <div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(D.dy,D.m,color,role,'akt')+`${extra}</div>`; };
+      const bars=(isS&&salView==='reg')
+        ? `<div class="hc-sub">Registrasi per ${unitTxt} · total ${fmt(D.rt)}</div>`+hcBars(D.dr,D.rg,'var(--accent)','Sales','reg')
+        : `<div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(D.dy,D.m,color,role,'akt');
+      const toggle=isS?`<div class="hcv hcv-top sv" role="group" aria-label="Tampilkan registrasi atau aktivasi"><button type="button" data-sv="reg" aria-pressed="${salView==='reg'}">Registrasi</button><button type="button" data-sv="act" aria-pressed="${salView==='act'}">Aktivasi</button></div>`:'';
+      return `<div class="card hc-card lift ${isS?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi · ${D.bk?esc(D.bk.label):'Q4 2026'}</p></div>${toggle}</div>
+        <div class="${isS?'hc-single':'hc-stats four'}">${hcTileHtml(role,D)}</div>${dist}${bars}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)')); hcDrillPaint();
   })();
   renderPerf(); renderDataCheck(); ccApply(); hcTrendInit();
@@ -1606,7 +1622,8 @@ function openDay(role,key){ const r=(rkRowMap[role]||new Map()).get(key); if(!r)
   $('#dayL').innerHTML=days.map(x=>{ const lbl=DOW[x.d.getDay()]+', '+x.d.getDate()+' '+['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][x.d.getMonth()];
     return `<div class="drow${x.a||x.g?'':' z'}"><span class="dd">${lbl}</span><span class="db"><i style="width:${x.a/mx*100}%"></i></span><span class="dv">${fmt(x.a)}${isS?`<small style="display:block;font-weight:500;color:var(--muted);font-size:11px">reg ${fmt(x.g)}</small>`:''}</span></div>`; }).join('');
   $('#dayDlg').hidden=false; $('#dayL').scrollTop=0; }
-document.addEventListener('click',e=>{ const hb=e.target.closest('[data-hcv]'); if(hb){ hcView=hb.dataset.hcv; try{ localStorage.setItem('starlite-hcv2',hcView); }catch(x){} renderDash(); return; }
+document.addEventListener('click',e=>{ const sv=e.target.closest('[data-sv]'); if(sv){ salView=sv.dataset.sv; try{ localStorage.setItem('starlite-salview',salView); }catch(x){} renderDash(); return; }
+  const hb=e.target.closest('[data-hcv]'); if(hb){ hcView=hb.dataset.hcv; try{ localStorage.setItem('starlite-hcv2',hcView); }catch(x){} renderDash(); return; }
   const pt=e.target.closest('[data-pt]'); if(pt){ const f=pt.dataset.pt; perfOpen[f]=!perfOpen[f]; try{ localStorage.setItem('starlite-perf',JSON.stringify(perfOpen)); }catch(x){} renderPerf(); return; }
   const cm=e.target.closest('[data-cm]'); if(cm){ const v=cm.dataset.cm; if(v.endsWith('-less')) ccLimit[v.split('-')[0]]=10; else ccLimit[v]=9999; renderDash(); return; }
   const ch=e.target.closest('[data-ct]'); if(ch){ const f=ch.dataset.ct; ccOpen[f]=ccOpen[f]===false; try{ localStorage.setItem('starlite-cc',JSON.stringify(ccOpen)); }catch(x){} ccApply(); return; }
@@ -1778,7 +1795,7 @@ function dashReport(){
   ['IKR','Sales'].forEach(role=>{
     const D=hcData(role,true), isS=role==='Sales', m=D.m, rg=D.rg, dyM=D.dy, drM=D.dr;
     const dwA=dayWeek(dyM), dwR=dayWeek(drM);
-    html+=`<div class="pkpis"><div class="card hc-card ${isS?'hc-sales':'hc-ikr'}"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi · ${D.dp?esc(D.dp.label):'Q4 2026'}${isS?' · ID distinct: terdaftar '+fmt(D.tR)+' reg / '+fmt(D.tA)+' akt, belum terdaftar '+fmt(D.bR)+' reg / '+fmt(D.bA)+' akt':' · ID distinct: terdaftar '+fmt(D.tA)+', belum terdaftar '+fmt(D.bA)}${(D.nA+D.nR)?' · total sudah termasuk '+fmt(D.nA)+(isS?' aktivasi & '+fmt(D.nR)+' registrasi':' aktivasi')+' tanpa ID number':''}</p><div class="${isS?'hc-split':'hc-stats four'}">${hcTileHtml(role,D)}</div></div></div>`;
+    html+=`<div class="pkpis"><div class="card hc-card ${isS?'hc-sales':'hc-ikr'}"><h2>Tim ${role}</h2><p class="sub">Monitoring HC aktivasi · ${D.dp?esc(D.dp.label):'Q4 2026'}${isS?' · ID distinct: terdaftar '+fmt(D.tR)+' reg / '+fmt(D.tA)+' akt, belum terdaftar '+fmt(D.bR)+' reg / '+fmt(D.bA)+' akt':' · ID distinct: terdaftar '+fmt(D.tA)+', belum terdaftar '+fmt(D.bA)}${(D.nA+D.nR)?' · total sudah termasuk '+fmt(D.nA)+(isS?' aktivasi & '+fmt(D.nR)+' registrasi':' aktivasi')+' tanpa ID number':''}</p><div class="${isS?'hc-split':'hc-stats four'}">${hcTileAll(role,D)}</div></div></div>`;
     html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:m[i]})))}<h4 style="font-size:10px;margin:4px 0">Aktivasi per minggu</h4>${miniTbl('Minggu',dwA.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Aktivasi per hari</h4>${miniTbl('Hari',dwA.days.slice().reverse())}</div></div>`;
     if(isS) html+=`<div class="rp-two"><div><h4 style="font-size:10px;margin:4px 0">Registrasi per bulan</h4>${miniTbl('Bulan',['Okt','Nov','Des'].map((l,i)=>({l,v:rg[i]})))}<h4 style="font-size:10px;margin:4px 0">Registrasi per minggu</h4>${miniTbl('Minggu',dwR.wk)}</div><div><h4 style="font-size:10px;margin:4px 0">Registrasi per hari</h4>${miniTbl('Hari',dwR.days.slice().reverse())}</div></div>`;
   });
