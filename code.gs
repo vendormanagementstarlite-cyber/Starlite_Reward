@@ -213,12 +213,18 @@ function achDay_(v) {
 function achIso_(v) {
   if (v === '' || v === null || v === undefined) return '';
   const p = n => (n < 10 ? '0' : '') + n;
-  if (v instanceof Date) return v.getFullYear() + '-' + p(v.getMonth() + 1) + '-' + p(v.getDate());
+  const fmt = (y, m, d) => (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1990 && y <= 2100) ? y + '-' + p(m) + '-' + p(d) : '';
+  if (v instanceof Date) return isNaN(v.getTime()) ? '' : fmt(v.getFullYear(), v.getMonth() + 1, v.getDate());
+  if (typeof v === 'number') { const dt = new Date(Math.round((v - 25569) * 86400000)); return isNaN(dt.getTime()) ? '' : fmt(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate()); }
   const s = String(v).trim();
-  let t = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (t) return t[1] + '-' + p(+t[2]) + '-' + p(+t[3]);
-  t = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  return t ? t[3] + '-' + p(+t[2]) + '-' + p(+t[1]) : '';
+  let t = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+  if (t) return fmt(+t[1], +t[2], +t[3]);
+  t = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/);
+  if (t) return fmt(+t[3], +t[2], +t[1]);
+  const MON = { jan: 1, feb: 2, mar: 3, apr: 4, mei: 5, may: 5, jun: 6, jul: 7, agu: 8, aug: 8, ags: 8, sep: 9, okt: 10, oct: 10, nov: 11, des: 12, dec: 12 };
+  t = s.match(/^(\d{1,2})[\s-]+([A-Za-z]{3})[A-Za-z]*[\s-,]+(\d{4})/);
+  if (t && MON[t[2].toLowerCase()]) return fmt(+t[3], MON[t[2].toLowerCase()], +t[1]);
+  return '';
 }
 function achId_(v) { return String(v === null || v === undefined ? '' : v).trim().replace(/\.0+$/, ''); }
 function achKey_(v) { return achId_(v).toLowerCase().replace(/\s+/g, ''); }
