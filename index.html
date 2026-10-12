@@ -2244,11 +2244,13 @@ function renderPersada(){
       if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); bump(S.dy,act); nb('act',ns,act); }
     }
   });
+  const tS=new Set([...Object.keys(S.regNm),...Object.keys(S.nm)]);
   $('#psKpis').innerHTML=[
-    ['Aktivasi IKR',I.tot,'baris IKR Psd','c-ikr'],
-    ['Nama IKR',Object.keys(I.nm).length,'nama IKR berawalan Psd','c-mitra'],
-    ['Registrasi Sales',S.regTot,'baris registrasi Sales Psd','c-sales'],
-    ['Aktivasi Sales',S.tot,'registrasi & aktif Sales Psd','c-st']
+    ['Aktivasi IKR',I.tot,'jumlah aktivasi IKR Psd','c-ikr'],
+    ['Registrasi Sales',S.regTot,'jumlah registrasi Sales Psd','c-sales'],
+    ['Aktivasi Sales',S.tot,'jumlah aktivasi Sales Psd','c-st'],
+    ['Tim IKR',Object.keys(I.nm).length,'jumlah nama IKR Psd','c-mitra'],
+    ['Tim Sales',tS.size,'jumlah nama Sales Psd','c-ikr']
   ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
   psChart(I.dy,S.regDy,S.dy);
   psNameTable(ND);
