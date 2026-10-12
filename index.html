@@ -677,6 +677,15 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .ps-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:6px 0 4px}
 .ps-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
 .ps-chart{overflow-x:auto;padding-bottom:4px}
+.ps-note{font-size:11.5px;color:var(--muted);margin-top:2px}
+.ps-tblwrap{overflow:auto;max-height:480px;border:1px solid var(--line);border-radius:12px}
+.ps-tbl{border-collapse:separate;border-spacing:0;font-size:12.5px;width:max-content;min-width:100%}
+.ps-tbl th,.ps-tbl td{padding:7px 10px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line-2,#eee)}
+.ps-tbl thead th{position:sticky;top:0;background:var(--surface-2,#f6f7f9);z-index:2;font-weight:700}
+.ps-tbl .nmc{position:sticky;left:0;text-align:left;background:var(--surface,#fff);z-index:1;font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.ps-tbl thead .nmc{z-index:3;background:var(--surface-2,#f6f7f9)}
+.ps-tbl .tot{font-weight:800;background:var(--surface-2,#f6f7f9)}
+.ps-tbl td.z{color:var(--muted);opacity:.45}
 </style>
 </head>
 <body>
@@ -902,6 +911,8 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Sales (Psd)</h2><p id="psSwSub">Aktivasi per periode</p></div><div class="hcv hcv-top" id="psSw" role="group" aria-label="Tampilkan registrasi atau aktivasi"><button type="button" data-sw="reg" aria-pressed="false">Registrasi</button><button type="button" data-sw="act" aria-pressed="true">Aktivasi</button></div></div><div id="psChSal" class="ps-chart"></div></div>
     <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama IKR (Psd…)</h2><p>Aktivasi per nama</p></div></div><div id="psIkrNames"></div></div>
         <div class="card chart-card lift"><div class="chart-head"><div><h2>Nama Sales (Psd…)</h2><p>Registrasi dan aktivasi per nama</p></div></div><div id="psSalNames"></div></div>
+      
+      <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Pencapaian per nama Psd</h2><p id="psNmSub">Per periode · ikuti tombol Harian / Mingguan / Bulanan di atas</p></div><div class="hcv hcv-top" id="psNmSw" role="group" aria-label="Metrik"><button type="button" data-nm="ikr" aria-pressed="true">IKR Aktivasi</button><button type="button" data-nm="reg" aria-pressed="false">Sales Registrasi</button><button type="button" data-nm="act" aria-pressed="false">Sales Aktivasi</button></div></div><div id="psNmTbl" class="ps-tblwrap"></div></div>
       </div>
       <div class="grid2">
       <div class="card chart-card lift"><div class="chart-head"><div><h2>🏆 High Performance</h2><p>Di atas atau sama dengan rata-rata aktivasi · maks 5 teratas</p></div></div><div id="psHigh"></div></div>
@@ -2156,6 +2167,10 @@ function psBLabel(k,p){
   if(p==='week'){ const e=new Date(Date.UTC(y,m-1,d+6)); return d+' '+mo(m-1)+'–'+e.getUTCDate()+' '+mo(e.getUTCMonth()); }
   return d+' '+mo(m-1);
 }
+function psBShort(k,p){
+  const [y,m,d]=k.split('-').map(Number);
+  return p==='month'?MONTHS[m-1]+' '+String(y).slice(2):d+' '+MONTHS[m-1];
+}
 function psChart1(box,o,color,name){
   const p=psPeriod, agg={};
   Object.keys(o).forEach(k=>{ const bk=psBucket(k,p); agg[bk]=(agg[bk]||0)+o[k]; });
@@ -2171,9 +2186,9 @@ function psChart1(box,o,color,name){
     const v=agg[k], h=v/ymax*ph, x=left+i*gw+(gw-bw)/2;
     s+=`<rect x="${x}" y="${top+ph-h}" width="${bw}" height="${h}" rx="3" fill="${color}"><title>${esc(psBLabel(k,p))} · ${name}: ${fmt(v)}</title></rect>`;
     if(v) s+=`<text x="${x+bw/2}" y="${top+ph-h-4}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">${fmt(v)}</text>`;
-    s+=`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(psBLabel(k,p))}</text>`;
+    s+=`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(psBShort(k,p))}</text>`;
   });
-  box.innerHTML=s+'</svg>';
+  box.innerHTML=s+'</svg>'+(p==='week'?'<div class="ps-note">Label minggu = tanggal Senin (minggu Senin–Minggu). Arahkan kursor ke batang untuk rentang lengkap.</div>':'');
 }
 let psSal='act', psLast=null;
 function psChart(a,b,c){
@@ -2185,6 +2200,25 @@ function psChart(a,b,c){
 }
 $('#psSw').addEventListener('click',e=>{ const b=e.target.closest('button[data-sw]'); if(!b) return; psSal=b.dataset.sw; document.querySelectorAll('#psSw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderPersada(); });
 $('#psTog').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; psPeriod=b.dataset.p; document.querySelectorAll('#psTog button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderPersada(); });
+let psNm='ikr';
+function psNameTable(ND){
+  const box=$('#psNmTbl'), p=psPeriod, data=ND[psNm]||{};
+  const names=Object.keys(data), per={}, cols=new Set();
+  names.forEach(n=>{ const o={}; Object.keys(data[n]).forEach(d=>{ const k=psBucket(d,p); o[k]=(o[k]||0)+data[n][d]; cols.add(k); }); per[n]=o; });
+  if(!names.length){ box.innerHTML='<div class="empty" style="padding:14px">Belum ada data pada filter ini.</div>'; return; }
+  const ks=[...cols].sort().reverse();
+  const tot=n=>Object.values(per[n]).reduce((a,b)=>a+b,0);
+  names.sort((a,b)=>tot(b)-tot(a)||a.localeCompare(b,'id'));
+  const mx=Math.max(1,...names.map(n=>Math.max(...Object.values(per[n]))));
+  const color=psNm==='ikr'?'var(--s-ikr)':psNm==='reg'?'var(--s-sales)':'#1f9d6b';
+  let s='<table class="ps-tbl"><thead><tr><th class="nmc">Nama</th><th class="tot">Total</th>'+ks.map(k=>`<th title="${esc(psBLabel(k,p))}">${esc(psBShort(k,p))}</th>`).join('')+'</tr></thead><tbody>';
+  names.forEach(n=>{
+    s+=`<tr><td class="nmc" title="${esc(n)}">${esc(n)}</td><td class="tot">${fmt(tot(n))}</td>`+ks.map(k=>{ const v=per[n][k]||0; return v?`<td style="background:color-mix(in srgb,${color} ${Math.round(12+v/mx*40)}%,transparent)">${fmt(v)}</td>`:'<td class="z">·</td>'; }).join('')+'</tr>';
+  });
+  let sumRow='<tr><td class="nmc tot">Total</td><td class="tot">'+fmt(names.reduce((a,n)=>a+tot(n),0))+'</td>'+ks.map(k=>`<td class="tot">${fmt(names.reduce((a,n)=>a+(per[n][k]||0),0))}</td>`).join('')+'</tr>';
+  box.innerHTML=s+sumRow+'</tbody></table>';
+}
+$('#psNmSw').addEventListener('click',e=>{ const b=e.target.closest('button[data-nm]'); if(!b) return; psNm=b.dataset.nm; document.querySelectorAll('#psNmSw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderPersada(); });
 function psFillOpts(rows){
   [['#psMitra',4,'Semua mitra'],['#psStasiun',5,'Semua stasiun']].forEach(([sel,i,all])=>{
     const el=$(sel), cur=el.value, set=[...new Set(rows.map(r=>r[i]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
@@ -2201,12 +2235,13 @@ function renderPersada(){
   const inR=d=>d&&(!f||d>=f)&&(!t||d<=t);
   const I={tot:0,dy:{},nm:{}}, S={tot:0,dy:{},nm:{},regTot:0,regDy:{},regNm:{}};
   const bump=(o,k)=>{ o[k]=(o[k]||0)+1; };
+  const ND={ikr:{},reg:{},act:{}}; const nb=(t,n,d)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); };
   rows.forEach(([reg,act,ni,ns,m,s])=>{
     if(mi&&m!==mi) return; if(st&&s!==st) return;
-    if(PS_RE.test(ni)&&(!q||ni.toLowerCase().includes(q))&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); }
+    if(PS_RE.test(ni)&&(!q||ni.toLowerCase().includes(q))&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); nb('ikr',ni,act); }
     if(PS_RE.test(ns)&&(!q||ns.toLowerCase().includes(q))){
-      if(inR(reg)){ S.regTot++; bump(S.regNm,ns); bump(S.regDy,reg); }
-      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); bump(S.dy,act); }
+      if(inR(reg)){ S.regTot++; bump(S.regNm,ns); bump(S.regDy,reg); nb('reg',ns,reg); }
+      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); bump(S.dy,act); nb('act',ns,act); }
     }
   });
   $('#psKpis').innerHTML=[
@@ -2216,6 +2251,7 @@ function renderPersada(){
     ['Aktivasi Sales',S.tot,'registrasi & aktif Sales Psd','c-st']
   ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
   psChart(I.dy,S.regDy,S.dy);
+  psNameTable(ND);
   $('#psIkrNames').innerHTML=psNames(I.nm,'var(--s-ikr)');
   $('#psSalNames').innerHTML=psNames(S.nm,'var(--s-sales)');
   psPerf(I,S);
