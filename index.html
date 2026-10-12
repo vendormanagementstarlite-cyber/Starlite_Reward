@@ -2132,6 +2132,7 @@ function renderRankSection(role,P,metric,rows,found,lfresh){
 
 /* ---------- PERSADA PROJECT (nama berawalan Psd, semua periode) ---------- */
 const PS_RE=/^psd(2k|1m)/i, PS_SAL=/^psd1m/i;
+const PS_ACTIVE=new Set(['psd1m monika erlina','psd1m leonidas gultom','psd1m irwan arifin','psd1m eko nugroho','psd1m ade ridwan','psd1m andhika priambodo','psd1m asif rahmatullah','psd1m rifaldi sulistyo pratama','psd1m rma kharisma buna','psd1m ismuha','psd1m aline hestia','psd1m lisnawati','psd1m miftakhul graha putra','psd1m catur nanang maret firmansyah','psd1m reno try widodo','psd1m novi putri utami','psd1m sukmah','psd1m arif lutfi hakim']);
 const psCanon={};
 function psNorm(n){ const t=String(n||'').replace(/\s+/g,' ').trim(), k=t.toLowerCase(); return k?(psCanon[k]||(psCanon[k]=t)):''; }
 function psLbl(iso){ const [y,m,d]=iso.split('-').map(Number), dt=new Date(y,m-1,d); return DOW[dt.getDay()]+', '+d+' '+MONTHS[m-1]+' '+y; }
@@ -2265,7 +2266,8 @@ function renderPersada(){
     ['Registrasi Sales',S.regTot,'jumlah registrasi Sales Psd','c-sales'],
     ['Aktivasi Sales',S.tot,'jumlah aktivasi Sales Psd','c-st'],
     ['Tim IKR',Object.keys(I.nm).length,'jumlah nama IKR Psd','c-mitra'],
-    ['Tim Sales',tS.size,'jumlah nama Sales Psd','c-ikr']
+    ['Tim Sales',tS.size,'jumlah nama Sales Psd','c-ikr'],
+    ['Tim Sales Active',[...tS].filter(n=>PS_ACTIVE.has(n.toLowerCase())).length,'dari '+PS_ACTIVE.size+' sales aktif','c-st']
   ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
   psChart(I.dy,S.regDy,S.dy);
   psND=ND; psNameTable(ND); psNameList(rows);
