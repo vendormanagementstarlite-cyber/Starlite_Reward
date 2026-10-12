@@ -937,7 +937,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       <div class="page-head"><div>
         <div class="eyebrow">Admin · PNM Project</div>
         <h1>PNM Project</h1>
-        <p class="lede">Pencapaian IKR dan Sales dengan nama berawalan “PNM” dari sheet Ach sales ikr, semua periode. Gunakan filter untuk mempersempit.</p>
+        <p class="lede">Pencapaian IKR berawalan “PNM2K” beserta Sales pada baris yang sama (nama Sales bebas), dari sheet Ach sales ikr, semua periode. Gunakan filter untuk mempersempit.</p>
       </div></div>
       <div class="ps-bar">
     <span class="rk-range" title="Filter tanggal. Kosongkan untuk semua periode"><input type="date" id="pnFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="pnTo" aria-label="Sampai tanggal"></span>
@@ -968,7 +968,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       <div class="page-head"><div>
         <div class="eyebrow">Admin · GMT Project</div>
         <h1>GMT Project</h1>
-        <p class="lede">Pencapaian IKR dan Sales dengan nama berawalan “GMT” dari sheet Ach sales ikr, semua periode. Gunakan filter untuk mempersempit.</p>
+        <p class="lede">Pencapaian IKR berawalan “GMT2K” beserta Sales pada baris yang sama (nama Sales bebas), dari sheet Ach sales ikr, semua periode. Gunakan filter untuk mempersempit.</p>
       </div></div>
       <div class="ps-bar">
     <span class="rk-range" title="Filter tanggal. Kosongkan untuk semua periode"><input type="date" id="gmFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="gmTo" aria-label="Sampai tanggal"></span>
@@ -2194,7 +2194,7 @@ function renderRankSection(role,P,metric,rows,found,lfresh){
   if(setHTML(tb,html)||lfresh){ if(lfresh) tb.innerHTML=html; tb.classList.remove('play'); void tb.offsetWidth; tb.classList.add('play'); growBars(tb); }
 }
 
-function psProject(ID,LB,RE_IKR,RE_SAL,ACTIVE){
+function psProject(ID,LB,RE_IKR,RE_SAL,ACTIVE,SBI){
 /* ---------- PROJECT DASHBOARD (Persada / PNM / GMT) ---------- */
 const psCanon={};
 function psNorm(n){ const t=String(n||'').replace(/\s+/g,' ').trim(), k=t.toLowerCase(); return k?(psCanon[k]||(psCanon[k]=t)):''; }
@@ -2306,7 +2306,7 @@ function psFillOpts(rows){
   });
 }
 function renderProj(){
-  const rows=((state.ach&&state.ach.persada&&state.ach.persada.rows)||[]).filter(r=>RE_IKR.test(psNorm(r[2]))||RE_SAL.test(psNorm(r[3])));
+  const rows=((state.ach&&state.ach.persada&&state.ach.persada.rows)||[]).filter(r=>SBI?RE_IKR.test(psNorm(r[2])):(RE_IKR.test(psNorm(r[2]))||RE_SAL.test(psNorm(r[3]))));
   psFillOpts(rows);
   const f=$('#' + ID + 'From').value, t=$('#' + ID + 'To').value, mi=$('#' + ID + 'Mitra').value, st=$('#' + ID + 'Stasiun').value;
   $('#' + ID + 'Reset').hidden=!(f||t||mi||st);
@@ -2318,7 +2318,7 @@ function renderProj(){
     const ni=psNorm(ni0), ns=psNorm(ns0);
     if(mi&&m!==mi) return; if(st&&s!==st) return;
     if(RE_IKR.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); bump(I.dy,act); nb('ikr',ni,act); }
-    if(RE_SAL.test(ns)){
+    if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){
       if(inR(reg)){ S.regTot++; bump(S.regNm,ns); bump(S.regDy,reg); nb('reg',ns,reg); }
       if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); bump(S.dy,act); nb('act',ns,act); }
     }
@@ -2341,7 +2341,7 @@ function renderProj(){
 ['#' + ID + 'From','#' + ID + 'To','#' + ID + 'Mitra','#' + ID + 'Stasiun'].forEach(s=>$(s).addEventListener('change',renderProj));
 let psND=null;
 function psNameList(rows){
-  const set=[...new Set(rows.flatMap(r=>[RE_IKR.test(psNorm(r[2]))?psNorm(r[2]):'',RE_SAL.test(psNorm(r[3]))?psNorm(r[3]):'']).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
+  const set=[...new Set(rows.flatMap(r=>[RE_IKR.test(psNorm(r[2]))?psNorm(r[2]):'',(SBI?RE_IKR.test(psNorm(r[2])):RE_SAL.test(psNorm(r[3])))?psNorm(r[3]):'']).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
   const dl=$('#' + ID + 'NameList'), sig=set.join('|'); if(dl._sig===sig) return; dl._sig=sig;
   dl.innerHTML=set.map(n=>`<option value="${esc(n)}"></option>`).join('');
 }
@@ -2362,7 +2362,7 @@ $('#' + ID + 'Q').addEventListener('change',()=>psJump(true));
 $('#' + ID + 'Reset').addEventListener('click',()=>{ ['#' + ID + 'From','#' + ID + 'To','#' + ID + 'Mitra','#' + ID + 'Stasiun','#' + ID + 'Q'].forEach(s=>$(s).value=''); renderProj(); });
 return renderProj;
 }
-const PSP={persada:psProject('ps','Psd',/^psd(2k|1m)/i,/^psd1m/i,new Set(['psd1m monika erlina','psd1m leonidas gultom','psd1m irwan arifin','psd1m eko nugroho','psd1m ade ridwan','psd1m andhika priambodo','psd1m asif rahmatullah','psd1m rifaldi sulistyo pratama','psd1m rma kharisma buna','psd1m ismuha','psd1m aline hestia','psd1m lisnawati','psd1m miftakhul graha putra','psd1m catur nanang maret firmansyah','psd1m reno try widodo','psd1m novi putri utami','psd1m sukmah','psd1m arif lutfi hakim'])),pnm:psProject('pn','PNM',/^pnm2k/i,/^pnm2k/i,null),gmt:psProject('gm','GMT',/^gmt2k/i,/^gmt2k/i,null)};
+const PSP={persada:psProject('ps','Psd',/^psd(2k|1m)/i,/^psd1m/i,new Set(['psd1m monika erlina','psd1m leonidas gultom','psd1m irwan arifin','psd1m eko nugroho','psd1m ade ridwan','psd1m andhika priambodo','psd1m asif rahmatullah','psd1m rifaldi sulistyo pratama','psd1m rma kharisma buna','psd1m ismuha','psd1m aline hestia','psd1m lisnawati','psd1m miftakhul graha putra','psd1m catur nanang maret firmansyah','psd1m reno try widodo','psd1m novi putri utami','psd1m sukmah','psd1m arif lutfi hakim'])),pnm:psProject('pn','PNM',/^pnm2k/i,/./,null,true),gmt:psProject('gm','GMT',/^gmt2k/i,/./,null,true)};
 /* ---------- DATA ---------- */
 function refreshAll(){ fillMitraSelects(); syncSteps(); renderDash(); renderLB(); renderRank();
   Object.keys(PSP).forEach(k=>{ if(!$('#v-'+k).hidden) PSP[k](); }); }
