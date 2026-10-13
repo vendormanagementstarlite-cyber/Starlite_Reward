@@ -695,6 +695,15 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 #v-persada .grid2,#v-pnm .grid2,#v-gmt .grid2{margin-bottom:18px}
 #v-persada .grid2 .card,#v-pnm .grid2 .card,#v-gmt .grid2 .card{margin:0}
 #v-persada .ps-det,#v-pnm .ps-det,#v-gmt .ps-det{margin-top:0}
+.rw-pick{cursor:pointer}.rw-pick:focus-visible{outline:3px solid var(--brand,#0B3D7A);outline-offset:2px}
+.rw-pop{position:fixed;inset:0;z-index:200;background:rgba(10,20,40,.45);display:flex;align-items:center;justify-content:center;padding:16px}
+.rw-pop[hidden]{display:none}
+.rw-card{position:relative;background:var(--surface,#fff);border-radius:18px;padding:24px 26px;width:min(420px,100%);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.rw-card h3{margin:0 0 4px;font-size:16px}.rw-big{font-size:34px;font-weight:800;margin-bottom:14px}
+.rw-x{position:absolute;top:10px;right:14px;border:0;background:transparent;font-size:26px;line-height:1;cursor:pointer;color:var(--muted)}
+.rw-row{display:flex;align-items:baseline;gap:10px;font-size:14px}.rw-row span{flex:1;font-weight:600}.rw-row b{font-size:18px}.rw-row em{font-style:normal;color:var(--muted);font-size:12.5px;min-width:44px;text-align:right}
+.rw-bar{height:8px;border-radius:99px;background:var(--line-2,#eee);margin:6px 0 6px;overflow:hidden}.rw-bar i{display:block;height:100%;background:#1f9d6b;border-radius:99px}.rw-bar.no i{background:#d0612a}
+.rw-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -866,6 +875,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     </section>
 
     <!-- DASHBOARD -->
+    <div class="rw-pop" id="rwPop" hidden role="dialog" aria-modal="true" aria-label="Rincian ID number"><div class="rw-card"><button type="button" class="rw-x" id="rwPopX" aria-label="Tutup">×</button><div id="rwPopBody"></div></div></div>
     <section class="view" id="v-dashboard" hidden>
       <div class="page-head"><div>
         <div class="eyebrow">Admin · FTTH Starlite · Registrasi Q4</div>
@@ -877,7 +887,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       <div class="kpis" id="rwKpis"></div>
       <div hidden aria-hidden="true"><div class="kpis" id="kpis"></div></div>
       <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" min="2026-10-01" max="2026-12-31" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" min="2026-10-01" max="2026-12-31" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
-      <div class="hc-grid" id="hcMon"></div>
+      <div hidden aria-hidden="true"><div class="hc-grid" id="hcMon"></div></div>
       <div class="hc-grid" id="perf"></div>
       <div hidden aria-hidden="true">
       <div class="grid2">
@@ -1539,6 +1549,23 @@ function hcDrillPaint(){
   root.addEventListener('click',pick);
   root.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-sel]')){ e.preventDefault(); pick(e); } });
 })();
+let rwData=null;
+function rwOpen(k){
+  const o=rwData&&rwData[k]; if(!o) return;
+  const w=o.v-o.no, pc=x=>o.v?(x/o.v*100).toFixed(1).replace('.',',')+'%':'0%';
+  $('#rwPopBody').innerHTML=`<h3>${esc(o.t)}</h3><div class="rw-big">${fmt(o.v)}</div>
+    <div class="rw-row"><span>Dengan ID number</span><b>${fmt(w)}</b><em>${pc(w)}</em></div>
+    <div class="rw-bar"><i style="width:${o.v?w/o.v*100:0}%"></i></div>
+    <div class="rw-sub">ID terdaftar: <b>${fmt(o.reg)}</b> · ID belum terdaftar: <b>${fmt(o.bel)}</b></div>
+    <div class="rw-row no"><span>Tanpa ID number</span><b>${fmt(o.no)}</b><em>${pc(o.no)}</em></div>
+    <div class="rw-bar no"><i style="width:${o.v?o.no/o.v*100:0}%"></i></div>
+    <div class="rw-sub">Baris di sheet yang ikr_number / sales_number-nya kosong. Sudah ikut dihitung di total.</div>`;
+  $('#rwPop').hidden=false;
+}
+$('#rwKpis').addEventListener('click',e=>{ const c=e.target.closest('[data-rw]'); if(c) rwOpen(c.dataset.rw); });
+$('#rwKpis').addEventListener('keydown',e=>{ if(e.key!=='Enter'&&e.key!==' ') return; const c=e.target.closest('[data-rw]'); if(c){ e.preventDefault(); rwOpen(c.dataset.rw); } });
+$('#rwPop').addEventListener('click',e=>{ if(e.target.id==='rwPop'||e.target.closest('#rwPopX')) $('#rwPop').hidden=true; });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#rwPop').hidden=true; });
 function renderDash(){
   if($('#v-dashboard').hidden) return;
   const sc=dashScope(), psAll=state.peserta.filter(p=>fDashMitra.has(p.mitra)), ps=psAll.filter(p=>!sc||sc.set.has(pKey(p)));
@@ -1548,14 +1575,13 @@ function renderDash(){
   const mitraCount=new Set(ps.map(p=>p.mitra)).size, stCount=new Set(ps.map(p=>String(p.stasiun||'').toUpperCase()).filter(Boolean)).size;
   const lead=ps.filter(p=>p.posisi==='Lead').length;
   const fresh=!!$('#v-dashboard')._fresh; $('#v-dashboard')._fresh=false;
-  { const st=(state.ach&&state.ach.stats)||{};
-    $('#rwKpis').innerHTML=[
-      ['Aktivasi IKR',st.ikrAct||0,'jumlah aktivasi IKR','c-ikr'],
-      ['Registrasi Sales',st.salesReg||0,'jumlah registrasi Sales','c-sales'],
-      ['Aktivasi Sales',st.salesAct||0,'jumlah aktivasi Sales','c-st'],
-      ['Tim IKR',st.ikrIds||0,'jumlah ID IKR','c-mitra'],
-      ['Tim Sales',st.salesIds||0,'jumlah ID Sales','c-ikr']
-    ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join(''); }
+  { const DI=hcData('IKR'), DS=hcData('Sales');
+    rwData={
+      ikr:{t:'Total HC Tim IKR',v:DI.tot,no:DI.nA,reg:DI.hTA,bel:DI.hBA,c:'c-ikr',d:'baris aktivasi IKR'},
+      reg:{t:'Total registrasi Sales',v:DS.rt,no:DS.nR,reg:DS.hTR,bel:DS.hBR,c:'c-sales',d:'baris registrasi Sales'},
+      act:{t:'Total aktivasi Sales',v:DS.tot,no:DS.nA,reg:DS.hTA,bel:DS.hBA,c:'c-st',d:'baris aktivasi Sales'}
+    };
+    $('#rwKpis').innerHTML=Object.keys(rwData).map(k=>{ const o=rwData[k]; return `<div class="kpi ${o.c} rw-pick" data-rw="${k}" role="button" tabindex="0" title="Klik untuk rincian ID number"><div class="k">${o.t}</div><div class="v">${fmt(o.v)}</div><div class="d">${o.d} · klik untuk rincian</div></div>`; }).join(''); }
   const kp=$('#kpis'); const prevK=kp._vals||[]; const kvals=[];
   const kHtml=[
     ['Total pendaftar',ps.length,'IKR + Sales','dark'],
