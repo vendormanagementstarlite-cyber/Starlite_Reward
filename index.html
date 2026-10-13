@@ -2309,6 +2309,7 @@ function renderProj(){
   const rows=((state.ach&&state.ach.persada&&state.ach.persada.rows)||[]).filter(r=>SBI?RE_IKR.test(psNorm(r[2])):(RE_IKR.test(psNorm(r[2]))||RE_SAL.test(psNorm(r[3]))));
   const PJ=(state.ach&&state.ach.persada)||null;
   if(PJ&&PJ.error){ $('#' + ID + 'Kpis').innerHTML='<div class="empty" style="grid-column:1/-1">'+esc(PJ.error)+'</div>'; return; }
+  const warn=PJ&&PJ.warn?'<div class="empty" style="grid-column:1/-1">⚠ Sumber Project: '+esc(PJ.warn)+'</div>':'';
   psFillOpts(rows);
   const f=$('#' + ID + 'From').value, t=$('#' + ID + 'To').value, mi=$('#' + ID + 'Mitra').value, st=$('#' + ID + 'Stasiun').value;
   $('#' + ID + 'Reset').hidden=!(f||t||mi||st);
@@ -2326,7 +2327,7 @@ function renderProj(){
     }
   });
   const tS=new Set([...Object.keys(S.regNm),...Object.keys(S.nm)]);
-  $('#' + ID + 'Kpis').innerHTML=[
+  $('#' + ID + 'Kpis').innerHTML=warn+[
     ['Aktivasi IKR',I.tot,'jumlah aktivasi IKR '+LB+'','c-ikr'],
     ['Registrasi Sales',S.regTot,'jumlah registrasi Sales '+LB+'','c-sales'],
     ['Aktivasi Sales',S.tot,'jumlah aktivasi Sales '+LB+'','c-st'],
