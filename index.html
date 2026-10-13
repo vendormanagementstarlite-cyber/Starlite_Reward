@@ -2219,7 +2219,7 @@ function renderRankSection(role,P,metric,rows,found,lfresh){
       <td><div class="prog"><div class="bar"><span class="anim-w" data-w="${pct}%" style="width:0;transition-delay:${Math.min(i,15)*40+200}ms"></span>${ticks}</div><small>${fmt(r.total)} / ${fmt(T2.q4)} · ${fmt(T1.q4)}${role==='IKR'?' · '+fmt(R.q4):''} ${unit}</small></div></td>`;
     return `<tr class="clk" data-rk="${esc(r.key)}" title="Klik untuk lihat pencapaian per hari" style="--i:${Math.min(i,15)}">
       <td>${rank<=3&&v>0?`<span class="rank top">${rank}</span>`:`<span class="rank">${rank}</span>`}</td>
-      <td class="who"><b>${esc(r.nama)}</b><small class="num" style="word-break:break-all">${esc(r.id)}</small> ${r.registered?'<span class="chip good" style="padding:1px 8px;margin-left:4px">Terdaftar</span>':'<span class="chip none" style="padding:1px 8px;margin-left:4px">Belum terdaftar</span>'}</td>
+      <td class="who"><b>${esc(r.nama)}</b><small class="num" style="word-break:break-all">${esc(r.id)}</small></td>
       <td class="who"><b style="font-weight:600">${esc(r.mitra||'—')}</b><small>${esc(r.stasiun||'—')}${r.region?' · '+esc(r.region):''}</small></td>
       ${months(r).map(x=>`<td class="r num">${fmt(x)}</td>`).join('')}
       ${mid}
