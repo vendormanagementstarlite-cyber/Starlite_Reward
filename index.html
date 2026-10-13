@@ -1577,7 +1577,7 @@ $('#rwKpis').addEventListener('keydown',e=>{ if(e.key!=='Enter'&&e.key!==' ') re
 $('#rwPop').addEventListener('click',e=>{ if(e.target.id==='rwPop'||e.target.closest('#rwPopX')) $('#rwPop').hidden=true; });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#rwPop').hidden=true; });
 let rwSalV='reg';
-const rwPerOf=()=>({all:'month',bln:'month',mgg:'week',hari:'day'}[hcView]||'month');
+const rwPerOf=()=>({all:'day',bln:'month',mgg:'week',hari:'day'}[hcView]||'month');
 const rwBucket=(iso,p)=>{ if(p==='month') return iso.slice(0,7);
   if(p==='week'){ const [y,m,d]=iso.split('-').map(Number), dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()-((dt.getUTCDay()+6)%7)); const mon=dt.toISOString().slice(0,10); return mon.slice(0,7)===iso.slice(0,7)?mon:iso.slice(0,7)+'-01'; }
   return iso; };
