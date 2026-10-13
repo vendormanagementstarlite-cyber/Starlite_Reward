@@ -226,6 +226,41 @@ function achIso_(v) {
   if (t && MON[t[2].toLowerCase()]) return fmt(+t[3], MON[t[2].toLowerCase()], +t[1]);
   return '';
 }
+/** Sumber data ke-2 (dashboard Persada / PNM / GMT): spreadsheet terpisah, sheet "postgre". */
+const PROJECT_SS_ID = '1eJATyn6V9UDd0QWH6q5d4JMliYWSvBTZWqFZQlItpYs';
+const PROJECT_SHEET = 'postgre';
+const PROJECT_RE = /^(psd|pnm2k|gmt2k)/i;
+function projectRows_() {
+  const res = { rows: [], found: false, total: 0 };
+  try {
+    const ss = SpreadsheetApp.openById(PROJECT_SS_ID);
+    const all = ss.getSheets(), want = PROJECT_SHEET.toLowerCase();
+    const sh = all.filter(s => s.getName().trim().toLowerCase() === want)[0] || all.filter(s => s.getName().toLowerCase().indexOf(want) >= 0)[0];
+    if (!sh) { res.error = 'Sheet "' + PROJECT_SHEET + '" tidak ditemukan. Sheet yang ada: ' + all.map(s => s.getName()).join(', '); return res; }
+    if (sh.getLastRow() < 2) { res.error = 'Sheet "' + sh.getName() + '" kosong.'; return res; }
+    res.found = true;
+    const lc = sh.getLastColumn();
+    const head = sh.getRange(1, 1, 1, lc).getValues()[0].map(x => String(x).trim().toLowerCase().replace(/[\s\-]+/g, '_'));
+    const ix = names => { for (const n of names) { const i = head.indexOf(n); if (i >= 0) return i; } return -1; };
+    const I = {
+      reg: ix(['registration_date', 'registrasi_date', 'tgl_registrasi', 'registration']),
+      act: ix(['active_date', 'activation_date', 'aktif_date', 'tgl_aktivasi']),
+      ikrName: ix(['ikr_name', 'nama_ikr']), salName: ix(['sales_name', 'nama_sales']),
+      mitra: ix(['mitra']), st: ix(['station', 'stasiun'])
+    };
+    const miss = Object.keys(I).filter(k => I[k] < 0);
+    if (I.ikrName < 0 || I.salName < 0) { res.error = 'Kolom ikr_name / sales_name tidak ditemukan di sheet "' + sh.getName() + '". Header terbaca: ' + head.join(', '); return res; }
+    if (miss.length) res.missing = miss;
+    const vals = sh.getRange(2, 1, sh.getLastRow() - 1, lc).getValues();
+    const at = (r, i) => i < 0 ? '' : r[i];
+    res.total = vals.length;
+    vals.forEach(r => {
+      const pI = String(at(r, I.ikrName)).trim(), pS = String(at(r, I.salName)).trim();
+      if (PROJECT_RE.test(pI) || PROJECT_RE.test(pS)) res.rows.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim()]);
+    });
+  } catch (e) { res.error = 'Gagal membaca spreadsheet Project: ' + e.message; }
+  return res;
+}
 function achId_(v) { return String(v === null || v === undefined ? '' : v).trim().replace(/\.0+$/, ''); }
 function achKey_(v) { return achId_(v).toLowerCase().replace(/\s+/g, ''); }
 
@@ -244,7 +279,7 @@ function achCompute_() {
   const out = { ikr: [], sales: [], found: false, rows: 0 };
   const warn = { noIdIkr: 0, noIdSales: 0, noCust: 0, dup: [] };
   const ALL = { ikr: [0, 0, 0], salesAct: [0, 0, 0], salesReg: [0, 0, 0] };
-  const PSDROWS = [];
+  out.persada = projectRows_();   // sumber ke-2 (spreadsheet Project: sheet postgre)
   const NOID = [];   // baris tanpa ID: [jenis ('i' aktivasi IKR, 'a' aktivasi Sales, 'r' registrasi Sales), 'MM-DD', mitra]
   const pushNoId = (t, d, m) => { if (d && NOID.length < 20000) NOID.push([t, d, m]); };
   const R = { rows: 0, actFilled: 0, actOut: 0, actBad: 0, regFilled: 0, regOut: 0, regBad: 0, ikrNoId: 0, ikrDup: 0, salActNoId: 0, salActNoReg: 0, salActDup: 0, salRegNoId: 0, salRegDup: 0, badSamples: [] };
@@ -278,8 +313,6 @@ function achCompute_() {
     const cust = String(at(r, I.cust)).trim() || ('row' + n);
     const rm = achMonth_(at(r, I.reg)), am = achMonth_(at(r, I.act));
     const hasReg = String(at(r, I.reg)).trim() !== '';
-    const pI = String(at(r, I.ikrName)).trim(), pS = String(at(r, I.salName)).trim();
-    if (/^(psd|pnm2k|gmt2k)/i.test(pI) || /^(psd|pnm2k|gmt2k)/i.test(pS)) PSDROWS.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim()]);
     if (am) ALL.ikr[am - 1]++;
     if (am && hasReg) ALL.salesAct[am - 1]++;
     if (rm) ALL.salesReg[rm - 1]++;
@@ -317,7 +350,7 @@ function achCompute_() {
   out.noId = NOID;
   const sum = (arr, f) => arr.reduce((s, e) => s + f(e).reduce((a, b) => a + b, 0), 0);
   out.stats = { ikrIds: out.ikr.length, ikrAct: sum(out.ikr, e => e.act), salesIds: out.sales.length, salesAct: sum(out.sales, e => e.act), salesReg: sum(out.sales, e => e.reg) };
-  out.persada = { rows: PSDROWS };
+
   return out;
 }
 
