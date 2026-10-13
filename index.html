@@ -752,7 +752,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       <div class="grp" id="dashGrp">
         <button type="button" class="grp-head" id="dashHead" aria-expanded="true" aria-controls="dashSub"><svg viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span class="lbl">Dashboard</span><svg class="grp-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
         <div class="sub" id="dashSub">
-          <button data-view="dashboard"><span class="lbl">Reward Mitra</span></button>
+          <button data-view="dashboard"><span class="lbl">Pencapaian All Mitra</span></button>
           <button data-view="persada"><span class="lbl">Persada Project</span></button>
           <button data-view="pnm"><span class="lbl">PNM Project</span></button>
           <button data-view="gmt"><span class="lbl">GMT Project</span></button>
@@ -879,7 +879,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <section class="view" id="v-dashboard" hidden>
       <div class="page-head"><div>
         <div class="eyebrow">Admin · FTTH Starlite · Registrasi Q4</div>
-        <h1>Reward Mitra</h1>
+        <h1>Pencapaian All Mitra</h1>
         <p class="lede" id="dashLede">Rekap IKR dan Sales yang didaftarkan mitra untuk mengikuti program reward Q4.</p>
       </div>
       
@@ -1458,9 +1458,10 @@ function hcData(role,all){
   const okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0);
   const rows=buildRank(role).filter(r=>okM(r.mitra));
   const dy={}, dr={}; let actN=0, nA=0, nR=0;
-  let tA=0, tR=0, bA=0, bR=0, hTA=0, hTR=0, hBA=0, hBR=0;
+  let tA=0, tR=0, bA=0, bR=0, hTA=0, hTR=0, hBA=0, hBR=0, uN=0, uT=0, uB=0;
   rows.forEach(r=>{ let a=0, g=0; for(const k in r.dy){ if(!inP(k)) continue; const n=Number(r.dy[k])||0; dy[k]=(dy[k]||0)+n; if(inB(k)) a+=n; } if(a>0) actN++;
     if(isS) for(const k in r.dr){ if(!inP(k)) continue; const n=Number(r.dr[k])||0; dr[k]=(dr[k]||0)+n; if(inB(k)) g+=n; }
+    if((r.registered||r.inAch)&&(a>0||g>0)){ uN++; if(r.registered) uT++; else uB++; }
     if(r.registered){ if(a>0) tA++; if(g>0) tR++; hTA+=a; hTR+=g; } else if(r.inAch){ if(a>0) bA++; if(g>0) bR++; hBA+=a; hBR+=g; } });
   ((state.ach&&state.ach.noId)||[]).forEach(([t,d,mm])=>{ if(!/^1[0-2]-/.test(d)||!inP(d)||!okM(canonMitra(mm||''))) return; const b=inB(d);
     if(t==='i'&&!isS){ dy[d]=(dy[d]||0)+1; if(b) nA++; } else if(t==='a'&&isS){ dy[d]=(dy[d]||0)+1; if(b) nA++; } else if(t==='r'&&isS){ dr[d]=(dr[d]||0)+1; if(b) nR++; } });
@@ -1468,7 +1469,7 @@ function hcData(role,all){
   const sumB=o=>{ let t=0; for(const k in o) if(inB(k)) t+=o[k]; return t; };
   const m=mon(dy), rg=mon(dr);
   return {dp,bk,rows,dy,dr,m,rg,tot:sumB(dy),rt:sumB(dr),act:actN,nA,nR,
-    tA,tR,bA,bR,hTA,hTR,hBA,hBR};
+    tA,tR,bA,bR,hTA,hTR,hBA,hBR,uN,uT,uB};
 }
 function hcTiles(role,D){ const isS=role==='Sales';
   return isS?[[[fmt(D.rt),'Total'],[fmt(D.hTR),'ID terdaftar'],[fmt(D.hBR),'ID belum terdaftar'],[fmt(D.nR),'Tanpa ID number']],
@@ -1552,6 +1553,11 @@ function hcDrillPaint(){
 let rwData=null;
 function rwOpen(k){
   const o=rwData&&rwData[k]; if(!o) return;
+  if(o.team){ const pc2=x=>o.v?(x/o.v*100).toFixed(1).replace('.',',')+'%':'0%';
+    $('#rwPopBody').innerHTML=`<h3>${esc(o.t)}</h3><div class="rw-big">${fmt(o.v)}</div><div class="rw-sub">ID distinct yang punya aktivitas pada periode terpilih.</div>
+      <div class="rw-row"><span>ID terdaftar</span><b>${fmt(o.reg)}</b><em>${pc2(o.reg)}</em></div><div class="rw-bar"><i style="width:${o.v?o.reg/o.v*100:0}%"></i></div>
+      <div class="rw-row no"><span>ID belum terdaftar</span><b>${fmt(o.bel)}</b><em>${pc2(o.bel)}</em></div><div class="rw-bar no"><i style="width:${o.v?o.bel/o.v*100:0}%"></i></div>`;
+    $('#rwPop').hidden=false; return; }
   const w=o.v-o.no, pc=x=>o.v?(x/o.v*100).toFixed(1).replace('.',',')+'%':'0%';
   $('#rwPopBody').innerHTML=`<h3>${esc(o.t)}</h3><div class="rw-big">${fmt(o.v)}</div>
     <div class="rw-row"><span>Dengan ID number</span><b>${fmt(w)}</b><em>${pc(w)}</em></div>
@@ -1579,7 +1585,9 @@ function renderDash(){
     rwData={
       ikr:{t:'Total HC Tim IKR',v:DI.tot,no:DI.nA,reg:DI.hTA,bel:DI.hBA,c:'c-ikr',d:'baris aktivasi IKR'},
       reg:{t:'Total registrasi Sales',v:DS.rt,no:DS.nR,reg:DS.hTR,bel:DS.hBR,c:'c-sales',d:'baris registrasi Sales'},
-      act:{t:'Total aktivasi Sales',v:DS.tot,no:DS.nA,reg:DS.hTA,bel:DS.hBA,c:'c-st',d:'baris aktivasi Sales'}
+      act:{t:'Total aktivasi Sales',v:DS.tot,no:DS.nA,reg:DS.hTA,bel:DS.hBA,c:'c-st',d:'baris aktivasi Sales'},
+      tikr:{team:1,t:'Total Tim IKR',v:DI.uN,reg:DI.uT,bel:DI.uB,c:'c-mitra',d:'ID IKR distinct'},
+      tsal:{team:1,t:'Total Tim Sales',v:DS.uN,reg:DS.uT,bel:DS.uB,c:'c-ikr',d:'ID Sales distinct'}
     };
     $('#rwKpis').innerHTML=Object.keys(rwData).map(k=>{ const o=rwData[k]; return `<div class="kpi ${o.c} rw-pick" data-rw="${k}" role="button" tabindex="0" title="Klik untuk rincian ID number"><div class="k">${o.t}</div><div class="v">${fmt(o.v)}</div><div class="d">${o.d} · klik untuk rincian</div></div>`; }).join(''); }
   const kp=$('#kpis'); const prevK=kp._vals||[]; const kvals=[];
