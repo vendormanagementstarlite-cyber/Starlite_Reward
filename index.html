@@ -740,7 +740,6 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <nav class="nav" aria-label="Menu utama">
       <div class="nav-label">Menu</div>
       <span class="nav-ind" id="navInd" aria-hidden="true"></span>
-      <button data-view="submit" aria-current="page"><svg viewBox="0 0 24 24"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M9 13l2 2 4-4"/></svg><span class="lbl">Submit Data</span></button>
       <div class="grp" id="dashGrp">
         <button type="button" class="grp-head" id="dashHead" aria-expanded="true" aria-controls="dashSub"><svg viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span class="lbl">Dashboard</span><svg class="grp-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
         <div class="sub" id="dashSub">
@@ -750,8 +749,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
           <button data-view="gmt"><span class="lbl">GMT Project</span></button>
         </div>
       </div>
-      <button data-view="ranking"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg><span class="lbl">Leaderboard</span></button>
-      <button data-view="leaderboard"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-1a6 6 0 0 1 12 0v1"/><path d="M15 15a5 5 0 0 1 6 4.5V20"/></svg><span class="lbl">Pendaftar</span></button>
+      <button data-view="ranking" aria-current="page"><svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg><span class="lbl">Leaderboard</span></button>
     </nav>
     <div class="side-foot">
       <span class="pill-live" id="live"><i></i><span id="liveTxt">Menghubungkan…</span></span>
@@ -876,10 +874,11 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div>
       
       </div>
-      <div class="kpis" id="kpis"></div>
+      <div hidden aria-hidden="true"><div class="kpis" id="kpis"></div></div>
       <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" min="2026-10-01" max="2026-12-31" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" min="2026-10-01" max="2026-12-31" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
       <div class="hc-grid" id="hcMon"></div>
       <div class="hc-grid" id="perf"></div>
+      <div hidden aria-hidden="true">
       <div class="grid2">
         <div class="card chart-card lift">
           <div class="chart-head cc-head" data-ct="mitra" role="button" tabindex="0" aria-expanded="true"><div><h2>Pendaftar per mitra</h2><p>Jumlah IKR dan Sales yang didaftarkan</p></div>
@@ -899,6 +898,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
           <div class="chart-head"><div><h2>Komposisi pendaftar</h2><p>Posisi Lead dan Tim</p></div></div>
           <div id="chComp"></div>
         </div>
+      </div>
       </div>
     </section>
 
@@ -1162,7 +1162,7 @@ $('#toTop').addEventListener('click',()=>window.scrollTo({top:0,behavior:RM?'aut
 
 /* ---------- NAV ---------- */
 const views=['submit','dashboard','persada','pnm','gmt','ranking','leaderboard'];
-const MODE_VIEWS={mitra:['submit','ranking'],admin:['dashboard','persada','pnm','gmt','ranking','leaderboard']};
+const MODE_VIEWS={mitra:['ranking'],admin:['dashboard','persada','pnm','gmt','ranking']};
 let mode='mitra', adminPw='';
 function go(v){ const allow=MODE_VIEWS[mode]; if(!allow.includes(v)) v=allow[0];
   views.forEach(x=>{ $('#v-'+x).hidden = x!==v; });
@@ -1181,7 +1181,7 @@ function setMode(m){ mode=m; const app=document.querySelector('.app'); app.datas
   document.querySelector('#dashGrp').hidden=!MODE_VIEWS[m].includes('dashboard');
   try{ sessionStorage.setItem('starlite-mode',m); if(m==='admin') sessionStorage.setItem('starlite-pin',adminPw); else sessionStorage.removeItem('starlite-pin'); }catch(e){}
   if(m==='mitra'){ state.peserta=[]; }
-  let v='submit'; try{ v=localStorage.getItem('starlite-view-'+m)||MODE_VIEWS[m][0]; }catch(e){}
+  let v=MODE_VIEWS[m][0]; try{ v=localStorage.getItem('starlite-view-'+m)||MODE_VIEWS[m][0]; }catch(e){}
   go(v);
 }
 $('#modeBtn').addEventListener('click',()=>{ if(mode==='admin'){ adminPw=''; setMode('mitra'); toast('Keluar dari mode Admin'); load(); } else openPw(); });
