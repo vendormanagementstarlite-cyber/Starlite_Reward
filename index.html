@@ -885,6 +885,11 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       
       </div>
       <div class="kpis" id="rwKpis"></div>
+      <div class="grid2" id="rwCharts" style="margin-bottom:18px">
+        <div style="grid-column:1/-1;display:flex"><div class="ps-tog" id="rwTog" role="group" aria-label="Periode"><button type="button" data-p="day" aria-pressed="false">Harian</button><button type="button" data-p="week" aria-pressed="false">Mingguan</button><button type="button" data-p="month" aria-pressed="true">Bulanan</button></div></div>
+        <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Tim IKR</h2><p>Aktivasi per periode</p></div></div><div id="rwChIkr" class="ps-chart"></div></div>
+        <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Tim Sales</h2><p id="rwSwSub">Registrasi per periode</p></div><div class="hcv hcv-top" id="rwSw" role="group" aria-label="Registrasi atau aktivasi"><button type="button" data-sw="reg" aria-pressed="true">Registrasi</button><button type="button" data-sw="act" aria-pressed="false">Aktivasi</button></div></div><div id="rwChSal" class="ps-chart"></div></div>
+      </div>
       <div hidden aria-hidden="true"><div class="kpis" id="kpis"></div></div>
       <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" min="2026-10-01" max="2026-12-31" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" min="2026-10-01" max="2026-12-31" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
       <div hidden aria-hidden="true"><div class="hc-grid" id="hcMon"></div></div>
@@ -1572,6 +1577,37 @@ $('#rwKpis').addEventListener('click',e=>{ const c=e.target.closest('[data-rw]')
 $('#rwKpis').addEventListener('keydown',e=>{ if(e.key!=='Enter'&&e.key!==' ') return; const c=e.target.closest('[data-rw]'); if(c){ e.preventDefault(); rwOpen(c.dataset.rw); } });
 $('#rwPop').addEventListener('click',e=>{ if(e.target.id==='rwPop'||e.target.closest('#rwPopX')) $('#rwPop').hidden=true; });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#rwPop').hidden=true; });
+let rwPer='month', rwSalV='reg';
+const rwBucket=(iso,p)=>{ if(p==='month') return iso.slice(0,7);
+  if(p==='week'){ const [y,m,d]=iso.split('-').map(Number), dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()-((dt.getUTCDay()+6)%7)); const mon=dt.toISOString().slice(0,10); return mon.slice(0,7)===iso.slice(0,7)?mon:iso.slice(0,7)+'-01'; }
+  return iso; };
+const rwLbl=(k,p,full)=>{ const [y,m,d]=k.split('-').map(Number);
+  if(p==='month') return MONTHS[m-1]+' '+(full?y:String(y).slice(2));
+  if(p==='week'&&full){ const e=new Date(Math.min(Date.UTC(y,m-1,d+6),Date.UTC(y,m,0))); return d+' '+MONTHS[m-1]+'–'+e.getUTCDate()+' '+MONTHS[e.getUTCMonth()]; }
+  return d+' '+MONTHS[m-1]; };
+function rwChart1(box,map,color,name){
+  const p=rwPer, agg={}; Object.keys(map||{}).forEach(k=>{ const bk=rwBucket('2026-'+k,p); agg[bk]=(agg[bk]||0)+map[k]; });
+  const keys=Object.keys(agg).sort();
+  if(!keys.length){ box.innerHTML='<div class="empty">Belum ada data pada filter ini.</div>'; return; }
+  const cw=box.clientWidth||600, left=36, H=230, top=20, bot=40;
+  const gw=Math.max(p==='day'?40:p==='week'?64:90,(cw-left-8)/keys.length), bw=Math.min(44,gw*.6);
+  const mx=Math.max(1,...keys.map(k=>agg[k])), step=Math.pow(10,Math.floor(Math.log10(mx))), nice=[1,2,5,10].map(x=>x*step).find(v=>mx/v<=5)||step*10;
+  const ymax=Math.ceil(mx/nice)*nice, ph=H-top-bot, W=Math.max(left+keys.length*gw+8,300);
+  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${name}">`;
+  for(let v=0;v<=ymax;v+=nice){ const y=top+ph-(v/ymax)*ph; s+=`<line x1="${left}" x2="${W}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">${fmt(v)}</text>`; }
+  keys.forEach((k,i)=>{ const v=agg[k], hh=v/ymax*ph, x=left+i*gw+(gw-bw)/2;
+    s+=`<rect x="${x}" y="${top+ph-hh}" width="${bw}" height="${hh}" rx="3" fill="${color}"><title>${esc(rwLbl(k,p,true))} · ${name}: ${fmt(v)}</title></rect>`;
+    if(v) s+=`<text x="${x+bw/2}" y="${top+ph-hh-4}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">${fmt(v)}</text>`;
+    s+=`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(rwLbl(k,p,false))}</text>`; });
+  box.innerHTML=s+'</svg>'+(p==='week'?'<div class="ps-note">Minggu Senin–Minggu, dipotong di pergantian bulan. Arahkan kursor ke batang untuk rentang lengkap.</div>':'');
+}
+function rwCharts(DI,DS){
+  rwChart1($('#rwChIkr'),DI.dy,'var(--s-ikr)','Aktivasi IKR');
+  const reg=rwSalV==='reg'; $('#rwSwSub').textContent=(reg?'Registrasi':'Aktivasi')+' per periode';
+  rwChart1($('#rwChSal'),reg?DS.dr:DS.dy,reg?'var(--s-sales)':'#1f9d6b',reg?'Registrasi Sales':'Aktivasi Sales');
+}
+$('#rwTog').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; rwPer=b.dataset.p; document.querySelectorAll('#rwTog button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderDash(); });
+$('#rwSw').addEventListener('click',e=>{ const b=e.target.closest('button[data-sw]'); if(!b) return; rwSalV=b.dataset.sw; document.querySelectorAll('#rwSw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderDash(); });
 function renderDash(){
   if($('#v-dashboard').hidden) return;
   const sc=dashScope(), psAll=state.peserta.filter(p=>fDashMitra.has(p.mitra)), ps=psAll.filter(p=>!sc||sc.set.has(pKey(p)));
@@ -1589,6 +1625,7 @@ function renderDash(){
       tikr:{team:1,t:'Total Tim IKR',v:DI.uN,reg:DI.uT,bel:DI.uB,c:'c-mitra',d:'ID IKR distinct'},
       tsal:{team:1,t:'Total Tim Sales',v:DS.uN,reg:DS.uT,bel:DS.uB,c:'c-ikr',d:'ID Sales distinct'}
     };
+    rwCharts(DI,DS);
     $('#rwKpis').innerHTML=Object.keys(rwData).map(k=>{ const o=rwData[k]; return `<div class="kpi ${o.c} rw-pick" data-rw="${k}" role="button" tabindex="0" title="Klik untuk rincian ID number"><div class="k">${o.t}</div><div class="v">${fmt(o.v)}</div><div class="d">${o.d} · klik untuk rincian</div></div>`; }).join(''); }
   const kp=$('#kpis'); const prevK=kp._vals||[]; const kvals=[];
   const kHtml=[
