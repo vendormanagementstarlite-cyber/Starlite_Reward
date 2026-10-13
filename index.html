@@ -874,6 +874,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div>
       
       </div>
+      <div class="kpis" id="rwKpis"></div>
       <div hidden aria-hidden="true"><div class="kpis" id="kpis"></div></div>
       <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" min="2026-10-01" max="2026-12-31" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" min="2026-10-01" max="2026-12-31" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
       <div class="hc-grid" id="hcMon"></div>
@@ -1547,6 +1548,14 @@ function renderDash(){
   const mitraCount=new Set(ps.map(p=>p.mitra)).size, stCount=new Set(ps.map(p=>String(p.stasiun||'').toUpperCase()).filter(Boolean)).size;
   const lead=ps.filter(p=>p.posisi==='Lead').length;
   const fresh=!!$('#v-dashboard')._fresh; $('#v-dashboard')._fresh=false;
+  { const st=(state.ach&&state.ach.stats)||{};
+    $('#rwKpis').innerHTML=[
+      ['Aktivasi IKR',st.ikrAct||0,'jumlah aktivasi IKR','c-ikr'],
+      ['Registrasi Sales',st.salesReg||0,'jumlah registrasi Sales','c-sales'],
+      ['Aktivasi Sales',st.salesAct||0,'jumlah aktivasi Sales','c-st'],
+      ['Tim IKR',st.ikrIds||0,'jumlah ID IKR','c-mitra'],
+      ['Tim Sales',st.salesIds||0,'jumlah ID Sales','c-ikr']
+    ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join(''); }
   const kp=$('#kpis'); const prevK=kp._vals||[]; const kvals=[];
   const kHtml=[
     ['Total pendaftar',ps.length,'IKR + Sales','dark'],
