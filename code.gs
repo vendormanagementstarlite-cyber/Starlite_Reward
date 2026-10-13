@@ -246,7 +246,7 @@ function projectRows_() {
       reg: ix(['registration_date', 'registrasi_date', 'tgl_registrasi', 'registration']),
       act: ix(['active_date', 'activation_date', 'aktif_date', 'tgl_aktivasi']),
       ikrName: ix(['ikr_name', 'nama_ikr']), salName: ix(['sales_name', 'nama_sales']),
-      mitra: ix(['mitra']), st: ix(['station', 'stasiun'])
+      mitra: ix(['mitra']), st: ix(['station', 'stasiun']), cust: ix(['customer_code', 'customer_id', 'cust_code'])
     };
     const miss = Object.keys(I).filter(k => I[k] < 0);
     if (I.ikrName < 0 || I.salName < 0) { res.error = 'Kolom ikr_name / sales_name tidak ditemukan di sheet "' + sh.getName() + '". Header terbaca: ' + head.join(', '); return res; }
@@ -256,9 +256,20 @@ function projectRows_() {
     res.total = vals.length;
     vals.forEach(r => {
       const pI = String(at(r, I.ikrName)).trim(), pS = String(at(r, I.salName)).trim();
-      if (PROJECT_RE.test(pI) || PROJECT_RE.test(pS)) res.rows.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim()]);
+      if (PROJECT_RE.test(pI) || PROJECT_RE.test(pS)) res.rows.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim(), String(at(r, I.cust)).trim()]);
     });
   } catch (e) { res.error = 'Gagal membaca spreadsheet Project: ' + e.message; }
+  return res;
+}
+/** Gabungkan sumber 2 (postgre) + sumber 1 (Ach sales ikr). Baris sumber 1 yang sudah ada di sumber 2 (customer_code sama; bila kosong, kombinasi tanggal+nama+mitra sama) tidak dihitung dua kali. */
+function mergeProject_(p2, s1) {
+  const key = r => r[6] ? 'c:' + String(r[6]).toLowerCase().replace(/\s+/g, '') : 'k:' + [r[0], r[1], r[2], r[3], r[4]].join('|').toLowerCase();
+  const seen = {}; (p2.rows || []).forEach(r => { seen[key(r)] = 1; });
+  const add = s1.filter(r => !seen[key(r)]);
+  const rows = (p2.rows || []).concat(add);
+  const res = { rows: rows, found: p2.found, total: p2.total, src: { postgre: (p2.rows || []).length, ach: add.length, achDup: s1.length - add.length } };
+  if (p2.error) { if (rows.length) res.warn = p2.error; else res.error = p2.error; }
+  if (p2.missing) res.missing = p2.missing;
   return res;
 }
 function achId_(v) { return String(v === null || v === undefined ? '' : v).trim().replace(/\.0+$/, ''); }
@@ -279,7 +290,9 @@ function achCompute_() {
   const out = { ikr: [], sales: [], found: false, rows: 0 };
   const warn = { noIdIkr: 0, noIdSales: 0, noCust: 0, dup: [] };
   const ALL = { ikr: [0, 0, 0], salesAct: [0, 0, 0], salesReg: [0, 0, 0] };
-  out.persada = projectRows_();   // sumber ke-2 (spreadsheet Project: sheet postgre)
+  const P2 = projectRows_();   // sumber ke-2 (spreadsheet Project: sheet postgre)
+  const S1ROWS = [];           // baris sumber ke-1 (Ach sales ikr) untuk dashboard Persada/PNM/GMT
+  out.persada = mergeProject_(P2, S1ROWS);
   const NOID = [];   // baris tanpa ID: [jenis ('i' aktivasi IKR, 'a' aktivasi Sales, 'r' registrasi Sales), 'MM-DD', mitra]
   const pushNoId = (t, d, m) => { if (d && NOID.length < 20000) NOID.push([t, d, m]); };
   const R = { rows: 0, actFilled: 0, actOut: 0, actBad: 0, regFilled: 0, regOut: 0, regBad: 0, ikrNoId: 0, ikrDup: 0, salActNoId: 0, salActNoReg: 0, salActDup: 0, salRegNoId: 0, salRegDup: 0, badSamples: [] };
@@ -313,6 +326,8 @@ function achCompute_() {
     const cust = String(at(r, I.cust)).trim() || ('row' + n);
     const rm = achMonth_(at(r, I.reg)), am = achMonth_(at(r, I.act));
     const hasReg = String(at(r, I.reg)).trim() !== '';
+    { const pI = String(at(r, I.ikrName)).trim(), pS = String(at(r, I.salName)).trim();
+      if (PROJECT_RE.test(pI) || PROJECT_RE.test(pS)) S1ROWS.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim(), String(at(r, I.cust)).trim()]); }
     if (am) ALL.ikr[am - 1]++;
     if (am && hasReg) ALL.salesAct[am - 1]++;
     if (rm) ALL.salesReg[rm - 1]++;
@@ -349,6 +364,7 @@ function achCompute_() {
   out.all = ALL;
   out.noId = NOID;
   const sum = (arr, f) => arr.reduce((s, e) => s + f(e).reduce((a, b) => a + b, 0), 0);
+  out.persada = mergeProject_(P2, S1ROWS);
   out.stats = { ikrIds: out.ikr.length, ikrAct: sum(out.ikr, e => e.act), salesIds: out.sales.length, salesAct: sum(out.sales, e => e.act), salesReg: sum(out.sales, e => e.reg) };
 
   return out;
