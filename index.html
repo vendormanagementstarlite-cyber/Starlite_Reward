@@ -884,14 +884,13 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div>
       
       </div>
+      <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" min="2026-10-01" max="2026-12-31" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" min="2026-10-01" max="2026-12-31" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
       <div class="kpis" id="rwKpis"></div>
       <div class="grid2" id="rwCharts" style="margin-bottom:18px">
-        <div style="grid-column:1/-1;display:flex"><div class="ps-tog" id="rwTog" role="group" aria-label="Periode"><button type="button" data-p="day" aria-pressed="false">Harian</button><button type="button" data-p="week" aria-pressed="false">Mingguan</button><button type="button" data-p="month" aria-pressed="true">Bulanan</button></div></div>
         <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Tim IKR</h2><p>Aktivasi per periode</p></div></div><div id="rwChIkr" class="ps-chart"></div></div>
         <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Tim Sales</h2><p id="rwSwSub">Registrasi per periode</p></div><div class="hcv hcv-top" id="rwSw" role="group" aria-label="Registrasi atau aktivasi"><button type="button" data-sw="reg" aria-pressed="true">Registrasi</button><button type="button" data-sw="act" aria-pressed="false">Aktivasi</button></div></div><div id="rwChSal" class="ps-chart"></div></div>
       </div>
       <div hidden aria-hidden="true"><div class="kpis" id="kpis"></div></div>
-      <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" min="2026-10-01" max="2026-12-31" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" min="2026-10-01" max="2026-12-31" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
       <div hidden aria-hidden="true"><div class="hc-grid" id="hcMon"></div></div>
       <div class="hc-grid" id="perf"></div>
       <div hidden aria-hidden="true">
@@ -1577,7 +1576,8 @@ $('#rwKpis').addEventListener('click',e=>{ const c=e.target.closest('[data-rw]')
 $('#rwKpis').addEventListener('keydown',e=>{ if(e.key!=='Enter'&&e.key!==' ') return; const c=e.target.closest('[data-rw]'); if(c){ e.preventDefault(); rwOpen(c.dataset.rw); } });
 $('#rwPop').addEventListener('click',e=>{ if(e.target.id==='rwPop'||e.target.closest('#rwPopX')) $('#rwPop').hidden=true; });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('#rwPop').hidden=true; });
-let rwPer='month', rwSalV='reg';
+let rwSalV='reg';
+const rwPerOf=()=>({all:'month',bln:'month',mgg:'week',hari:'day'}[hcView]||'month');
 const rwBucket=(iso,p)=>{ if(p==='month') return iso.slice(0,7);
   if(p==='week'){ const [y,m,d]=iso.split('-').map(Number), dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()-((dt.getUTCDay()+6)%7)); const mon=dt.toISOString().slice(0,10); return mon.slice(0,7)===iso.slice(0,7)?mon:iso.slice(0,7)+'-01'; }
   return iso; };
@@ -1586,7 +1586,7 @@ const rwLbl=(k,p,full)=>{ const [y,m,d]=k.split('-').map(Number);
   if(p==='week'&&full){ const e=new Date(Math.min(Date.UTC(y,m-1,d+6),Date.UTC(y,m,0))); return d+' '+MONTHS[m-1]+'–'+e.getUTCDate()+' '+MONTHS[e.getUTCMonth()]; }
   return d+' '+MONTHS[m-1]; };
 function rwChart1(box,map,color,name){
-  const p=rwPer, agg={}; Object.keys(map||{}).forEach(k=>{ const bk=rwBucket('2026-'+k,p); agg[bk]=(agg[bk]||0)+map[k]; });
+  const p=rwPerOf(), agg={}; Object.keys(map||{}).forEach(k=>{ const bk=rwBucket('2026-'+k,p); agg[bk]=(agg[bk]||0)+map[k]; });
   const keys=Object.keys(agg).sort();
   if(!keys.length){ box.innerHTML='<div class="empty">Belum ada data pada filter ini.</div>'; return; }
   const cw=box.clientWidth||600, left=36, H=230, top=20, bot=40;
@@ -1606,7 +1606,6 @@ function rwCharts(DI,DS){
   const reg=rwSalV==='reg'; $('#rwSwSub').textContent=(reg?'Registrasi':'Aktivasi')+' per periode';
   rwChart1($('#rwChSal'),reg?DS.dr:DS.dy,reg?'var(--s-sales)':'#1f9d6b',reg?'Registrasi Sales':'Aktivasi Sales');
 }
-$('#rwTog').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; rwPer=b.dataset.p; document.querySelectorAll('#rwTog button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderDash(); });
 $('#rwSw').addEventListener('click',e=>{ const b=e.target.closest('button[data-sw]'); if(!b) return; rwSalV=b.dataset.sw; document.querySelectorAll('#rwSw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderDash(); });
 function renderDash(){
   if($('#v-dashboard').hidden) return;
