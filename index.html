@@ -704,6 +704,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .rw-row{display:flex;align-items:baseline;gap:10px;font-size:14px}.rw-row span{flex:1;font-weight:600}.rw-row b{font-size:18px}.rw-row em{font-style:normal;color:var(--muted);font-size:12.5px;min-width:44px;text-align:right}
 .rw-bar{height:8px;border-radius:99px;background:var(--line-2,#eee);margin:6px 0 6px;overflow:hidden}.rw-bar i{display:block;height:100%;background:#1f9d6b;border-radius:99px}.rw-bar.no i{background:#d0612a}
 .rw-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.chk{outline:none;cursor:pointer}.chk:hover .b,.chk:focus-visible .b{opacity:.8}.chrow:hover .nm{color:var(--accent);font-weight:700}.ps-chart svg{max-width:none}
 </style>
 </head>
 <body>
@@ -1554,6 +1555,53 @@ function hcDrillPaint(){
   root.addEventListener('click',pick);
   root.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.closest('[data-sel]')){ e.preventDefault(); pick(e); } });
 })();
+// ===== chart batang generik: pas lebar kartu, klik batang -> popup rincian =====
+function barChart(box,map,color,name,o){
+  const p=o.p, agg={};
+  Object.keys(map||{}).forEach(k=>{ const bk=o.bucket(k); agg[bk]=(agg[bk]||0)+map[k]; });
+  const keys=Object.keys(agg).sort();
+  box.onclick=null; box.onkeydown=null;
+  if(!keys.length){ box.innerHTML='<div class="empty">Belum ada data pada filter ini.</div>'; return; }
+  const cw=Math.max(280,box.clientWidth||600), H=230, top=22, bot=40, ph=H-top-bot;
+  const mx=Math.max(1,...keys.map(k=>agg[k])), step=Math.pow(10,Math.floor(Math.log10(mx))), nice=[1,2,5,10].map(x=>x*step).find(v=>mx/v<=5)||step*10;
+  const ymax=Math.ceil(mx/nice)*nice, left=Math.max(34,fmt(ymax).length*6.5+14);
+  const minGw=p==='day'?34:p==='week'?46:56;
+  const gw=Math.max(minGw,(cw-left-6)/keys.length), bw=Math.min(48,gw*.62), W=left+keys.length*gw+6, fit=W<=cw+1;
+  let s=`<svg width="${fit?'100%':W}" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet" role="img" aria-label="${esc(name)}" style="display:block">`;
+  for(let v=0;v<=ymax;v+=nice){ const y=top+ph-(v/ymax)*ph; s+=`<line x1="${left}" x2="${W}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">${fmt(v)}</text>`; }
+  keys.forEach((k,i)=>{ const v=agg[k], h=v/ymax*ph, x=left+i*gw+(gw-bw)/2;
+    s+=`<g class="chk" data-bk="${esc(k)}" tabindex="0" role="button" aria-label="${esc(o.full(k))}: ${fmt(v)}, klik untuk rincian"><rect x="${left+i*gw}" y="${top-14}" width="${gw}" height="${H-top+14}" fill="transparent"></rect>`
+      +`<rect class="b" x="${x}" y="${top+ph-h}" width="${bw}" height="${h}" rx="3" fill="${color}"><title>${esc(o.full(k))} · ${esc(name)}: ${fmt(v)} (klik untuk rincian)</title></rect>`
+      +(v?`<text x="${x+bw/2}" y="${top+ph-h-4}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">${fmt(v)}</text>`:'')
+      +`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(o.short(k))}</text></g>`; });
+  box.innerHTML=s+'</svg><div class="ps-note">Klik batang untuk melihat rincian.'+(p==='week'?' Minggu Senin–Minggu, dipotong di pergantian bulan agar total sama dengan tampilan bulanan.':'')+'</div>';
+  box.onclick=e=>{ const g=e.target.closest('[data-bk]'); if(g&&o.pick) o.pick(g.dataset.bk); };
+  box.onkeydown=e=>{ if(e.key!=='Enter'&&e.key!==' ') return; const g=e.target.closest('[data-bk]'); if(g&&o.pick){ e.preventDefault(); o.pick(g.dataset.bk); } };
+}
+// ===== popup rincian generik =====
+let chSel=null;
+function chPopFromEntries(ents){
+  const M=new Map();
+  (ents||[]).forEach(([d,m,n])=>{ const k=m||'(Tanpa mitra)'; let o=M.get(k); if(!o){ o={name:k,total:0,P:new Map()}; M.set(k,o); } o.total++; o.P.set(n,(o.P.get(n)||0)+1); });
+  return [...M.values()].map(o=>({name:o.name,total:o.total,people:[...o.P].map(([nama,n])=>({nama,n})).sort((a,b)=>b.n-a.n||a.nama.localeCompare(b.nama,'id'))})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name,'id'));
+}
+function chPop(title,sub,list,note){ chSel={title,sub,list,note:note||'Klik baris untuk melihat rinciannya. Tekan Esc atau klik di luar untuk menutup.',open:new Set()}; chPopPaint(); }
+function chPopHtml(){
+  const s=chSel, list=s.list, mx=Math.max(1,...list.map(o=>o.total));
+  const rows=list.map((o,i)=>{ const has=o.people&&o.people.length, open=s.open.has(o.name);
+    return `<li><button type="button" class="dm" data-mi="${i}" aria-expanded="${open}"><span class="car">${has?'▸':''}</span><span class="nm" title="${esc(o.name)}">${esc(o.name)}</span><span class="bar"><i style="width:${o.total/mx*100}%"></i></span><b>${fmt(o.total)}</b></button>${open&&has?`<ul class="dp">${o.people.map(p=>`<li><span title="${esc(p.nama)}">${esc(p.nama)}</span><b>${fmt(p.n)}</b></li>`).join('')}</ul>`:''}</li>`; }).join('');
+  return `<div class="dh"><div><b>${esc(s.title)}</b><span>${esc(s.sub)}</span></div><button type="button" class="dx" aria-label="Tutup rincian">✕</button></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">${esc(s.note)}</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
+}
+function chPopPaint(){
+  let m=document.getElementById('chModal');
+  if(!m){ m=document.createElement('div'); m.id='chModal'; m.className='hc-modal'; m.hidden=true; m.innerHTML='<div class="hc-pop hc-drill" role="dialog" aria-modal="true" aria-label="Rincian chart"></div>'; document.body.appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target===m||e.target.closest('.dx')){ chSel=null; chPopPaint(); return; }
+      const dm=e.target.closest('.dm'); if(dm&&chSel){ const o=chSel.list[+dm.dataset.mi]; if(o&&o.people&&o.people.length){ chSel.open.has(o.name)?chSel.open.delete(o.name):chSel.open.add(o.name); chPopPaint(); } } });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&chSel){ chSel=null; chPopPaint(); } }); }
+  const pop=m.firstChild, was=pop.scrollTop, l0=pop.querySelector('.dl'), ls=l0?l0.scrollTop:0;
+  m.hidden=!chSel; document.body.classList.toggle('hc-lock',!!chSel);
+  if(chSel){ pop.innerHTML=chPopHtml(); const l2=pop.querySelector('.dl'); if(l2) l2.scrollTop=ls; pop.scrollTop=was; } else pop.innerHTML='';
+}
 let rwData=null;
 function rwOpen(k){
   const o=rwData&&rwData[k]; if(!o) return;
@@ -1585,26 +1633,16 @@ const rwLbl=(k,p,full)=>{ const [y,m,d]=k.split('-').map(Number);
   if(p==='month') return MONTHS[m-1]+' '+(full?y:String(y).slice(2));
   if(p==='week'&&full){ const e=new Date(Math.min(Date.UTC(y,m-1,d+6),Date.UTC(y,m,0))); return d+' '+MONTHS[m-1]+'–'+e.getUTCDate()+' '+MONTHS[e.getUTCMonth()]; }
   return d+' '+MONTHS[m-1]; };
-function rwChart1(box,map,color,name){
-  const p=rwPerOf(), agg={}; Object.keys(map||{}).forEach(k=>{ const bk=rwBucket('2026-'+k,p); agg[bk]=(agg[bk]||0)+map[k]; });
-  const keys=Object.keys(agg).sort();
-  if(!keys.length){ box.innerHTML='<div class="empty">Belum ada data pada filter ini.</div>'; return; }
-  const cw=box.clientWidth||600, left=36, H=230, top=20, bot=40;
-  const gw=Math.max(p==='day'?40:p==='week'?64:90,(cw-left-8)/keys.length), bw=Math.min(44,gw*.6);
-  const mx=Math.max(1,...keys.map(k=>agg[k])), step=Math.pow(10,Math.floor(Math.log10(mx))), nice=[1,2,5,10].map(x=>x*step).find(v=>mx/v<=5)||step*10;
-  const ymax=Math.ceil(mx/nice)*nice, ph=H-top-bot, W=Math.max(left+keys.length*gw+8,300);
-  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${name}">`;
-  for(let v=0;v<=ymax;v+=nice){ const y=top+ph-(v/ymax)*ph; s+=`<line x1="${left}" x2="${W}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">${fmt(v)}</text>`; }
-  keys.forEach((k,i)=>{ const v=agg[k], hh=v/ymax*ph, x=left+i*gw+(gw-bw)/2;
-    s+=`<rect x="${x}" y="${top+ph-hh}" width="${bw}" height="${hh}" rx="3" fill="${color}"><title>${esc(rwLbl(k,p,true))} · ${name}: ${fmt(v)}</title></rect>`;
-    if(v) s+=`<text x="${x+bw/2}" y="${top+ph-hh-4}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">${fmt(v)}</text>`;
-    s+=`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(rwLbl(k,p,false))}</text>`; });
-  box.innerHTML=s+'</svg>'+(p==='week'?'<div class="ps-note">Minggu Senin–Minggu, dipotong di pergantian bulan. Arahkan kursor ke batang untuk rentang lengkap.</div>':'');
+function rwChart1(box,map,color,name,role,kind){
+  const p=rwPerOf();
+  barChart(box,map,color,name,{p,bucket:k=>rwBucket('2026-'+k,p),full:bk=>rwLbl(bk,p,true),short:bk=>rwLbl(bk,p,false),
+    pick:bk=>{ const ks=Object.keys(map||{}).filter(k=>rwBucket('2026-'+k,p)===bk); const list=hcDrillData(role,kind,ks), tot=list.reduce((t,o)=>t+o.total,0);
+      chPop(name+' · '+rwLbl(bk,p,true),'Tim '+role+' · total '+fmt(tot)+' · '+list.length+' mitra',list); }});
 }
 function rwCharts(DI,DS){
-  rwChart1($('#rwChIkr'),DI.dy,'var(--s-ikr)','Aktivasi IKR');
+  rwChart1($('#rwChIkr'),DI.dy,'var(--s-ikr)','Aktivasi IKR','IKR','akt');
   const reg=rwSalV==='reg'; $('#rwSwSub').textContent=(reg?'Registrasi':'Aktivasi')+' per periode';
-  rwChart1($('#rwChSal'),reg?DS.dr:DS.dy,reg?'var(--s-sales)':'#1f9d6b',reg?'Registrasi Sales':'Aktivasi Sales');
+  rwChart1($('#rwChSal'),reg?DS.dr:DS.dy,reg?'var(--s-sales)':'#1f9d6b',reg?'Registrasi Sales':'Aktivasi Sales','Sales',reg?'reg':'akt');
 }
 $('#rwSw').addEventListener('click',e=>{ const b=e.target.closest('button[data-sw]'); if(!b) return; rwSalV=b.dataset.sw; document.querySelectorAll('#rwSw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderDash(); });
 function renderDash(){
@@ -2289,23 +2327,23 @@ function psDayRows(map,mode){
     return `<div class="drow"><span class="dd">${psLbl(k)}</span><span class="db"><i style="width:${w}%"></i></span><span class="dv">${txt}</span></div>`;
   }).join('')+'</div>';
 }
-function psNames(o,color){
+function psNames(o,color,t){
   const a=Object.entries(o||{}).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0],'id'));
   if(!a.length) return '<div class="empty">Belum ada nama berawalan '+LB+'.</div>';
   const mx=Math.max(1,a[0][1]);
-  return '<div class="hbars" style="max-height:420px;overflow:auto">'+a.map(([n,v])=>`<div class="hbar"><span class="nm" title="${esc(n)}">${esc(n)}</span><div class="track"><span style="width:${v/mx*100}%;background:${color}"></span></div><span class="tv">${fmt(v)}</span></div>`).join('')+'</div>';
+  return '<div class="hbars" style="max-height:420px;overflow:auto">'+a.map(([n,v])=>`<div class="hbar chrow" data-t="${t}" data-n="${esc(n)}" style="cursor:pointer" title="Klik untuk rincian"><span class="nm" title="${esc(n)}">${esc(n)}</span><div class="track"><span style="width:${v/mx*100}%;background:${color}"></span></div><span class="tv">${fmt(v)}</span></div>`).join('')+'</div>';
 }
 function psPerf(I,S){
-  const grp=(o,label,color)=>{
+  const grp=(o,label,color,t)=>{
     const a=Object.entries(o||{}).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0],'id'));
     if(!a.length) return {hi:'',lo:''};
     const avg=a.reduce((s,e)=>s+e[1],0)/a.length;
     const hi=a.filter(e=>e[1]>=avg).slice(0,5), lo=a.filter(e=>e[1]<avg).slice(-5).reverse();
-    const mk=list=>list.length?'<div class="hbars">'+list.map(([n,v])=>`<div class="hbar"><span class="nm" title="${esc(n)}">${esc(n)}</span><div class="track"><span style="width:${v/a[0][1]*100}%;background:${color}"></span></div><span class="tv">${fmt(v)}</span></div>`).join('')+'</div>':'<div class="empty">Tidak ada.</div>';
+    const mk=list=>list.length?'<div class="hbars">'+list.map(([n,v])=>`<div class="hbar chrow" data-t="${t}" data-n="${esc(n)}" style="cursor:pointer" title="Klik untuk rincian"><span class="nm" title="${esc(n)}">${esc(n)}</span><div class="track"><span style="width:${v/a[0][1]*100}%;background:${color}"></span></div><span class="tv">${fmt(v)}</span></div>`).join('')+'</div>':'<div class="empty">Tidak ada.</div>';
     const head=`<div class="eyebrow" style="margin:8px 0 4px">${label} · rata-rata ${avg.toFixed(1)}</div>`;
     return {hi:head+mk(hi),lo:head+mk(lo)};
   };
-  const a=grp(I.nm,'IKR','var(--s-ikr)'), b=grp(S.nm,'Sales','var(--s-sales)');
+  const a=grp(I.nm,'IKR','var(--s-ikr)','ikr'), b=grp(S.nm,'Sales','var(--s-sales)','act');
   const none='<div class="empty">Belum ada data.</div>';
   $('#' + ID + 'High').innerHTML=(a.hi+b.hi)||none;
   $('#' + ID + 'Low').innerHTML=(a.lo+b.lo)||none;
@@ -2327,33 +2365,19 @@ function psBShort(k,p){
   const [y,m,d]=k.split('-').map(Number);
   return p==='month'?MONTHS[m-1]+' '+String(y).slice(2):d+' '+MONTHS[m-1];
 }
-function psChart1(box,o,color,name){
-  const p=psPeriod, agg={};
-  Object.keys(o).forEach(k=>{ const bk=psBucket(k,p); agg[bk]=(agg[bk]||0)+o[k]; });
-  const keys=Object.keys(agg).sort();
-  if(!keys.length){ box.innerHTML='<div class="empty">Belum ada data pada filter ini.</div>'; return; }
-  const cw=box.clientWidth||600, left=34, H=230, top=20, bot=40;
-  const gw=Math.max(p==='day'?40:p==='week'?64:90,(cw-left-8)/keys.length), bw=Math.min(44,gw*.6);
-  const mx=Math.max(1,...keys.map(k=>agg[k]));
-  const step=Math.pow(10,Math.floor(Math.log10(mx))), nice=[1,2,5,10].map(x=>x*step).find(v=>mx/v<=5)||step*10;
-  const ymax=Math.ceil(mx/nice)*nice, ph=H-top-bot, W=Math.max(left+keys.length*gw+8,300);
-  let s=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${name}">`;
-  for(let v=0;v<=ymax;v+=nice){ const y=top+ph-(v/ymax)*ph; s+=`<line x1="${left}" x2="${W}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">${fmt(v)}</text>`; }
-  keys.forEach((k,i)=>{
-    const v=agg[k], h=v/ymax*ph, x=left+i*gw+(gw-bw)/2;
-    s+=`<rect x="${x}" y="${top+ph-h}" width="${bw}" height="${h}" rx="3" fill="${color}"><title>${esc(psBLabel(k,p))} · ${name}: ${fmt(v)}</title></rect>`;
-    if(v) s+=`<text x="${x+bw/2}" y="${top+ph-h-4}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">${fmt(v)}</text>`;
-    s+=`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(psBShort(k,p))}</text>`;
-  });
-  box.innerHTML=s+'</svg>'+(p==='week'?'<div class="ps-note">Minggu Senin–Minggu, dipotong di pergantian bulan agar total sama dengan tampilan bulanan. Arahkan kursor ke batang untuk rentang lengkap.</div>':'');
+function psChart1(box,o,color,name,ents){
+  const p=psPeriod;
+  barChart(box,o,color,name,{p,bucket:k=>psBucket(k,p),full:bk=>psBLabel(bk,p),short:bk=>psBShort(bk,p),
+    pick:bk=>{ const e=(ents||[]).filter(x=>psBucket(x[0],p)===bk), list=chPopFromEntries(e);
+      chPop(name+' · '+psBLabel(bk,p),LB+' · total '+fmt(e.length)+' · '+list.length+' mitra',list); }});
 }
 let psSal='reg', psLast=null;
-function psChart(a,b,c){
+function psChart(a,b,c,DL){
   psLast=[a,b,c];
-  psChart1($('#' + ID + 'ChIkr'),a,'var(--s-ikr)','Aktivasi IKR');
+  psChart1($('#' + ID + 'ChIkr'),a,'var(--s-ikr)','Aktivasi IKR',DL.ikr);
   const reg=psSal==='reg';
   $('#' + ID + 'SwSub').textContent=(reg?'Registrasi':'Aktivasi')+' per periode';
-  psChart1($('#' + ID + 'ChSal'),reg?b:c,reg?'var(--s-sales)':'#1f9d6b',reg?'Registrasi Sales':'Aktivasi Sales');
+  psChart1($('#' + ID + 'ChSal'),reg?b:c,reg?'var(--s-sales)':'#1f9d6b',reg?'Registrasi Sales':'Aktivasi Sales',reg?DL.reg:DL.act);
 }
 $('#' + ID + 'Sw').addEventListener('click',e=>{ const b=e.target.closest('button[data-sw]'); if(!b) return; psSal=b.dataset.sw; document.querySelectorAll('#' + ID + 'Sw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderProj(); });
 $('#' + ID + 'Tog').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; psPeriod=b.dataset.p; document.querySelectorAll('#' + ID + 'Tog button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderProj(); });
@@ -2395,14 +2419,14 @@ function renderProj(){
   const inR=d=>d&&(!f||d>=f)&&(!t||d<=t);
   const I={tot:0,dy:{},nm:{}}, S={tot:0,dy:{},nm:{},regTot:0,regDy:{},regNm:{}};
   const bump=(o,k)=>{ o[k]=(o[k]||0)+1; };
-  const ND={ikr:{},reg:{},act:{}}; const nb=(t,n,d)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); };
+  const ND={ikr:{},reg:{},act:{}}, DL={ikr:[],reg:[],act:[]}; const nb=(t,n,d,m)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); DL[t].push([d,m,n]); };
   rows.forEach(([reg,act,ni0,ns0,m,s])=>{
     const ni=psNorm(ni0), ns=psNorm(ns0);
     if(mi&&m!==mi) return; if(st&&s!==st) return;
-    if(RE_IKR.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); if(act){ bump(I.dy,act); nb('ikr',ni,act); } }
+    if(RE_IKR.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); if(act){ bump(I.dy,act); nb('ikr',ni,act,m); } }
     if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){
-      if(inR(reg)){ S.regTot++; bump(S.regNm,ns); if(reg){ bump(S.regDy,reg); nb('reg',ns,reg); } }
-      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); if(act){ bump(S.dy,act); nb('act',ns,act); } }
+      if(inR(reg)){ S.regTot++; bump(S.regNm,ns); if(reg){ bump(S.regDy,reg); nb('reg',ns,reg,m); } }
+      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); if(act){ bump(S.dy,act); nb('act',ns,act,m); } }
     }
   });
   const tS=new Set([...Object.keys(S.regNm),...Object.keys(S.nm)]);
@@ -2414,14 +2438,21 @@ function renderProj(){
     ['Tim Sales',tS.size,'jumlah nama Sales '+LB+'','c-ikr'],
     ...(ACTIVE?[['Tim Sales Active',[...tS].filter(n=>ACTIVE.has(n.toLowerCase())).length,'dari '+ACTIVE.size+' sales aktif','c-st']]:[])
   ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
-  psChart(I.dy,S.regDy,S.dy);
+  psChart(I.dy,S.regDy,S.dy,DL);
   psND=ND; psNameTable(ND); psNameList(rows);
-  $('#' + ID + 'IkrNames').innerHTML=psNames(I.nm,'var(--s-ikr)');
-  $('#' + ID + 'SalNames').innerHTML=psNames(S.nm,'var(--s-sales)');
+  $('#' + ID + 'IkrNames').innerHTML=psNames(I.nm,'var(--s-ikr)','ikr');
+  $('#' + ID + 'SalNames').innerHTML=psNames(S.nm,'var(--s-sales)','act');
   psPerf(I,S);
 }
 ['#' + ID + 'From','#' + ID + 'To','#' + ID + 'Mitra','#' + ID + 'Stasiun'].forEach(s=>$(s).addEventListener('change',renderProj));
 let psND=null;
+function psNameDetail(t,n){
+  const d=(psND&&psND[t]&&psND[t][n])||{}, p=psPeriod, B={};
+  Object.keys(d).forEach(day=>{ const bk=psBucket(day,p); (B[bk]=B[bk]||[]).push([day,d[day]]); });
+  const list=Object.keys(B).sort().reverse().map(bk=>({name:psBLabel(bk,p),total:B[bk].reduce((s,x)=>s+x[1],0),people:B[bk].sort((a,b)=>b[0].localeCompare(a[0])).map(([day,c])=>({nama:psLbl(day),n:c}))}));
+  const tot=list.reduce((s,o)=>s+o.total,0), lab={ikr:'Aktivasi IKR',reg:'Registrasi Sales',act:'Aktivasi Sales'}[t]||'';
+  chPop(n,lab+' · total '+fmt(tot),list,'Klik periode untuk melihat rincian per hari. Tekan Esc atau klik di luar untuk menutup.');
+}
 function psNameList(rows){
   const set=[...new Set(rows.flatMap(r=>[RE_IKR.test(psNorm(r[2]))?psNorm(r[2]):'',(SBI?RE_IKR.test(psNorm(r[2])):RE_SAL.test(psNorm(r[3])))?psNorm(r[3]):'']).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
   const dl=$('#' + ID + 'NameList'), sig=set.join('|'); if(dl._sig===sig) return; dl._sig=sig;
@@ -2441,10 +2472,12 @@ function psJump(scroll){
 }
 let psQt; $('#' + ID + 'Q').addEventListener('input',()=>{ clearTimeout(psQt); psQt=setTimeout(()=>psJump(true),250); });
 $('#' + ID + 'Q').addEventListener('change',()=>psJump(true));
+['IkrNames','SalNames','High','Low'].forEach(x=>{ $('#' + ID + x).addEventListener('click',e=>{ const r=e.target.closest('.chrow'); if(r) psNameDetail(r.dataset.t,r.dataset.n); }); });
 $('#' + ID + 'Reset').addEventListener('click',()=>{ ['#' + ID + 'From','#' + ID + 'To','#' + ID + 'Mitra','#' + ID + 'Stasiun','#' + ID + 'Q'].forEach(s=>$(s).value=''); renderProj(); });
 return renderProj;
 }
 const PSP={persada:psProject('ps','Psd',/^psd(2k|1m)/i,/^psd1m/i,new Set(['psd1m monika erlina','psd1m leonidas gultom','psd1m irwan arifin','psd1m eko nugroho','psd1m ade ridwan','psd1m andhika priambodo','psd1m asif rahmatullah','psd1m rifaldi sulistyo pratama','psd1m rma kharisma buna','psd1m ismuha','psd1m aline hestia','psd1m lisnawati','psd1m miftakhul graha putra','psd1m catur nanang maret firmansyah','psd1m reno try widodo','psd1m novi putri utami','psd1m sukmah','psd1m arif lutfi hakim'])),pnm:psProject('pn','PNM',/^pnm2k/i,/./,null,true),gmt:psProject('gm','GMT',/^gmt2k/i,/./,null,true)};
+let rsT, rsW=innerWidth; window.addEventListener('resize',()=>{ if(innerWidth===rsW) return; rsW=innerWidth; clearTimeout(rsT); rsT=setTimeout(()=>{ Object.keys(PSP).forEach(k=>{ if(!$('#v-'+k).hidden) PSP[k](); }); if(!$('#v-dashboard').hidden) renderDash(); },200); });
 /* ---------- DATA ---------- */
 function refreshAll(){ fillMitraSelects(); syncSteps(); renderDash(); renderLB(); renderRank();
   Object.keys(PSP).forEach(k=>{ if(!$('#v-'+k).hidden) PSP[k](); }); }
