@@ -2432,14 +2432,30 @@ function renderProj(){
     }
   });
   const tS=new Set([...Object.keys(S.regNm),...Object.keys(S.nm)]);
+  // Tim aktif = nama yang masih bekerja di bulan terakhir data (mis. Oktober); tidak ikut filter tanggal
+  const aI=new Set(), aS=new Set(), eI=[], eS=[]; let lastD='';
+  rows.forEach(([reg,act,ni0,ns0,m,s])=>{ if(mi&&m!==mi) return; if(st&&s!==st) return; [reg,act].forEach(d=>{ if(d&&/^\d{4}-\d{2}/.test(d)&&d>lastD) lastD=d; }); });
+  const lastM=lastD.slice(0,7);
+  if(lastM) rows.forEach(([reg,act,ni0,ns0,m,s])=>{
+    if(mi&&m!==mi) return; if(st&&s!==st) return;
+    const ni=psNorm(ni0), ns=psNorm(ns0), inM=d=>d&&String(d).slice(0,7)===lastM;
+    if(RE_IKR.test(ni)&&inM(act)){ aI.add(ni); eI.push([act,m,ni]); }
+    if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){ if(inM(reg)||inM(act)){ aS.add(ns); if(inM(reg)) eS.push([reg,m,ns]); if(inM(act)) eS.push([act,m,ns]); } }
+  });
+  const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'], lastLbl=lastM?BLN[+lastM.slice(5,7)-1]+' '+lastM.slice(0,4):'-';
   $('#' + ID + 'Kpis').innerHTML=warn+[
     ['Aktivasi IKR',I.tot,'jumlah aktivasi IKR '+LB+'','c-ikr'],
     ['Registrasi Sales',S.regTot,'jumlah registrasi Sales '+LB+'','c-sales'],
     ['Aktivasi Sales',S.tot,'jumlah aktivasi Sales '+LB+'','c-st'],
     ['Tim IKR',Object.keys(I.nm).length,'jumlah nama IKR '+LB+'','c-mitra'],
+    ['Tim IKR Active',aI.size,'masih bekerja di '+lastLbl,'c-mitra','ikr'],
     ['Tim Sales',tS.size,'jumlah nama Sales '+LB+'','c-ikr'],
-    ...(ACTIVE?[['Tim Sales Active',[...tS].filter(n=>ACTIVE.has(n.toLowerCase())).length,'dari '+ACTIVE.size+' sales aktif','c-st']]:[])
-  ].map(([k,v,d,c])=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
+    ['Tim Sales Active',aS.size,'masih bekerja di '+lastLbl,'c-st','sales']
+  ].map(([k,v,d,c,a])=>`<div class="kpi ${c}"${a?` data-act="${a}" role="button" tabindex="0" style="cursor:pointer" title="Klik untuk melihat nama tim aktif"`:''}><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
+  const kbox=$('#' + ID + 'Kpis');
+  const openAct=e=>{ const c=e.target.closest('[data-act]'); if(!c) return; const isI=c.dataset.act==='ikr', ents=isI?eI:eS, list=chPopFromEntries(ents), nn=isI?aI.size:aS.size;
+    chPop((isI?'Tim IKR Active':'Tim Sales Active')+' · '+lastLbl, LB+' · '+fmt(nn)+' nama · '+list.length+' mitra', list, 'Angka = '+(isI?'aktivasi':'registrasi + aktivasi')+' per nama di '+lastLbl+'. Klik mitra untuk melihat nama. Tekan Esc atau klik di luar untuk menutup.'); };
+  kbox.onclick=openAct; kbox.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ if(e.target.closest('[data-act]')){ e.preventDefault(); openAct(e); } } };
   psChart(I.dy,S.regDy,S.dy,DL);
   psND=ND; psNameTable(ND); psNameList(rows);
   $('#' + ID + 'IkrNames').innerHTML=psNames(I.nm,'var(--s-ikr)','ikr');
