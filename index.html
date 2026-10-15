@@ -1607,6 +1607,7 @@ function chPopPaint(){
 let rwData=null;
 function rwOpen(k){
   const o=rwData&&rwData[k]; if(!o) return;
+  if(o.list){ chPop(o.t+' · '+o.lbl,'Pencapaian All Mitra · '+fmt(o.v)+' nama · '+o.list.length+' mitra',o.list,'Angka = '+(o.isS?'registrasi + aktivasi':'aktivasi')+' per nama di '+o.lbl+'. Klik mitra untuk melihat nama. Tekan Esc atau klik di luar untuk menutup.'); return; }
   if(o.team){ const pc2=x=>o.v?(x/o.v*100).toFixed(1).replace('.',',')+'%':'0%';
     $('#rwPopBody').innerHTML=`<h3>${esc(o.t)}</h3><div class="rw-big">${fmt(o.v)}</div><div class="rw-sub">ID distinct yang punya aktivitas pada periode terpilih.</div>
       <div class="rw-row"><span>ID terdaftar</span><b>${fmt(o.reg)}</b><em>${pc2(o.reg)}</em></div><div class="rw-bar"><i style="width:${o.v?o.reg/o.v*100:0}%"></i></div>
@@ -1657,12 +1658,24 @@ function renderDash(){
   const lead=ps.filter(p=>p.posisi==='Lead').length;
   const fresh=!!$('#v-dashboard')._fresh; $('#v-dashboard')._fresh=false;
   { const DI=hcData('IKR'), DS=hcData('Sales');
+    // Tim aktif = ID yang masih punya aktivitas di bulan terakhir data (tidak ikut filter periode)
+    const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    let lastMM=0; const scan=(o)=>{ for(const k in o){ if((Number(o[k])||0)>0&&/^1[0-2]-/.test(k)) lastMM=Math.max(lastMM,+k.slice(0,2)); } };
+    DI.rows.forEach(r=>scan(r.dy)); DS.rows.forEach(r=>{ scan(r.dy); scan(r.dr); });
+    const pre=lastMM?String(lastMM).padStart(2,'0')+'-':'', lastLbl=lastMM?BLN[lastMM-1]+' 2026':'-';
+    const cnt=o=>{ let n=0; if(pre) for(const k in o) if(k.startsWith(pre)) n+=Number(o[k])||0; return n; };
+    const actTeam=(t,D,isS,c)=>{ const M=new Map(); let v=0;
+      D.rows.forEach(r=>{ const n=cnt(r.dy)+(isS?cnt(r.dr):0); if(n<=0) return; v++; const mk=r.mitra||'(Tanpa mitra)'; let o=M.get(mk); if(!o){ o={name:mk,total:0,people:[]}; M.set(mk,o); } o.total+=n; o.people.push({nama:r.nama||r.id||'(tanpa nama)',n}); });
+      const list=[...M.values()].map(o=>({name:o.name,total:o.total,people:o.people.sort((a,b)=>b.n-a.n||a.nama.localeCompare(b.nama,'id'))})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name,'id'));
+      return {t,v,c,d:'masih bekerja di '+lastLbl,list,lbl:lastLbl,isS}; };
     rwData={
       ikr:{t:'Total HC Tim IKR',v:DI.tot,no:DI.nA,reg:DI.hTA,bel:DI.hBA,c:'c-ikr',d:'baris aktivasi IKR'},
       reg:{t:'Total registrasi Sales',v:DS.rt,no:DS.nR,reg:DS.hTR,bel:DS.hBR,c:'c-sales',d:'baris registrasi Sales'},
       act:{t:'Total aktivasi Sales',v:DS.tot,no:DS.nA,reg:DS.hTA,bel:DS.hBA,c:'c-st',d:'baris aktivasi Sales'},
       tikr:{team:1,t:'Total Tim IKR',v:DI.uN,reg:DI.uT,bel:DI.uB,c:'c-mitra',d:'ID IKR distinct'},
-      tsal:{team:1,t:'Total Tim Sales',v:DS.uN,reg:DS.uT,bel:DS.uB,c:'c-ikr',d:'ID Sales distinct'}
+      aikr:actTeam('Tim IKR Active',DI,false,'c-mitra'),
+      tsal:{team:1,t:'Total Tim Sales',v:DS.uN,reg:DS.uT,bel:DS.uB,c:'c-ikr',d:'ID Sales distinct'},
+      asal:actTeam('Tim Sales Active',DS,true,'c-st')
     };
     rwCharts(DI,DS);
     $('#rwKpis').innerHTML=Object.keys(rwData).map(k=>{ const o=rwData[k]; return `<div class="kpi ${o.c} rw-pick" data-rw="${k}" role="button" tabindex="0" title="Klik untuk rincian ID number"><div class="k">${o.t}</div><div class="v">${fmt(o.v)}</div><div class="d">${o.d} · klik untuk rincian</div></div>`; }).join(''); }
