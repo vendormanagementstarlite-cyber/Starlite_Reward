@@ -2461,9 +2461,9 @@ function renderProj(){
     ['Aktivasi IKR',pI,'aktivasi IKR '+LB+' · '+lastLbl,'c-ikr'],
     ['Registrasi Sales',pR,'registrasi Sales '+LB+' · '+lastLbl,'c-sales'],
     ['Aktivasi Sales',pA,'aktivasi Sales '+LB+' · '+lastLbl,'c-st'],
-    ['Tim IKR',Object.keys(I.nm).length,'jumlah nama IKR '+LB+'','c-mitra'],
+    ['Tim IKR',aI.size,'jumlah nama IKR '+LB+' · '+lastLbl,'c-mitra'],
     ['Tim IKR Active',aI.size,'masih bekerja di '+lastLbl,'c-mitra','ikr'],
-    ['Tim Sales',tS.size,'jumlah nama Sales '+LB+'','c-ikr'],
+    ['Tim Sales',aS.size,'jumlah nama Sales '+LB+' · '+lastLbl,'c-ikr'],
     ['Tim Sales Active',aS.size,'masih bekerja di '+lastLbl,'c-st','sales']
   ].map(([k,v,d,c,a])=>`<div class="kpi ${c}"${a?` data-act="${a}" role="button" tabindex="0" style="cursor:pointer" title="Klik untuk melihat nama tim aktif"`:''}><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
   const kbox=$('#' + ID + 'Kpis');
