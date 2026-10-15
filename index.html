@@ -2447,20 +2447,20 @@ function renderProj(){
   });
   const tS=new Set([...Object.keys(S.regNm),...Object.keys(S.nm)]);
   // Tim aktif = nama yang masih bekerja di periode terakhir data (bulan/minggu/hari sesuai toggle); ikut semua filter (tanggal, mitra, stasiun)
-  const aI=new Set(), aS=new Set(), eI=[], eS=[]; let lastD='';
+  const aI=new Set(), aS=new Set(), eI=[], eS=[]; let lastD='', pI=0, pR=0, pA=0;
   rows.forEach(([reg,act,ni0,ns0,m,s])=>{ if(mi&&m!==mi) return; if(st&&s!==st) return; [reg,act].forEach(d=>{ if(d&&/^\d{4}-\d{2}/.test(d)&&inR(d)&&d>lastD) lastD=d; }); });
   const lastM=lastD?psBucket(lastD,psPeriod):'';
   if(lastM) rows.forEach(([reg,act,ni0,ns0,m,s])=>{
     if(mi&&m!==mi) return; if(st&&s!==st) return;
     const ni=psNorm(ni0), ns=psNorm(ns0), inM=d=>d&&inR(d)&&/^\d{4}-\d{2}-\d{2}/.test(d)&&psBucket(String(d).slice(0,10),psPeriod)===lastM;
-    if(RE_IKR.test(ni)&&inM(act)){ aI.add(ni); eI.push([act,m,ni]); }
-    if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){ if(inM(reg)||inM(act)){ aS.add(ns); if(inM(reg)) eS.push([reg,m,ns]); if(inM(act)) eS.push([act,m,ns]); } }
+    if(RE_IKR.test(ni)&&inM(act)){ aI.add(ni); eI.push([act,m,ni]); pI++; }
+    if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){ if(inM(reg)||inM(act)){ aS.add(ns); if(inM(reg)){ eS.push([reg,m,ns]); pR++; } if(inM(act)){ eS.push([act,m,ns]); if(reg) pA++; } } }
   });
   const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'], lastLbl=lastM?psBLabel(lastM,psPeriod)+(psPeriod==='month'?'':' '+lastM.slice(0,4)):'-';
   $('#' + ID + 'Kpis').innerHTML=warn+[
-    ['Aktivasi IKR',I.tot,'jumlah aktivasi IKR '+LB+'','c-ikr'],
-    ['Registrasi Sales',S.regTot,'jumlah registrasi Sales '+LB+'','c-sales'],
-    ['Aktivasi Sales',S.tot,'jumlah aktivasi Sales '+LB+'','c-st'],
+    ['Aktivasi IKR',pI,'aktivasi IKR '+LB+' · '+lastLbl,'c-ikr'],
+    ['Registrasi Sales',pR,'registrasi Sales '+LB+' · '+lastLbl,'c-sales'],
+    ['Aktivasi Sales',pA,'aktivasi Sales '+LB+' · '+lastLbl,'c-st'],
     ['Tim IKR',Object.keys(I.nm).length,'jumlah nama IKR '+LB+'','c-mitra'],
     ['Tim IKR Active',aI.size,'masih bekerja di '+lastLbl,'c-mitra','ikr'],
     ['Tim Sales',tS.size,'jumlah nama Sales '+LB+'','c-ikr'],
