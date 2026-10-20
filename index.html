@@ -706,6 +706,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .rw-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
 .grid2:has(.ps-chart){grid-template-columns:repeat(2,minmax(0,1fr))}@media (max-width:900px){.grid2:has(.ps-chart){grid-template-columns:minmax(0,1fr)}}
 #rwKpis,#psKpis,#pnKpis,#gmKpis{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+#dQ4.on{background:var(--ink,#0B3D7A);color:#fff;border-color:transparent}
 .chk{outline:none;cursor:pointer}.chk:hover .b,.chk:focus-visible .b{opacity:.8}.chrow:hover .nm{color:var(--accent);font-weight:700}.ps-chart svg{max-width:none}
 </style>
 </head>
@@ -887,7 +888,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div>
       
       </div>
-      <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
+      <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" aria-label="Sampai tanggal"></span><button type="button" class="btn btn-ghost btn-sm" id="dQ4" aria-pressed="false" title="Tampilkan hanya Q4 (Oktober–Desember 2026)">Q4 Okt–Des</button><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
       <div class="kpis" id="rwKpis"></div>
       <div class="grid2" id="rwCharts" style="margin-bottom:18px">
         <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Tim IKR</h2><p>Aktivasi per periode</p></div></div><div id="rwChIkr" class="ps-chart"></div></div>
@@ -1421,8 +1422,11 @@ const fDashMitra=MultiFilter($('#dashMitra'),{all:'Semua mitra',noun:'mitra',onC
 const fLbMitra=MultiFilter($('#lbMitra'),{all:'Semua mitra',noun:'mitra',onChange:lbChanged});
 const fLbStasiun=MultiFilter($('#lbStasiun'),{all:'Semua stasiun',noun:'stasiun',onChange:lbChanged});
 function lbChanged(){ $('#lbReset').hidden=!(fLbMitra.size()||fLbStasiun.size()); $('#v-leaderboard')._fresh=true; renderLB(); }
-function dashFilterUi(){ $('#dashReset').hidden=!(fDashMitra.size()||$('#dFrom').value||$('#dTo').value); }
+const Q4A=['2026-10-01','2026-12-31'];
+function dashFilterUi(){ $('#dashReset').hidden=!(fDashMitra.size()||$('#dFrom').value||$('#dTo').value);
+  const q=$('#dQ4'); if(q){ const on=$('#dFrom').value===Q4A[0]&&$('#dTo').value===Q4A[1]; q.setAttribute('aria-pressed',String(on)); q.classList.toggle('on',on); } }
 ['#dFrom','#dTo'].forEach(s=>$(s).addEventListener('change',()=>{ dashFilterUi(); $('#v-dashboard')._fresh=true; renderDash(); }));
+$('#dQ4').addEventListener('click',()=>{ const on=$('#dFrom').value===Q4A[0]&&$('#dTo').value===Q4A[1]; $('#dFrom').value=on?'':Q4A[0]; $('#dTo').value=on?'':Q4A[1]; dashFilterUi(); $('#v-dashboard')._fresh=true; renderDash(); });
 $('#dashReset').addEventListener('click',()=>{ fDashMitra.clear(); $('#dFrom').value=''; $('#dTo').value=''; dashFilterUi(); $('#v-dashboard')._fresh=true; renderDash(); });
 $('#lbReset').addEventListener('click',()=>{ fLbMitra.clear(); fLbStasiun.clear(); lbChanged(); });
 
@@ -1443,7 +1447,7 @@ let ccOpen={mitra:true,stasiun:true}; try{ Object.assign(ccOpen,JSON.parse(local
 const ccMore=(f,n)=>n<=10?'':(ccLimit[f]<n?`<button type="button" class="btn btn-ghost btn-sm perf-more" data-cm="${f}">Tampilkan semua (${fmt(n)})</button>`:`<button type="button" class="btn btn-ghost btn-sm perf-more" data-cm="${f}-less">Ringkas (10 teratas)</button>`);
 function ccApply(){ document.querySelectorAll('.cc-head').forEach(h=>{ const o=ccOpen[h.dataset.ct]!==false; h.setAttribute('aria-expanded',o); h.closest('.chart-card').classList.toggle('closed',!o); }); }
 function stackedBars(rows,max,titleFn){ return `<div class="hbars">${rows.map(([n,v],ri)=>`<div class="hbar" title="${esc(titleFn(n,v))}"><span class="nm">${esc(n)}</span><div class="track"><span class="anim-w" data-w="${v.i/max*100}%" style="width:0;transition-delay:${ri*70}ms;background:var(--s-ikr)"></span><span class="anim-w" data-w="${v.s/max*100}%" style="width:0;transition-delay:${ri*70+120}ms;background:var(--s-sales)"></span></div><span class="tv">${v.i+v.s}</span></div>`).join('')}</div>`; }
-let hcView='all'; try{ hcView=localStorage.getItem('starlite-hcv2')||'all'; }catch(e){}
+let hcView='bln'; try{ hcView=localStorage.getItem('starlite-hcv2')||'bln'; }catch(e){} if(hcView==='all') hcView='bln';
 function hcTrendInit(){ document.querySelectorAll('.hc-trend').forEach(e=>{ if(e._i) return; e._i=1; e.scrollLeft=e.scrollWidth;
   let d=null; e.addEventListener('pointerdown',ev=>{ if(ev.pointerType==='touch') return; d={x:ev.clientX,l:e.scrollLeft}; });
   window.addEventListener('pointermove',ev=>{ if(d) e.scrollLeft=d.l-(ev.clientX-d.x); }); window.addEventListener('pointerup',()=>{ d=null; }); }); }
@@ -1481,7 +1485,7 @@ const hcRowsA=role=>buildRank(role).map(r=>Object.assign({},r,{dy:r.dyA||hcCv(r.
 const hcNoIdA=()=>{ const a=state.ach||{}; return a.noIdA||(a.noId||[]).map(([t,d,m])=>[t,'2026-'+d,m]); };
 function hcDataA(role,all){
   const dp=dashRangeA(), inP=k=>!dp||dp.has(k), isS=role==='Sales';
-  const bk=(all||hcView==='all')?dp:hcBucketA(dp), inB=k=>inP(k)&&(!bk||bk.has(k));
+  const bk=dp, inB=k=>inP(k)&&(!bk||bk.has(k));
   const okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0);
   const rows=hcRowsA(role).filter(r=>okM(r.mitra));
   const dy={}, dr={}; let actN=0, nA=0, nR=0;
@@ -1713,7 +1717,7 @@ function renderDash(){
     let lastK=''; const scan=(D,o)=>{ for(const k in o){ if((Number(o[k])||0)>0&&(!D.dp||D.dp.has(k))&&k>lastK) lastK=k; } };
     DI.rows.forEach(r=>scan(DI,r.dy)); DS.rows.forEach(r=>{ scan(DS,r.dy); scan(DS,r.dr); });
     const pre=lastK.slice(0,7), lastLbl=lastK?BLN[+lastK.slice(5,7)-1]+' '+lastK.slice(0,4):'-';
-    const allV=hcView==='all', inSc=(D,k)=>(!D.dp||D.dp.has(k))&&(allV?(pre&&k.startsWith(pre)):!!(D.bk&&D.bk.has(k)));
+    const allV=true, inSc=(D,k)=>(!D.dp||D.dp.has(k))&&(allV?(pre&&k.startsWith(pre)):!!(D.bk&&D.bk.has(k)));
     const cnt=(D,o)=>{ let n=0; for(const k in o) if(inSc(D,k)) n+=Number(o[k])||0; return n; };
     const actTeam=(t,D,isS,c)=>{ const M=new Map(); let v=0;
       D.rows.forEach(r=>{ const n=cnt(D,r.dy)+(isS?cnt(D,r.dr):0); if(n<=0) return; v++; const mk=r.mitra||'(Tanpa mitra)'; let o=M.get(mk); if(!o){ o={name:mk,total:0,people:[]}; M.set(mk,o); } o.total+=n; o.people.push({nama:r.nama||r.id||'(tanpa nama)',n}); });
