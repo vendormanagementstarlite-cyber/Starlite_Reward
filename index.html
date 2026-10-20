@@ -1471,9 +1471,13 @@ function dashRangeA(){
   const lo=a<=b?a:b, hi=a<=b?b:a, f=k=>k.slice(8,10)+'/'+k.slice(5,7)+'/'+k.slice(0,4);
   return {lo,hi,has:k=>k>=lo&&k<=hi,label:lo===hi?f(lo):f(lo)+'–'+f(hi)};
 }
+// tanggal terakhir yang ada datanya (<= hari ini) dalam rentang filter: jadi acuan "minggu/hari terakhir"
+function hcLatestA(dp){ let mx=''; const t=isoOf(new Date()), up=k=>{ if(k<=t&&k>mx&&(!dp||dp.has(k))) mx=k; };
+  ['IKR','Sales'].forEach(role=>hcRowsA(role).forEach(r=>[r.dy,r.dr].forEach(o=>{ for(const k in o) if((Number(o[k])||0)>0) up(k); })));
+  hcNoIdA().forEach(x=>up(x[1])); return mx; }
 function hcBucketA(dp){
   const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-  let an=isoOf(new Date()); if(dp){ if(an<dp.lo) an=dp.lo; if(an>dp.hi) an=dp.hi; }
+  let an=hcLatestA(dp)||isoOf(new Date()); if(dp){ if(an<dp.lo) an=dp.lo; if(an>dp.hi) an=dp.hi; }
   const [y,m,d]=an.split('-').map(Number), inP=k=>!dp||dp.has(k);
   if(hcView==='hari') return {has:k=>k===an,label:DOW[new Date(y,m-1,d).getDay()]+', '+d+' '+MN[m-1]+' '+y};
   if(hcView==='mgg'){ const dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()-((dt.getUTCDay()+6)%7)); const mon=dt.toISOString().slice(0,10); dt.setUTCDate(dt.getUTCDate()+6); const sun=dt.toISOString().slice(0,10);
@@ -1485,7 +1489,7 @@ const hcRowsA=role=>buildRank(role).map(r=>Object.assign({},r,{dy:r.dyA||hcCv(r.
 const hcNoIdA=()=>{ const a=state.ach||{}; return a.noIdA||(a.noId||[]).map(([t,d,m])=>[t,'2026-'+d,m]); };
 function hcDataA(role,all){
   const dp=dashRangeA(), inP=k=>!dp||dp.has(k), isS=role==='Sales';
-  const bk=dp, inB=k=>inP(k)&&(!bk||bk.has(k));
+  const bk=(all||hcView==='bln')?dp:hcBucketA(dp), inB=k=>inP(k)&&(!bk||bk.has(k));
   const okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0);
   const rows=hcRowsA(role).filter(r=>okM(r.mitra));
   const dy={}, dr={}; let actN=0, nA=0, nR=0;
@@ -1717,7 +1721,7 @@ function renderDash(){
     let lastK=''; const scan=(D,o)=>{ for(const k in o){ if((Number(o[k])||0)>0&&(!D.dp||D.dp.has(k))&&k>lastK) lastK=k; } };
     DI.rows.forEach(r=>scan(DI,r.dy)); DS.rows.forEach(r=>{ scan(DS,r.dy); scan(DS,r.dr); });
     const pre=lastK.slice(0,7), lastLbl=lastK?BLN[+lastK.slice(5,7)-1]+' '+lastK.slice(0,4):'-';
-    const allV=true, inSc=(D,k)=>(!D.dp||D.dp.has(k))&&(allV?(pre&&k.startsWith(pre)):!!(D.bk&&D.bk.has(k)));
+    const allV=hcView==='bln', inSc=(D,k)=>(!D.dp||D.dp.has(k))&&(allV?(pre&&k.startsWith(pre)):!!(D.bk&&D.bk.has(k)));
     const cnt=(D,o)=>{ let n=0; for(const k in o) if(inSc(D,k)) n+=Number(o[k])||0; return n; };
     const actTeam=(t,D,isS,c)=>{ const M=new Map(); let v=0;
       D.rows.forEach(r=>{ const n=cnt(D,r.dy)+(isS?cnt(D,r.dr):0); if(n<=0) return; v++; const mk=r.mitra||'(Tanpa mitra)'; let o=M.get(mk); if(!o){ o={name:mk,total:0,people:[]}; M.set(mk,o); } o.total+=n; o.people.push({nama:r.nama||r.id||'(tanpa nama)',n}); });
