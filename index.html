@@ -2294,10 +2294,11 @@ const perfLimit={mitra:10,stasiun:10};
 let perfOpen={mitra:false,stasiun:false}; try{ Object.assign(perfOpen,JSON.parse(localStorage.getItem('starlite-perf')||'{}')); }catch(e){}
 function aggBy(field){
   const m=new Map();
-  const sc=dashScope(), sv=o=>{ let t=0; for(const k in (o||{})) if(sc.set.has(k)) t+=Number(o[k])||0; return t; };
-  buildRank('IKR').concat(buildRank('Sales')).forEach(r0=>{
+  const dpA=dashRangeA(), sc=hcView==='bln'?dpA:hcBucketA(dpA); perfCache.label=sc?sc.label:'Semua periode';   // ikut pilihan Bulan/Minggu/Hari seperti kartu atas
+  const sv=o=>{ let t=0; for(const k in (o||{})) if(!sc||sc.has(k)) t+=Number(o[k])||0; return t; };
+  hcRowsA('IKR').concat(hcRowsA('Sales')).forEach(r0=>{
     if(!(fDashMitra.has(r0.mitra)||(!r0.mitra&&fDashMitra.size()===0))) return;
-    const r=sc?Object.assign({},r0,{total:sv(r0.dy),reg:sv(r0.dr)}):r0;
+    const r=Object.assign({},r0,{total:sv(r0.dy),reg:sv(r0.dr)});
     const k=field==='stasiun'?String(r.stasiun||'').toUpperCase().trim():String(r.mitra||'').trim(); if(!k) return;
     let e=m.get(k); if(!e){ e={name:k,ikr:0,sAct:0,sReg:0,ikrN:0,salN:0,idy:{},sdy:{},sdr:{}}; m.set(k,e); }
     const add=(o,src)=>{ for(const d in (src||{})) o[d]=(o[d]||0)+(Number(src[d])||0); };
@@ -2306,24 +2307,26 @@ function aggBy(field){
   });
   return [...m.values()].filter(e=>e.ikr+e.sAct+e.sReg>0).sort((a,b)=>(b.ikr+b.sAct)-(a.ikr+a.sAct)||b.sReg-a.sReg||a.name.localeCompare(b.name,'id'));
 }
-const perfCache={mitra:[],stasiun:[]};
+const perfCache={mitra:[],stasiun:[],label:''};
 function renderPerf(){
   const el=$('#perf'); if(!el) return;
   const card=(field,title,sub)=>{
     const rows=aggBy(field); perfCache[field]=rows; const shown=rows.slice(0,perfLimit[field]), mx=Math.max(1,...rows.map(e=>e.ikr+e.sAct));
     const body=shown.length?shown.map((e,i)=>`<tr class="clk" data-pf="${field}|${esc(e.name)}"><td>${i+1}</td><td class="who"><b>${esc(e.name)}</b><small>${fmt(e.ikrN)} IKR · ${fmt(e.salN)} Sales aktif</small></td><td class="r num">${fmt(e.ikr)}</td><td class="r num">${fmt(e.sAct)}</td><td class="r num">${fmt(e.sReg)}</td><td style="min-width:140px"><div class="bar" style="height:10px;border-radius:99px;background:var(--line-2);overflow:hidden"><i style="display:block;height:100%;width:${(e.ikr+e.sAct)/mx*100}%;background:var(--accent);border-radius:99px"></i></div></td></tr>`).join(''):'<tr><td colspan="6"><div class="empty">Belum ada data pencapaian.</div></td></tr>';
-    const open=!!perfOpen[field], sum=`${fmt(rows.length)} ${field} · total ${fmt(rows.reduce((s,e)=>s+e.ikr+e.sAct,0))} HC`;
+    const open=!!perfOpen[field], sum=`${fmt(rows.length)} ${field} · total ${fmt(rows.reduce((s,e)=>s+e.ikr+e.sAct,0))} HC · ${esc(perfCache.label||'')}`;
     return `<div class="card perf-card lift${open?' open':''}"><button type="button" class="perf-head" data-pt="${field}" aria-expanded="${open}"><span><h2>${title}</h2><p class="sub">${open?sub:sum}</p></span><svg viewBox="0 0 24 24" class="perf-chev" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="perf-body" ${open?'':'hidden'}><div class="tbl-wrap"><table><thead><tr><th>#</th><th>${field==='mitra'?'Mitra':'Stasiun'}</th><th class="r">IKR (HC)</th><th class="r">Sales akt.</th><th class="r">Sales reg.</th><th></th></tr></thead><tbody>${body}</tbody></table></div>${rows.length>perfLimit[field]?`<button type="button" class="btn btn-ghost btn-sm perf-more" data-pm="${field}">Tampilkan semua (${fmt(rows.length)})</button>`:(perfLimit[field]>10&&rows.length>10?`<button type="button" class="btn btn-ghost btn-sm perf-more" data-pm="${field}-less">Ringkas</button>`:'')}</div></div>`; };
   setHTML(el,card('mitra','Pencapaian per mitra','Klik baris untuk lihat pencapaian per hari')+card('stasiun','Pencapaian per stasiun','Klik baris untuk lihat pencapaian per hari'));
 }
 function openAgg(field,name){
   const e=(perfCache[field]||[]).find(x=>x.name===name); if(!e) return;
-  const dn=qDn(), days=[]; for(let i=dn-1;i>=0;i--){ const d=new Date(2026,9,1+i), k=pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); days.push({d,i:e.idy[k]||0,a:e.sdy[k]||0,g:e.sdr[k]||0}); }
+  const days=[]; { const ks=[...Object.keys(e.idy),...Object.keys(e.sdy),...Object.keys(e.sdr)].sort(), dpa=dashRangeA(); let st=ks[0]||isoOf(new Date()), en=ks[ks.length-1]||st; if(dpa){ if(st<dpa.lo) st=dpa.lo; if(en>dpa.hi) en=dpa.hi; if(en<st) en=st; }
+    for(let d=new Date(+st.slice(0,4),+st.slice(5,7)-1,+st.slice(8,10)); isoOf(d)<=en; d.setDate(d.getDate()+1)){ const c=new Date(d), k=isoOf(c); days.push({d:c,i:e.idy[k]||0,a:e.sdy[k]||0,g:e.sdr[k]||0}); }
+    days.reverse(); if(days.length>366) days.length=366; }
   const mx=Math.max(1,...days.map(x=>x.i));
   $('#dayT').textContent=e.name; $('#dayS').textContent=(field==='mitra'?'Mitra':'Stasiun')+' · '+fmt(e.ikrN)+' IKR aktif · '+fmt(e.salN)+' Sales aktif';
   $('#daySum').innerHTML=`<div><b>${fmt(e.ikr)}</b><small>IKR (HC)</small></div><div><b>${fmt(e.sAct)}</b><small>Sales aktivasi</small></div><div><b>${fmt(e.sReg)}</b><small>Sales registrasi</small></div>`;
   $('#dayGap').innerHTML='';
-  $('#dayL').innerHTML=days.map(x=>`<div class="drow${x.i||x.a||x.g?'':' z'}"><span class="dd">${DOW[x.d.getDay()]}, ${x.d.getDate()} ${MONTHS[x.d.getMonth()]}</span><span class="db"><i style="width:${x.i/mx*100}%"></i></span><span class="dv">${fmt(x.i)}<small style="display:block;font-weight:500;color:var(--muted);font-size:11px;white-space:nowrap">Sales ${fmt(x.a)} · reg ${fmt(x.g)}</small></span></div>`).join('');
+  $('#dayL').innerHTML=days.map(x=>`<div class="drow${x.i||x.a||x.g?'':' z'}"><span class="dd">${DOW[x.d.getDay()]}, ${x.d.getDate()} ${MONTHS[x.d.getMonth()]} ${String(x.d.getFullYear()).slice(2)}</span><span class="db"><i style="width:${x.i/mx*100}%"></i></span><span class="dv">${fmt(x.i)}<small style="display:block;font-weight:500;color:var(--muted);font-size:11px;white-space:nowrap">Sales ${fmt(x.a)} · reg ${fmt(x.g)}</small></span></div>`).join('');
   $('#dayDlg').hidden=false; $('#dayL').scrollTop=0;
 }
 function gapChip(role,r){ const g=gapInfo(role,r); if(!g.next||g.kurang<=0) return ''; return `<small class="gap" title="Proyeksi akhir Q4 ≈ ${fmt(g.proj)} (${g.projTier})">→ ${g.next.n} · kurang ${fmt(g.kurang)}</small>`; }
