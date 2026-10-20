@@ -1505,8 +1505,8 @@ function hcBucketA(dp){
 const hcCv=o=>{ const x={}; for(const k in (o||{})) x['2026-'+k]=o[k]; return x; };   // cadangan bila Code.gs lama (hanya Q4)
 const hcRowsA=role=>buildRank(role).map(r=>Object.assign({},r,{dy:r.dyA||hcCv(r.dy),dr:r.drA||hcCv(r.dr)}));
 const hcNoIdA=()=>{ const a=state.ach||{}; return a.noIdA||(a.noId||[]).map(([t,d,m])=>[t,'2026-'+d,m]); };
-function hcDataA(role,all){
-  const dp=dashRangeA(), inP=k=>!dp||dp.has(k), isS=role==='Sales';
+function hcDataA(role,all,full){
+  const dp=full?dashRangeRawA():dashRangeA(), inP=k=>!dp||dp.has(k), isS=role==='Sales';
   const bk=(all||hcView==='bln')?dp:hcBucketA(dp), inB=k=>inP(k)&&(!bk||bk.has(k));
   const okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0);
   const rows=hcRowsA(role).filter(r=>okM(r.mitra));
@@ -1597,7 +1597,7 @@ function hcBars(dayMap,monthArr,color,role,kind,A){
 // ===== rincian per batang: klik batang → mitra → tim =====
 let hcSel=null;
 function hcDrillData(role,kind,keys){
-  const ks=new Set(keys), dp=dashRangeA(), okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0), M=new Map();
+  const ks=new Set(keys), dp=dashRangeRawA(), okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0), M=new Map();
   const add=(mitra,nama,n)=>{ if(!n) return; const key=mitra||'(Tanpa mitra)'; let o=M.get(key); if(!o){ o={name:key,total:0,people:[]}; M.set(key,o); } o.total+=n; o.people.push({nama,n}); };
   hcRowsA(role).filter(r=>okM(r.mitra)).forEach(r=>{ const src=kind==='reg'?r.dr:r.dy; let n=0; for(const k in src){ if(ks.has(k)&&(!dp||dp.has(k))) n+=Number(src[k])||0; } add(r.mitra,r.nama,n); });
   const want=kind==='reg'?'r':(role==='Sales'?'a':'i'), noid=new Map();
@@ -1656,6 +1656,7 @@ function barChart(box,map,color,name,o){
           +(v?`<text x="${x+bw/2}" y="${top+ph-h-4}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">${fmt(v)}</text>`:''))
       +`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(o.short(k))}</text></g>`; });
   box.innerHTML=s+'</svg><div class="ps-note">Klik batang untuk melihat rincian.'+(anyOver?' Nilai di atas '+fmt(cap)+' hanya ditampilkan angkanya agar naik turunnya terlihat jelas.':'')+(p==='week'?' Minggu Senin–Minggu, dipotong di pergantian bulan agar total sama dengan tampilan bulanan.':'')+'</div>';
+  if(o.scrollEnd) box.scrollLeft=box.scrollWidth;   // awal di periode terbaru (kanan), periode lama bisa digeser ke kiri
   box.onclick=e=>{ const g=e.target.closest('[data-bk]'); if(g&&o.pick) o.pick(g.dataset.bk); };
   box.onkeydown=e=>{ if(e.key!=='Enter'&&e.key!==' ') return; const g=e.target.closest('[data-bk]'); if(g&&o.pick){ e.preventDefault(); o.pick(g.dataset.bk); } };
 }
@@ -1717,7 +1718,7 @@ const rwLbl=(k,p,full)=>{ const [y,m,d]=k.split('-').map(Number);
   return d+' '+MONTHS[m-1]; };
 function rwChart1(box,map,color,name,role,kind){
   const p=rwPerOf();
-  barChart(box,map,color,name,{p,cap:2500,bucket:k=>rwBucket(k,p),full:bk=>rwLbl(bk,p,true),short:bk=>rwLbl(bk,p,false),
+  barChart(box,map,color,name,{p,cap:2500,scrollEnd:true,bucket:k=>rwBucket(k,p),full:bk=>rwLbl(bk,p,true),short:bk=>rwLbl(bk,p,false),
     pick:bk=>{ const ks=Object.keys(map||{}).filter(k=>rwBucket(k,p)===bk); const list=hcDrillData(role,kind,ks), tot=list.reduce((t,o)=>t+o.total,0);
       chPop(name+' · '+rwLbl(bk,p,true),'Tim '+role+' · total '+fmt(tot)+' · '+list.length+' mitra',list); }});
 }
@@ -1758,7 +1759,7 @@ function renderDash(){
       tsal:{team:1,t:'Total Tim Sales',v:DS.uN,reg:DS.uT,bel:DS.uB,c:'c-ikr',d:'ID Sales distinct'},
       asal:actTeam('Tim Sales Active',DS,true,'c-st')
     };
-    rwCharts(DI,DS);
+    rwCharts(hcDataA('IKR',false,true),hcDataA('Sales',false,true));   // chart memuat semua bulan (bisa digeser); tampilan awal di bulan terbaru
     $('#rwKpis').innerHTML=Object.keys(rwData).map(k=>{ const o=rwData[k]; return `<div class="kpi ${o.c} rw-pick" data-rw="${k}" role="button" tabindex="0" title="Klik untuk rincian ID number"><div class="k">${o.t}</div><div class="v">${fmt(o.v)}</div><div class="d">${o.d} · klik untuk rincian</div></div>`; }).join(''); }
   const kp=$('#kpis'); const prevK=kp._vals||[]; const kvals=[];
   const kHtml=[
