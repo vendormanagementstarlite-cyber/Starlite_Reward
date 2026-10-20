@@ -887,7 +887,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div>
       
       </div>
-      <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" min="2026-10-01" max="2026-12-31" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" min="2026-10-01" max="2026-12-31" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
+      <div class="dash-ctl" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:-4px 0 18px"><span class="rk-range" id="dRange" title="Filter tanggal. Kosongkan untuk melihat total semuanya"><input type="date" id="dFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="dTo" aria-label="Sampai tanggal"></span><div class="hcv hcv-top" id="dashView" role="group" aria-label="Rentang tampilan"><button type="button" data-hcv="all">Total</button><button type="button" data-hcv="bln">Bulan</button><button type="button" data-hcv="mgg">Minggu</button><button type="button" data-hcv="hari">Hari</button></div><div class="mf" id="dashMitra" data-align="right"></div><button type="button" class="btn btn-ghost btn-sm" id="dashReset" hidden>Hapus filter</button><button type="button" class="btn btn-ghost btn-sm" id="dashPdf">Unduh PDF</button><button type="button" class="btn btn-ghost btn-sm chk-btn" id="chkBtn" hidden>Pemeriksaan data <span class="chk-badge" id="chkBadge"></span></button></div>
       <div class="kpis" id="rwKpis"></div>
       <div class="grid2" id="rwCharts" style="margin-bottom:18px">
         <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Tim IKR</h2><p>Aktivasi per periode</p></div></div><div id="rwChIkr" class="ps-chart"></div></div>
@@ -1458,6 +1458,44 @@ function hcBucket(dp){
   const s=av.filter(x=>x.d.getMonth()===an.d.getMonth()); return {set:new Set(s.map(x=>x.k)),label:'Bulan '+['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][an.d.getMonth()]};
 }
 const dashScope=()=>{ const dp=dashPer(); return hcView==='all'?dp:hcBucket(dp); };
+
+/* ===== Dashboard Pencapaian All Mitra: SEMUA bulan (kunci tanggal ISO YYYY-MM-DD). Leaderboard & laporan tetap Q4 (Okt–Des) ===== */
+const isoOf=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+const MN_FULL=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+function dashRangeA(){
+  const a=$('#dFrom').value, b=$('#dTo').value||a; if(!/^\d{4}-\d{2}-\d{2}$/.test(a||'')) return null;
+  const lo=a<=b?a:b, hi=a<=b?b:a, f=k=>k.slice(8,10)+'/'+k.slice(5,7)+'/'+k.slice(0,4);
+  return {lo,hi,has:k=>k>=lo&&k<=hi,label:lo===hi?f(lo):f(lo)+'–'+f(hi)};
+}
+function hcBucketA(dp){
+  const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  let an=isoOf(new Date()); if(dp){ if(an<dp.lo) an=dp.lo; if(an>dp.hi) an=dp.hi; }
+  const [y,m,d]=an.split('-').map(Number), inP=k=>!dp||dp.has(k);
+  if(hcView==='hari') return {has:k=>k===an,label:DOW[new Date(y,m-1,d).getDay()]+', '+d+' '+MN[m-1]+' '+y};
+  if(hcView==='mgg'){ const dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()-((dt.getUTCDay()+6)%7)); const mon=dt.toISOString().slice(0,10); dt.setUTCDate(dt.getUTCDate()+6); const sun=dt.toISOString().slice(0,10);
+    return {has:k=>k>=mon&&k<=sun&&inP(k),label:'Minggu '+(+mon.slice(8,10))+' '+MN[+mon.slice(5,7)-1]+'–'+(+sun.slice(8,10))+' '+MN[+sun.slice(5,7)-1]+' '+sun.slice(0,4)}; }
+  const pre=an.slice(0,7); return {has:k=>k.startsWith(pre)&&inP(k),label:'Bulan '+MN_FULL[m-1]+' '+y};
+}
+const hcCv=o=>{ const x={}; for(const k in (o||{})) x['2026-'+k]=o[k]; return x; };   // cadangan bila Code.gs lama (hanya Q4)
+const hcRowsA=role=>buildRank(role).map(r=>Object.assign({},r,{dy:r.dyA||hcCv(r.dy),dr:r.drA||hcCv(r.dr)}));
+const hcNoIdA=()=>{ const a=state.ach||{}; return a.noIdA||(a.noId||[]).map(([t,d,m])=>[t,'2026-'+d,m]); };
+function hcDataA(role,all){
+  const dp=dashRangeA(), inP=k=>!dp||dp.has(k), isS=role==='Sales';
+  const bk=(all||hcView==='all')?dp:hcBucketA(dp), inB=k=>inP(k)&&(!bk||bk.has(k));
+  const okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0);
+  const rows=hcRowsA(role).filter(r=>okM(r.mitra));
+  const dy={}, dr={}; let actN=0, nA=0, nR=0;
+  let tA=0, tR=0, bA=0, bR=0, hTA=0, hTR=0, hBA=0, hBR=0, uN=0, uT=0, uB=0;
+  rows.forEach(r=>{ let a=0, g=0; for(const k in r.dy){ if(!inP(k)) continue; const n=Number(r.dy[k])||0; dy[k]=(dy[k]||0)+n; if(inB(k)) a+=n; } if(a>0) actN++;
+    if(isS) for(const k in r.dr){ if(!inP(k)) continue; const n=Number(r.dr[k])||0; dr[k]=(dr[k]||0)+n; if(inB(k)) g+=n; }
+    if((r.registered||r.inAch)&&(a>0||g>0)){ uN++; if(r.registered) uT++; else uB++; }
+    if(r.registered){ if(a>0) tA++; if(g>0) tR++; hTA+=a; hTR+=g; } else if(r.inAch){ if(a>0) bA++; if(g>0) bR++; hBA+=a; hBR+=g; } });
+  hcNoIdA().forEach(([t,d,mm])=>{ if(!inP(d)||!okM(canonMitra(mm||''))) return; const b=inB(d);
+    if(t==='i'&&!isS){ dy[d]=(dy[d]||0)+1; if(b) nA++; } else if(t==='a'&&isS){ dy[d]=(dy[d]||0)+1; if(b) nA++; } else if(t==='r'&&isS){ dr[d]=(dr[d]||0)+1; if(b) nR++; } });
+  const mon=o=>{ const a={}; for(const k in o){ const mk=k.slice(0,7); a[mk]=(a[mk]||0)+o[k]; } return a; };
+  const sumB=o=>{ let t=0; for(const k in o) if(inB(k)) t+=o[k]; return t; };
+  return {dp,bk,rows,dy,dr,m:mon(dy),rg:mon(dr),tot:sumB(dy),rt:sumB(dr),act:actN,nA,nR,tA,tR,bA,bR,hTA,hTR,hBA,hBR,uN,uT,uB};
+}
 const pKey=p=>{ const d=new Date(p.createdAt||''); return (isNaN(d)||d.getFullYear()!==2026)?'':pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); };
 function hcData(role,all){
   const dp=dashPer(), inP=k=>!dp||dp.set.has(k), isS=role==='Sales';
@@ -1493,16 +1531,28 @@ const hcTileHtml=(role,D)=>{
   const t=hcTiles(role,D), act=salView==='act', x=act?t[1]:t[0];
   return `<section class="hc-grp hc-one"><h5>${act?'Aktivasi':'Registrasi'}</h5><div class="hc-stats four row">${hcOne(x)}</div><p class="hc-dist">ID distinct: terdaftar <b>${fmt(act?D.tA:D.tR)}</b> · belum <b>${fmt(act?D.bA:D.bR)}</b></p></section>`;
 };
-function hcBars(dayMap,monthArr,color,role,kind){
+function hcBars(dayMap,monthArr,color,role,kind,A){
   const dz='';
   const mkKeys=m=>{ const n=new Date(2026,m,0).getDate(); return Array.from({length:n},(_,i)=>pad2(m)+'-'+pad2(i+1)); };
   const att=(it)=>{ const id=role+'|'+kind+'|'+it.keys[0]+'|'+it.keys.length; return ` class="r pick" data-sel="${id}" data-role="${role}" data-kind="${kind}" data-keys="${it.keys.join(',')}" data-lbl="${esc(it.l)}" tabindex="0" role="button"`; };
   const view=hcView==='all'?'bln':hcView, MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  if(view==='bln'&&A){ const ks=Object.keys(dayMap||{}).sort(); if(!ks.length) return '<p class="trend-hint">Belum ada data pada periode ini.</p>';
+    const mm=monthArr||{}, its=[]; let y=+ks[0].slice(0,4), m=+ks[0].slice(5,7); const ey=+ks[ks.length-1].slice(0,4), em=+ks[ks.length-1].slice(5,7);
+    while(y<ey||(y===ey&&m<=em)){ const mk=y+'-'+pad2(m), dim=new Date(y,m,0).getDate(); its.push({l:MN[m-1]+' '+y,v:mm[mk]||0,keys:Array.from({length:dim},(_,i)=>mk+'-'+pad2(i+1))}); if(++m>12){ m=1; y++; } }
+    its.reverse(); const mx2=Math.max(1,...its.map(x=>x.v));
+    return '<div class="hc-mon wide scroll">'+its.map(x=>`<div${att(x)}><span>${x.l}</span><div class="bar"><i style="width:${x.v/mx2*100}%;background:${color}"></i></div><b>${fmt(x.v)}</b></div>`).join('')+'</div>'+dz; }
   if(view==='bln'){ const mx=Math.max(1,...monthArr); return '<div class="hc-mon">'+['Okt','Nov','Des'].map((n,i)=>`<div${att({l:n,keys:mkKeys(10+i)})}><span>${n}</span><div class="bar"><i style="width:${monthArr[i]/mx*100}%;background:${color}"></i></div><b>${fmt(monthArr[i])}</b></div>`).join('')+'</div>'+dz; }
-  const dn=Math.min(92,Math.max(1,Math.floor((Date.now()-new Date(2026,9,1).getTime())/864e5)+1)), days=[];
-  for(let i=0;i<dn;i++){ const d=new Date(2026,9,1+i); const k=pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); days.push({d,k,v:(dayMap||{})[k]||0}); }
+  let dn, days=[];
+  if(A){ const ks=Object.keys(dayMap||{}).sort(), dpa=dashRangeA(); let st=ks[0]||isoOf(new Date()), en=isoOf(new Date());
+    if(ks.length&&ks[ks.length-1]>en) en=ks[ks.length-1]; if(en<st) en=st;
+    if(dpa){ if(st<dpa.lo) st=dpa.lo; if(en>dpa.hi) en=dpa.hi; if(en<st) en=st; }
+    for(let d=new Date(+st.slice(0,4),+st.slice(5,7)-1,+st.slice(8,10)); isoOf(d)<=en; d.setDate(d.getDate()+1)){ const c=new Date(d), k=isoOf(c); days.push({d:c,k,v:(dayMap||{})[k]||0}); }
+    if(days.length>366) days=days.slice(-366); dn=days.length; }
+  else { dn=Math.min(92,Math.max(1,Math.floor((Date.now()-new Date(2026,9,1).getTime())/864e5)+1));
+    for(let i=0;i<dn;i++){ const d=new Date(2026,9,1+i); const k=pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); days.push({d,k,v:(dayMap||{})[k]||0}); } }
   let items;
   if(view==='hari') items=days.map(x=>({l:DOW[x.d.getDay()]+', '+x.d.getDate()+' '+MN[x.d.getMonth()],v:x.v,keys:[x.k]}));
+  else if(A){ const W=new Map(); days.forEach(x=>{ const wk=rwBucket(x.k,'week'); let o=W.get(wk); if(!o){ o={l:rwLbl(wk,'week',true),v:0,keys:[]}; W.set(wk,o); } o.v+=x.v; o.keys.push(x.k); }); items=[...W.values()]; }
   else { items=[]; for(let w=0;w*7<dn;w++){ const s=days.slice(w*7,w*7+7), a=s[0].d, z=s[s.length-1].d;
     items.push({l:'M'+(w+1)+' · '+a.getDate()+(a.getMonth()!==z.getMonth()?' '+MN[a.getMonth()]:'')+'–'+z.getDate()+' '+MN[z.getMonth()],v:s.reduce((t,x)=>t+x.v,0),keys:s.map(x=>x.k)}); } }
   if(view==='hari'){
@@ -1521,11 +1571,11 @@ function hcBars(dayMap,monthArr,color,role,kind){
 // ===== rincian per batang: klik batang → mitra → tim =====
 let hcSel=null;
 function hcDrillData(role,kind,keys){
-  const ks=new Set(keys), dp=dashPer(), okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0), M=new Map();
+  const ks=new Set(keys), dp=dashRangeA(), okM=m=>fDashMitra.has(m)||(!m&&fDashMitra.size()===0), M=new Map();
   const add=(mitra,nama,n)=>{ if(!n) return; const key=mitra||'(Tanpa mitra)'; let o=M.get(key); if(!o){ o={name:key,total:0,people:[]}; M.set(key,o); } o.total+=n; o.people.push({nama,n}); };
-  buildRank(role).filter(r=>okM(r.mitra)).forEach(r=>{ const src=kind==='reg'?r.dr:r.dy; let n=0; for(const k in src){ if(ks.has(k)&&(!dp||dp.set.has(k))) n+=Number(src[k])||0; } add(r.mitra,r.nama,n); });
+  hcRowsA(role).filter(r=>okM(r.mitra)).forEach(r=>{ const src=kind==='reg'?r.dr:r.dy; let n=0; for(const k in src){ if(ks.has(k)&&(!dp||dp.has(k))) n+=Number(src[k])||0; } add(r.mitra,r.nama,n); });
   const want=kind==='reg'?'r':(role==='Sales'?'a':'i'), noid=new Map();
-  ((state.ach&&state.ach.noId)||[]).forEach(([t,d,mm])=>{ if(t!==want||!ks.has(d)||(dp&&!dp.set.has(d))) return; const m=canonMitra(mm||''); if(!okM(m)) return; noid.set(m,(noid.get(m)||0)+1); });
+  hcNoIdA().forEach(([t,d,mm])=>{ if(t!==want||!ks.has(d)||(dp&&!dp.has(d))) return; const m=canonMitra(mm||''); if(!okM(m)) return; noid.set(m,(noid.get(m)||0)+1); });
   noid.forEach((n,m)=>add(m,'Tanpa ID number',n));
   const list=[...M.values()]; list.forEach(o=>o.people.sort((a,b)=>b.n-a.n||a.nama.localeCompare(b.nama)));
   list.sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name));
@@ -1638,8 +1688,8 @@ const rwLbl=(k,p,full)=>{ const [y,m,d]=k.split('-').map(Number);
   return d+' '+MONTHS[m-1]; };
 function rwChart1(box,map,color,name,role,kind){
   const p=rwPerOf();
-  barChart(box,map,color,name,{p,bucket:k=>rwBucket('2026-'+k,p),full:bk=>rwLbl(bk,p,true),short:bk=>rwLbl(bk,p,false),
-    pick:bk=>{ const ks=Object.keys(map||{}).filter(k=>rwBucket('2026-'+k,p)===bk); const list=hcDrillData(role,kind,ks), tot=list.reduce((t,o)=>t+o.total,0);
+  barChart(box,map,color,name,{p,bucket:k=>rwBucket(k,p),full:bk=>rwLbl(bk,p,true),short:bk=>rwLbl(bk,p,false),
+    pick:bk=>{ const ks=Object.keys(map||{}).filter(k=>rwBucket(k,p)===bk); const list=hcDrillData(role,kind,ks), tot=list.reduce((t,o)=>t+o.total,0);
       chPop(name+' · '+rwLbl(bk,p,true),'Tim '+role+' · total '+fmt(tot)+' · '+list.length+' mitra',list); }});
 }
 function rwCharts(DI,DS){
@@ -1657,13 +1707,13 @@ function renderDash(){
   const mitraCount=new Set(ps.map(p=>p.mitra)).size, stCount=new Set(ps.map(p=>String(p.stasiun||'').toUpperCase()).filter(Boolean)).size;
   const lead=ps.filter(p=>p.posisi==='Lead').length;
   const fresh=!!$('#v-dashboard')._fresh; $('#v-dashboard')._fresh=false;
-  { const DI=hcData('IKR'), DS=hcData('Sales');
+  { const DI=hcDataA('IKR'), DS=hcDataA('Sales');
     // Tim aktif = ID yang masih punya aktivitas di bulan terakhir data (tidak ikut filter periode)
     const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    let lastMM=0; const scan=(o)=>{ for(const k in o){ if((Number(o[k])||0)>0&&/^1[0-2]-/.test(k)) lastMM=Math.max(lastMM,+k.slice(0,2)); } };
-    DI.rows.forEach(r=>scan(r.dy)); DS.rows.forEach(r=>{ scan(r.dy); scan(r.dr); });
-    const pre=lastMM?String(lastMM).padStart(2,'0')+'-':'', lastLbl=lastMM?BLN[lastMM-1]+' 2026':'-';
-    const allV=hcView==='all', inSc=(D,k)=>allV?(pre&&k.startsWith(pre)):!!(D.bk&&D.bk.set.has(k));
+    let lastK=''; const scan=(D,o)=>{ for(const k in o){ if((Number(o[k])||0)>0&&(!D.dp||D.dp.has(k))&&k>lastK) lastK=k; } };
+    DI.rows.forEach(r=>scan(DI,r.dy)); DS.rows.forEach(r=>{ scan(DS,r.dy); scan(DS,r.dr); });
+    const pre=lastK.slice(0,7), lastLbl=lastK?BLN[+lastK.slice(5,7)-1]+' '+lastK.slice(0,4):'-';
+    const allV=hcView==='all', inSc=(D,k)=>(!D.dp||D.dp.has(k))&&(allV?(pre&&k.startsWith(pre)):!!(D.bk&&D.bk.has(k)));
     const cnt=(D,o)=>{ let n=0; for(const k in o) if(inSc(D,k)) n+=Number(o[k])||0; return n; };
     const actTeam=(t,D,isS,c)=>{ const M=new Map(); let v=0;
       D.rows.forEach(r=>{ const n=cnt(D,r.dy)+(isS?cnt(D,r.dr):0); if(n<=0) return; v++; const mk=r.mitra||'(Tanpa mitra)'; let o=M.get(mk); if(!o){ o={name:mk,total:0,people:[]}; M.set(mk,o); } o.total+=n; o.people.push({nama:r.nama||r.id||'(tanpa nama)',n}); });
@@ -1697,14 +1747,14 @@ function renderDash(){
   (function(){
     const el=$('#hcMon'); if(!el) return;
     const mk=(role,label,color)=>{
-      const D=hcData(role), isS=role==='Sales';
+      const D=hcDataA(role), isS=role==='Sales';
       const unitTxt={bln:'bulan',mgg:'minggu',hari:'hari'}[hcView]||'bulan';
       const dist=isS?'':`<p class="hc-all">Jumlah ID (distinct): terdaftar <b>${fmt(D.tA)}</b> · belum terdaftar <b>${fmt(D.bA)}</b>.</p>`;
       const bars=(isS&&salView==='reg')
-        ? `<div class="hc-sub">Registrasi per ${unitTxt} · total ${fmt(D.rt)}</div>`+hcBars(D.dr,D.rg,'var(--accent)','Sales','reg')
-        : `<div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(D.dy,D.m,color,role,'akt');
+        ? `<div class="hc-sub">Registrasi per ${unitTxt} · total ${fmt(D.rt)}</div>`+hcBars(D.dr,D.rg,'var(--accent)','Sales','reg',true)
+        : `<div class="hc-sub">Aktivasi per ${unitTxt}</div>`+hcBars(D.dy,D.m,color,role,'akt',true);
       const toggle=isS?`<div class="hcv hcv-top sv" role="group" aria-label="Tampilkan registrasi atau aktivasi"><button type="button" data-sv="reg" aria-pressed="${salView==='reg'}">Registrasi</button><button type="button" data-sv="act" aria-pressed="${salView==='act'}">Aktivasi</button></div>`:'';
-      return `<div class="card hc-card lift ${isS?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi · ${D.bk?esc(D.bk.label):'Q4 2026'}</p></div>${toggle}</div>
+      return `<div class="card hc-card lift ${isS?'hc-sales':'hc-ikr'}"><div class="hc-top"><div><h2>${label}</h2><p class="sub">Monitoring HC aktivasi · ${D.bk?esc(D.bk.label):'Semua periode'}</p></div>${toggle}</div>
         <div class="${isS?'hc-single':'hc-stats four'}">${hcTileHtml(role,D)}</div>${dist}${bars}</div>`; };
     setHTML(el, mk('IKR','Tim IKR','var(--s-ikr)')+mk('Sales','Tim Sales','var(--s-sales)')); hcDrillPaint();
   })();
@@ -1826,7 +1876,7 @@ function buildRank(role){
   const regMap=new Map(regs.map(p=>[normKey(p.uid),p]));
   const seen=new Set(); const rows=[];
   ach.forEach(a=>{ seen.add(a.key); const p=regMap.get(a.key); const m=a.act.map(x=>Number(x)||0);
-    rows.push({key:a.key,id:a.id,region:a.region||'',nama:p?p.nama:(a.name||'(tanpa nama)'),mitra:canonMitra(p?p.mitra:(a.mitra||'')),mitraRaw:a.mitra||'',stasiun:p?p.stasiun:(a.stasiun||''),m,dy:a.dy||{},dr:a.dr||{},role,regM:(a.reg||[0,0,0]).map(x=>Number(x)||0),reg:(a.reg||[]).reduce((s,x)=>s+(Number(x)||0),0),total:m.reduce((s,x)=>s+x,0),registered:!!p,inAch:true}); });
+    rows.push({key:a.key,id:a.id,region:a.region||'',nama:p?p.nama:(a.name||'(tanpa nama)'),mitra:canonMitra(p?p.mitra:(a.mitra||'')),mitraRaw:a.mitra||'',stasiun:p?p.stasiun:(a.stasiun||''),m,dy:a.dy||{},dr:a.dr||{},dyA:a.dyA,drA:a.drA,role,regM:(a.reg||[0,0,0]).map(x=>Number(x)||0),reg:(a.reg||[]).reduce((s,x)=>s+(Number(x)||0),0),total:m.reduce((s,x)=>s+x,0),registered:!!p,inAch:true}); });
   regs.forEach(p=>{ const k=normKey(p.uid); if(seen.has(k)) return; seen.add(k);
     rows.push({key:k,id:p.uid,region:'',nama:p.nama,mitra:canonMitra(p.mitra),mitraRaw:p.mitra||'',stasiun:p.stasiun,dy:{},dr:{},role,m:[0,0,0],regM:[0,0,0],reg:0,total:0,registered:true,inAch:false}); });
   const T=TGT[role]; const gmax={}; rows.forEach(r=>{ const k=r.region||'—'; gmax[k]=Math.max(gmax[k]||0,r.total); });
