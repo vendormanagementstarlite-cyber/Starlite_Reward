@@ -1647,15 +1647,23 @@ function barChart(box,map,color,name,o){
   const minGw=p==='day'?34:p==='week'?46:56;
   const gw=Math.max(minGw,(cw-left-6)/keys.length), bw=Math.min(48,gw*.62), W=left+keys.length*gw+6, fit=W<=cw+1;
   let s=`<svg width="${fit?'100%':W}" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet" role="img" aria-label="${esc(name)}" style="display:block">`;
-  for(let v=0;v<=ymax;v+=nice){ const y=top+ph-(v/ymax)*ph; s+=`<line x1="${left}" x2="${W}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".12"/><text x="${left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">${fmt(v)}</text>`; }
-  keys.forEach((k,i)=>{ const v=agg[k], h=v/ymax*ph, x=left+i*gw+(gw-bw)/2;
+  const sqrtS=o.scale==='sqrt', yf=sqrtS?(v=>Math.sqrt(v/ymax)):(v=>v/ymax);
+  let ticks=[]; if(!sqrtS){ for(let v=0;v<=ymax;v+=nice) ticks.push(v); }
+  else { const sel=[ymax]; let last=top; const e0=Math.floor(Math.log10(ymax));
+    for(let e=e0;e>=0;e--) for(const m of [5,2,1]){ const v=m*Math.pow(10,e); if(v>=ymax) continue; const y=top+ph-yf(v)*ph; if(y-last>=16&&(top+ph)-y>=16){ sel.push(v); last=y; } }
+    ticks=[0,...sel]; }
+  const split=!fit&&!!o.scrollEnd; let axs='';
+  for(const v of ticks){ const y=top+ph-yf(v)*ph; s+=`<line x1="${left}" x2="${W}" y1="${y}" y2="${y}" stroke="currentColor" opacity=".12"/>`; axs+=`<text x="${left-6}" y="${y+4}" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">${fmt(v)}</text>`; }
+  if(!split) s+=axs; else s=s.replace('style="display:block">','style="display:block;margin-left:'+(-left)+'px">');
+  keys.forEach((k,i)=>{ const v=agg[k], h=yf(v)*ph, x=left+i*gw+(gw-bw)/2;
     s+=`<g class="chk" data-bk="${esc(k)}" tabindex="0" role="button" aria-label="${esc(o.full(k))}: ${fmt(v)}, klik untuk rincian"><rect x="${left+i*gw}" y="${top-14}" width="${gw}" height="${H-top+14}" fill="transparent"></rect>`
       +(over(k)
         ? `<text class="b" x="${left+i*gw+gw/2}" y="${top+14}" text-anchor="middle" font-size="12" font-weight="800" fill="${color}"><title>${esc(o.full(k))} · ${esc(name)}: ${fmt(v)} (melebihi ${fmt(cap)}, klik untuk rincian)</title>${fmt(v)}</text><line x1="${left+i*gw+gw/2}" x2="${left+i*gw+gw/2}" y1="${top+20}" y2="${top+ph}" stroke="${color}" stroke-width="1.5" stroke-dasharray="2 4" opacity=".45"/>`
         : `<rect class="b" x="${x}" y="${top+ph-h}" width="${bw}" height="${h}" rx="3" fill="${color}"><title>${esc(o.full(k))} · ${esc(name)}: ${fmt(v)} (klik untuk rincian)</title></rect>`
           +(v?`<text x="${x+bw/2}" y="${top+ph-h-4}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".8">${fmt(v)}</text>`:''))
       +`<text x="${left+i*gw+gw/2}" y="${H-bot+16}" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".75">${esc(o.short(k))}</text></g>`; });
-  box.innerHTML=s+'</svg><div class="ps-note">Klik batang untuk melihat rincian.'+(anyOver?' Nilai di atas '+fmt(cap)+' hanya ditampilkan angkanya agar naik turunnya terlihat jelas.':'')+(p==='week'?' Minggu Senin–Minggu, dipotong di pergantian bulan agar total sama dengan tampilan bulanan.':'')+'</div>';
+  const chartHtml=split?`<div style="display:flex;width:${W}px"><svg width="${left}" height="${H}" style="position:sticky;left:0;flex:none;z-index:1;background:var(--surface,#fff);color:inherit" aria-hidden="true">${axs}</svg>${s}</svg></div>`:s+'</svg>';
+  box.innerHTML=chartHtml+'<div class="ps-note" style="position:sticky;left:0;width:'+cw+'px">Klik batang untuk melihat rincian.'+(sqrtS?' Skala sumbu Y diperhalus (akar) agar naik turun nilai kecil tetap terlihat; angka di batang adalah nilai asli.':'')+(anyOver?' Nilai di atas '+fmt(cap)+' hanya ditampilkan angkanya agar naik turunnya terlihat jelas.':'')+(p==='week'?' Minggu Senin–Minggu, dipotong di pergantian bulan agar total sama dengan tampilan bulanan.':'')+'</div>';
   if(o.scrollEnd) box.scrollLeft=box.scrollWidth;   // awal di periode terbaru (kanan), periode lama bisa digeser ke kiri
   box.onclick=e=>{ const g=e.target.closest('[data-bk]'); if(g&&o.pick) o.pick(g.dataset.bk); };
   box.onkeydown=e=>{ if(e.key!=='Enter'&&e.key!==' ') return; const g=e.target.closest('[data-bk]'); if(g&&o.pick){ e.preventDefault(); o.pick(g.dataset.bk); } };
@@ -1718,7 +1726,7 @@ const rwLbl=(k,p,full)=>{ const [y,m,d]=k.split('-').map(Number);
   return d+' '+MONTHS[m-1]; };
 function rwChart1(box,map,color,name,role,kind){
   const p=rwPerOf();
-  barChart(box,map,color,name,{p,cap:2500,scrollEnd:true,bucket:k=>rwBucket(k,p),full:bk=>rwLbl(bk,p,true),short:bk=>rwLbl(bk,p,false),
+  barChart(box,map,color,name,{p,scale:'sqrt',scrollEnd:true,bucket:k=>rwBucket(k,p),full:bk=>rwLbl(bk,p,true),short:bk=>rwLbl(bk,p,false),
     pick:bk=>{ const ks=Object.keys(map||{}).filter(k=>rwBucket(k,p)===bk); const list=hcDrillData(role,kind,ks), tot=list.reduce((t,o)=>t+o.total,0);
       chPop(name+' · '+rwLbl(bk,p,true),'Tim '+role+' · total '+fmt(tot)+' · '+list.length+' mitra',list); }});
 }
