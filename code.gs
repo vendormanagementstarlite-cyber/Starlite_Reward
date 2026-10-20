@@ -293,6 +293,8 @@ function achCompute_() {
   const P2 = projectRows_();   // sumber ke-2 (spreadsheet Project: sheet postgre)
   const S1ROWS = [];           // baris sumber ke-1 (Ach sales ikr) untuk dashboard Persada/PNM/GMT
   out.persada = mergeProject_(P2, S1ROWS);
+  const NOIDA = [];   // idem NOID tetapi semua tanggal ('YYYY-MM-DD'), khusus dashboard Pencapaian All Mitra
+  const pushNoIdA = (t, d, m) => { if (d && NOIDA.length < 60000) NOIDA.push([t, d, m]); };
   const NOID = [];   // baris tanpa ID: [jenis ('i' aktivasi IKR, 'a' aktivasi Sales, 'r' registrasi Sales), 'MM-DD', mitra]
   const pushNoId = (t, d, m) => { if (d && NOID.length < 20000) NOID.push([t, d, m]); };
   const R = { rows: 0, actFilled: 0, actOut: 0, actBad: 0, regFilled: 0, regOut: 0, regBad: 0, ikrNoId: 0, ikrDup: 0, salActNoId: 0, salActNoReg: 0, salActDup: 0, salRegNoId: 0, salRegDup: 0, badSamples: [] };
@@ -326,6 +328,7 @@ function achCompute_() {
     const cust = String(at(r, I.cust)).trim() || ('row' + n);
     const rm = achMonth_(at(r, I.reg)), am = achMonth_(at(r, I.act));
     const hasReg = String(at(r, I.reg)).trim() !== '';
+    const actIso = achIso_(at(r, I.act)), regIso = achIso_(at(r, I.reg));   // semua bulan/tahun (dashboard All Mitra)
     { const pI = String(at(r, I.ikrName)).trim(), pS = String(at(r, I.salName)).trim();
       if (PROJECT_RE.test(pI) || PROJECT_RE.test(pS)) S1ROWS.push([achIso_(at(r, I.reg)), achIso_(at(r, I.act)), pI, pS, String(at(r, I.mitra)).trim(), String(at(r, I.st)).trim(), String(at(r, I.cust)).trim()]); }
     if (am) ALL.ikr[am - 1]++;
@@ -337,9 +340,9 @@ function achCompute_() {
     if (!String(at(r, I.cust)).trim() && (am || rm)) warn.noCust++;
     const mitra = String(at(r, I.mitra)).trim(), st = String(at(r, I.st)).trim(), rgn = String(at(r, I.reg2)).trim();
     [['ikr', at(r, I.ikrId), at(r, I.ikrName), at(r, I.ikrMail)], ['sales', at(r, I.sal), at(r, I.salName), at(r, I.salMail)]].forEach(([kind, rawId, nm, mail]) => {
-      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) { if (kind === 'ikr' ? am : (am || rm)) warn[kind === 'ikr' ? 'noIdIkr' : 'noIdSales']++; if (kind === 'ikr') { if (am) { R.ikrNoId++; pushNoId('i', achDay_(at(r, I.act)), mitra); } } else { if (am && hasReg) { R.salActNoId++; pushNoId('a', achDay_(at(r, I.act)), mitra); } if (rm) { R.salRegNoId++; pushNoId('r', achDay_(at(r, I.reg)), mitra); } } return; }   // ID kosong/placeholder → tidak dihitung
+      const key = achKey_(rawId); if (!key || /^(-+|0|null|undefined|n\/a|na|#n\/a|none|tidak ada|ny defined)$/.test(key)) { if (kind === 'ikr') { if (actIso) pushNoIdA('i', actIso, mitra); } else { if (actIso && hasReg) pushNoIdA('a', actIso, mitra); if (regIso) pushNoIdA('r', regIso, mitra); } if (kind === 'ikr' ? am : (am || rm)) warn[kind === 'ikr' ? 'noIdIkr' : 'noIdSales']++; if (kind === 'ikr') { if (am) { R.ikrNoId++; pushNoId('i', achDay_(at(r, I.act)), mitra); } } else { if (am && hasReg) { R.salActNoId++; pushNoId('a', achDay_(at(r, I.act)), mitra); } if (rm) { R.salRegNoId++; pushNoId('r', achDay_(at(r, I.reg)), mitra); } } return; }   // ID kosong/placeholder → tidak dihitung
       const M = maps[kind];
-      const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], dy: {}, dr: {}, nms: {}, sa: {}, sr: {} });
+      const e = M[key] || (M[key] = { id: achId_(rawId), key: key, name: '', email: '', mit: {}, stn: {}, rgn: {}, act: [0, 0, 0], reg: [0, 0, 0], dy: {}, dr: {}, dyA: {}, drA: {}, saA: {}, srA: {}, nms: {}, sa: {}, sr: {} });
       if (!e.name) e.name = String(nm).trim();
       { const nv = String(nm).trim(); if (nv) e.nms[nv] = 1; }
       if (!e.email) e.email = String(mail).trim();
@@ -352,17 +355,22 @@ function achCompute_() {
       if (kind === 'sales' && rm && e.sr[cust]) R.salRegDup++;
       if (okAct && !e.sa[cust]) { e.sa[cust] = 1; e.act[am - 1]++; const dd = achDay_(at(r, I.act)); if (dd) e.dy[dd] = (e.dy[dd] || 0) + 1; }
       if (kind === 'sales' && rm && !e.sr[cust]) { e.sr[cust] = 1; e.reg[rm - 1]++; const dr = achDay_(at(r, I.reg)); if (dr) e.dr[dr] = (e.dr[dr] || 0) + 1; }
+      // Semua bulan (tanpa batas Q4): dipakai dashboard Pencapaian All Mitra saja; leaderboard tetap memakai dy/dr/act/reg di atas.
+      { const okActA = actIso && (kind === 'ikr' || hasReg);
+        if (okActA && !e.saA[cust]) { e.saA[cust] = 1; e.dyA[actIso] = (e.dyA[actIso] || 0) + 1; }
+        if (kind === 'sales' && regIso && !e.srA[cust]) { e.srA[cust] = 1; e.drA[regIso] = (e.drA[regIso] || 0) + 1; } }
     });
   });
   ['ikr', 'sales'].forEach(kind => {
     out[kind] = Object.keys(maps[kind]).map(k => { const e = maps[kind][k];
-      return { id: e.id, key: e.key, name: e.name, mitra: top(e.mit), stasiun: top(e.stn), region: top(e.rgn), act: e.act, reg: e.reg, dy: e.dy, dr: e.dr }; });
+      return { id: e.id, key: e.key, name: e.name, mitra: top(e.mit), stasiun: top(e.stn), region: top(e.rgn), act: e.act, reg: e.reg, dy: e.dy, dr: e.dr, dyA: e.dyA, drA: e.drA }; });
   });
   ['ikr', 'sales'].forEach(kind => Object.keys(maps[kind]).forEach(k => { const nn = Object.keys(maps[kind][k].nms); if (nn.length > 1 && warn.dup.length < 30) warn.dup.push({ kind: kind, id: maps[kind][k].id, names: nn.slice(0, 5) }); }));
   out.warn = warn;
   out.recon = R;
   out.all = ALL;
   out.noId = NOID;
+  out.noIdA = NOIDA;
   const sum = (arr, f) => arr.reduce((s, e) => s + f(e).reduce((a, b) => a + b, 0), 0);
   out.persada = mergeProject_(P2, S1ROWS);
   out.stats = { ikrIds: out.ikr.length, ikrAct: sum(out.ikr, e => e.act), salesIds: out.sales.length, salesAct: sum(out.sales, e => e.act), salesReg: sum(out.sales, e => e.reg) };
