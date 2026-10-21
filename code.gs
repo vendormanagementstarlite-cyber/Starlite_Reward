@@ -16,6 +16,7 @@ const SHEET_DATA = 'Data';
 const SHEET_MITRA = 'Mitra';
 const SHEET_STASIUN = 'Stasiun';
 const SHEET_FINAL = 'Hasil Final';
+const SHEET_ACTIVE = 'SALES IKR AKTIVE';   // daftar tim aktif keseluruhan: kolom SALES1000 ACTIVE & IKR1000 ACTIVE
 const SHEET_ACH = 'Ach sales ikr';   // data pencapaian (1 baris = 1 pelanggan): registration_date, active_date, customer_code, mitra, station, ikr_id, ikr_name, sales, sales_name, ...
 const HEADERS = ['NAMA MITRA','NAMA IKR','NAMA SALES','STASIUN','NAMA ACCOUNT','NO HP','ALAMAT EMAIL','POSISI','TANGGAL INPUT','ID','IKR ID / SALES ID'];
 const C = {MITRA:0, IKR:1, SALES:2, STASIUN:3, AKUN:4, HP:5, EMAIL:6, POSISI:7, TGL:8, ID:9, UID:10};
@@ -286,8 +287,26 @@ function achData_() {
   putBig_('ach', res, 120);   // cache singkat 30 detik; juga dihapus otomatis tiap ada perubahan di sheet
   return res;
 }
+/** Daftar nama Tim IKR / Sales aktif dari sheet SALES IKR AKTIVE (kolom 'SALES...' dan 'IKR...'; default A = Sales, B = IKR). */
+function activeNames_() {
+  const res = { ikr: [], sales: [], found: false };
+  try {
+    const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_ACTIVE);
+    if (!sh || sh.getLastRow() < 1) return res;
+    const v = sh.getRange(1, 1, sh.getLastRow(), Math.max(2, sh.getLastColumn())).getValues();
+    let cs = 0, ci = 1;
+    v[0].forEach((h, i) => { const t = String(h).trim().toLowerCase(); if (/^sales/.test(t)) cs = i; else if (/^ikr/.test(t)) ci = i; });
+    const seen = { ikr: {}, sales: {} };
+    for (let r = 1; r < v.length; r++) {
+      [['sales', cs], ['ikr', ci]].forEach(([k, c]) => { const n = String(v[r][c] === undefined ? '' : v[r][c]).replace(/\s+/g, ' ').trim(); const key = n.toLowerCase(); if (n && !seen[k][key]) { seen[k][key] = 1; res[k].push(n); } });
+    }
+    res.found = true;
+  } catch (e) { res.error = String(e); }
+  return res;
+}
 function achCompute_() {
   const out = { ikr: [], sales: [], found: false, rows: 0 };
+  out.active = activeNames_();
   const warn = { noIdIkr: 0, noIdSales: 0, noCust: 0, dup: [] };
   const ALL = { ikr: [0, 0, 0], salesAct: [0, 0, 0], salesReg: [0, 0, 0] };
   const P2 = projectRows_();   // sumber ke-2 (spreadsheet Project: sheet postgre)
