@@ -2603,14 +2603,14 @@ function renderProj(){
     ['Aktivasi IKR',pI,'aktivasi IKR '+LB+' · '+lastLbl,'c-ikr'],
     ['Registrasi Sales',pR,'registrasi Sales '+LB+' · '+lastLbl,'c-sales'],
     ['Aktivasi Sales',pA,'aktivasi Sales '+LB+' · '+lastLbl,'c-st'],
-    ['Tim IKR',aI.size,'jumlah nama IKR '+LB+' · '+lastLbl,'c-mitra'],
-    ['Tim IKR Active',shI.length?shI.length:aI.size,shI.length?'Seluruh Tim IKR yang aktif (sheet SALES IKR AKTIVE)':'masih bekerja di '+lastLbl,'c-mitra','ikr'],
-    ['Tim Sales',aS.size,'jumlah nama Sales '+LB+' · '+lastLbl,'c-ikr'],
-    ['Tim Sales Active',shS.length?shS.length:aS.size,shS.length?'Seluruh Tim Sales yang aktif (sheet SALES IKR AKTIVE)':'masih bekerja di '+lastLbl,'c-st','sales']
+    ['Tim IKR',shI.length?shI.length:aI.size,shI.length?'Seluruh Tim IKR yang aktif (sheet SALES IKR AKTIVE)':'jumlah nama IKR '+LB+' · '+lastLbl,'c-mitra',shI.length?'ikrsh':''],
+    ['Tim IKR Active',aI.size,'masih bekerja di '+lastLbl,'c-mitra','ikr'],
+    ['Tim Sales',shS.length?shS.length:aS.size,shS.length?'Seluruh Tim Sales yang aktif (sheet SALES IKR AKTIVE)':'jumlah nama Sales '+LB+' · '+lastLbl,'c-ikr',shS.length?'salessh':''],
+    ['Tim Sales Active',aS.size,'masih bekerja di '+lastLbl,'c-st','sales']
   ].map(([k,v,d,c,a])=>`<div class="kpi ${c}"${a?` data-act="${a}" role="button" tabindex="0" style="cursor:pointer" title="Klik untuk melihat nama tim aktif"`:''}><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
   const kbox=$('#' + ID + 'Kpis');
-  const openAct=e=>{ const c=e.target.closest('[data-act]'); if(!c) return; const isI=c.dataset.act==='ikr', ents=isI?eI:eS, sh=isI?shI:shS;
-    if(sh.length){ const list=shList(sh,ents); chPop((isI?'Tim IKR Active':'Tim Sales Active')+' · keseluruhan', LB+' · '+fmt(sh.length)+' nama · '+list.length+' mitra', list, 'Seluruh Tim '+(isI?'IKR':'Sales')+' yang aktif sesuai sheet SALES IKR AKTIVE. Angka = '+(isI?'aktivasi':'registrasi + aktivasi')+' pada periode terpilih ('+lastLbl+'); 0 = belum ada aktivitas. Klik mitra untuk melihat nama. Tekan Esc atau klik di luar untuk menutup.'); return; }
+  const openAct=e=>{ const c=e.target.closest('[data-act]'); if(!c) return; const ak=c.dataset.act, isI=ak.indexOf('ikr')===0, ents=isI?eI:eS, sh=/sh$/.test(ak)?(isI?shI:shS):[];
+    if(sh.length){ const list=shList(sh,ents); chPop((isI?'Tim IKR':'Tim Sales')+' · keseluruhan', LB+' · '+fmt(sh.length)+' nama · '+list.length+' mitra', list, 'Seluruh Tim '+(isI?'IKR':'Sales')+' yang aktif sesuai sheet SALES IKR AKTIVE. Angka = '+(isI?'aktivasi':'registrasi + aktivasi')+' pada periode terpilih ('+lastLbl+'); 0 = belum ada aktivitas. Klik mitra untuk melihat nama. Tekan Esc atau klik di luar untuk menutup.'); return; }
     const list=chPopFromEntries(ents), nn=isI?aI.size:aS.size;
     chPop((isI?'Tim IKR Active':'Tim Sales Active')+' · '+lastLbl, LB+' · '+fmt(nn)+' nama · '+list.length+' mitra', list, 'Angka = '+(isI?'aktivasi':'registrasi + aktivasi')+' per nama di '+lastLbl+'. Klik mitra untuk melihat nama. Tekan Esc atau klik di luar untuk menutup.'); };
   kbox.onclick=openAct; kbox.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ if(e.target.closest('[data-act]')){ e.preventDefault(); openAct(e); } } };
