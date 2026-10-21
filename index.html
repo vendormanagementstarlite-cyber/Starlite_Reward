@@ -710,6 +710,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .dxm{position:relative}.dxm-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:150px;background:var(--surface,#fff);border:1px solid var(--line-2);border-radius:12px;box-shadow:var(--shadow-up,0 8px 24px rgba(20,30,60,.15));padding:5px}.dxm-pop button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:8px;font:600 12.5px var(--font,inherit);color:var(--ink);cursor:pointer}.dxm-pop button:hover{background:var(--surface-2,#f1f4fa)}
 .dact{display:flex;gap:8px;align-items:center;flex:none}.dxl{border:1px solid var(--line-2);background:var(--surface,#fff);color:var(--ink);border-radius:99px;height:32px;padding:0 12px;font:600 12px var(--font,inherit);cursor:pointer;white-space:nowrap}.dxl:hover{background:var(--line-2)}
 .ps-tbl .nst{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:.04em;vertical-align:1px}.ps-tbl .nst.dep{background:#dcf5e8;color:#127a4b}.ps-tbl .nst.res{background:#fde3e3;color:#b42323}
+.ps-tbl .rg,.rg{color:#c4521c;font-weight:700}.ps-tbl .ak,.ak{color:#14804f;font-weight:700}.ps-tbl .sep{color:#aab3c5;margin:0 3px;font-weight:500}
 .ps-tbl .nmm{display:block;margin-top:1px;font-size:10.5px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ps-bar .mf{max-width:230px}.ps-bar .mf-q{width:calc(100% - 16px);max-width:none;box-sizing:border-box;margin:8px;padding:10px 12px;font-size:13px;border-radius:10px;background:var(--surface-2)}.ps-bar .mf-pop{max-width:calc(100vw - 32px)}
 .chk{outline:none;cursor:pointer}.chk:hover .b,.chk:focus-visible .b{opacity:.8}.chrow:hover .nm{color:var(--accent);font-weight:700}.ps-chart svg{max-width:none}
@@ -943,7 +944,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>IKR (Psd)</h2><p>Aktivasi per periode</p></div></div><div id="psChIkr" class="ps-chart"></div></div>
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Sales (Psd)</h2><p id="psSwSub">Registrasi per periode</p></div><div class="hcv hcv-top" id="psSw" role="group" aria-label="Tampilkan registrasi atau aktivasi"><button type="button" data-sw="reg" aria-pressed="true">Registrasi</button><button type="button" data-sw="act" aria-pressed="false">Aktivasi</button></div></div><div id="psChSal" class="ps-chart"></div></div>
       
-      <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Pencapaian per nama Psd</h2><p id="psNmSub">Per periode · ikuti tombol Harian / Bulanan di atas</p></div><div class="hcv hcv-top" id="psNmSw" role="group" aria-label="Metrik"><button type="button" data-nm="ikr" aria-pressed="true">IKR Aktivasi</button><button type="button" data-nm="reg" aria-pressed="false">Sales Registrasi</button><button type="button" data-nm="act" aria-pressed="false">Sales Aktivasi</button></div></div><div id="psNmTbl" class="ps-tblwrap"></div></div>
+      <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Pencapaian per nama Psd</h2><p id="psNmSub">Per periode · ikuti tombol Harian / Bulanan di atas</p></div><div class="hcv hcv-top" id="psNmSw" role="group" aria-label="Metrik"><button type="button" data-nm="ikr" aria-pressed="true">IKR</button><button type="button" data-nm="sales" aria-pressed="false">Sales</button></div></div><div id="psNmTbl" class="ps-tblwrap"></div></div>
       </div>
       <div class="grid2">
       <div class="card chart-card lift"><div class="chart-head"><div><h2>🏆 High Performance</h2><p>Di atas atau sama dengan rata-rata aktivasi · maks 5 teratas</p></div></div><div id="psHigh"></div></div>
@@ -972,7 +973,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>IKR (PNM)</h2><p>Aktivasi per periode</p></div></div><div id="pnChIkr" class="ps-chart"></div></div>
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Sales (PNM)</h2><p id="pnSwSub">Aktivasi per periode</p></div><div class="hcv hcv-top" id="pnSw" role="group" aria-label="Tampilkan registrasi atau aktivasi"><button type="button" data-sw="reg" aria-pressed="true">Registrasi</button><button type="button" data-sw="act" aria-pressed="false">Aktivasi</button></div></div><div id="pnChSal" class="ps-chart"></div></div>
       
-      <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Pencapaian per nama PNM</h2><p id="pnNmSub">Per periode · ikuti tombol Harian / Bulanan di atas</p></div><div class="hcv hcv-top" id="pnNmSw" role="group" aria-label="Metrik"><button type="button" data-nm="ikr" aria-pressed="true">IKR Aktivasi</button><button type="button" data-nm="reg" aria-pressed="false">Sales Registrasi</button><button type="button" data-nm="act" aria-pressed="false">Sales Aktivasi</button></div></div><div id="pnNmTbl" class="ps-tblwrap"></div></div>
+      <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Pencapaian per nama PNM</h2><p id="pnNmSub">Per periode · ikuti tombol Harian / Bulanan di atas</p></div><div class="hcv hcv-top" id="pnNmSw" role="group" aria-label="Metrik"><button type="button" data-nm="ikr" aria-pressed="true">IKR</button><button type="button" data-nm="sales" aria-pressed="false">Sales</button></div></div><div id="pnNmTbl" class="ps-tblwrap"></div></div>
       </div>
       <div class="grid2">
       <div class="card chart-card lift"><div class="chart-head"><div><h2>🏆 High Performance</h2><p>Di atas atau sama dengan rata-rata aktivasi · maks 5 teratas</p></div></div><div id="pnHigh"></div></div>
@@ -1001,7 +1002,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>IKR (GMT)</h2><p>Aktivasi per periode</p></div></div><div id="gmChIkr" class="ps-chart"></div></div>
     <div class="card chart-card lift"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Sales (GMT)</h2><p id="gmSwSub">Aktivasi per periode</p></div><div class="hcv hcv-top" id="gmSw" role="group" aria-label="Tampilkan registrasi atau aktivasi"><button type="button" data-sw="reg" aria-pressed="true">Registrasi</button><button type="button" data-sw="act" aria-pressed="false">Aktivasi</button></div></div><div id="gmChSal" class="ps-chart"></div></div>
       
-      <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Pencapaian per nama GMT</h2><p id="gmNmSub">Per periode · ikuti tombol Harian / Bulanan di atas</p></div><div class="hcv hcv-top" id="gmNmSw" role="group" aria-label="Metrik"><button type="button" data-nm="ikr" aria-pressed="true">IKR Aktivasi</button><button type="button" data-nm="reg" aria-pressed="false">Sales Registrasi</button><button type="button" data-nm="act" aria-pressed="false">Sales Aktivasi</button></div></div><div id="gmNmTbl" class="ps-tblwrap"></div></div>
+      <div class="card chart-card lift" style="grid-column:1/-1"><div class="chart-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h2>Pencapaian per nama GMT</h2><p id="gmNmSub">Per periode · ikuti tombol Harian / Bulanan di atas</p></div><div class="hcv hcv-top" id="gmNmSw" role="group" aria-label="Metrik"><button type="button" data-nm="ikr" aria-pressed="true">IKR</button><button type="button" data-nm="sales" aria-pressed="false">Sales</button></div></div><div id="gmNmTbl" class="ps-tblwrap"></div></div>
       </div>
       <div class="grid2">
       <div class="card chart-card lift"><div class="chart-head"><div><h2>🏆 High Performance</h2><p>Di atas atau sama dengan rata-rata aktivasi · maks 5 teratas</p></div></div><div id="gmHigh"></div></div>
@@ -1705,7 +1706,7 @@ async function dlXlsx(name,title,sub,list){
 function dlPng(name,title,sub,head,rows,o){
   o=o||{}; const al=o.align||[], F='"Plus Jakarta Sans",Inter,system-ui,-apple-system,"Segoe UI",sans-serif', PAD=24, RH=27, HH=32, TH=62;
   const m=document.createElement('canvas').getContext('2d'), mw=(t,b)=>{ m.font=(b?'700 ':'500 ')+'13px '+F; return m.measureText(String(t==null?'':t)).width; };
-  const W=head.map((h,ci)=>{ let w=mw(h,true); rows.forEach(r=>{ const t=r.cells[ci]; w=Math.max(w,mw(t,r.bold)+(ci===o.indentCol&&r.indent?16:0)); }); return Math.ceil(Math.min(o.maxW&&o.maxW[ci]||420,w+22)); });
+  const W=head.map((h,ci)=>{ let w=mw(h,true); rows.forEach(r=>{ const t=r.cells[ci]; w=Math.max(w,mw(Array.isArray(t)?t.join(' / '):t,r.bold)+(ci===o.indentCol&&r.indent?16:0)); }); return Math.ceil(Math.min(o.maxW&&o.maxW[ci]||420,w+22)); });
   const subTxt=(sub?sub+'  ·  ':'')+'Diunduh '+new Date().toLocaleString('id-ID',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const tw0=W.reduce((a,b)=>a+b,0), cw=Math.max(tw0+PAD*2,Math.ceil(mw(title,true)*1.4)+PAD*2,Math.ceil(mw(subTxt))+PAD*2,360), tw=tw0, ch=TH+HH+rows.length*RH+PAD+8;
   const sc=ch>7000?1:ch>3500?1.5:2, c=document.createElement('canvas'); c.width=Math.round(cw*sc); c.height=Math.round(ch*sc);
@@ -1719,7 +1720,9 @@ function dlPng(name,title,sub,head,rows,o){
     if(r.fill){ x.fillStyle=r.fill; x.fillRect(PAD,y,tw,RH); }
     r.cells.forEach((t,ci)=>{ const cf=r.cellFill&&r.cellFill[ci]; if(cf){ x.fillStyle=cf; x.fillRect(cx,y,W[ci],RH); }
       x.fillStyle=r.color&&r.color[ci]||(r.bold?'#0B3D7A':'#1b2540'); x.font=(r.bold?'700 ':'500 ')+'13px '+F; x.textAlign=al[ci]==='c'?'center':al[ci]==='r'?'right':'left';
-      const ind=(ci===o.indentCol&&r.indent)?16:0, tx=al[ci]==='c'?cx+W[ci]/2:al[ci]==='r'?cx+W[ci]-10:cx+10+ind; if(t!==''&&t!=null) x.fillText(String(t),tx,y+RH/2+1); cx+=W[ci]; });
+      const ind=(ci===o.indentCol&&r.indent)?16:0, tx=al[ci]==='c'?cx+W[ci]/2:al[ci]==='r'?cx+W[ci]-10:cx+10+ind; if(Array.isArray(t)){ const A=String(t[0]), B=String(t[1]), S=' / ', wA=x.measureText(A).width, wS=x.measureText(S).width, wB=x.measureText(B).width; let sx=cx+W[ci]/2-(wA+wS+wB)/2; x.textAlign='left';
+        x.fillStyle='#C4521C'; x.fillText(A,sx,y+RH/2+1); x.fillStyle='#9AA3B8'; x.fillText(S,sx+wA,y+RH/2+1); x.fillStyle='#14804F'; x.fillText(B,sx+wA+wS,y+RH/2+1); }
+      else if(t!==''&&t!=null) x.fillText(String(t),tx,y+RH/2+1); cx+=W[ci]; });
     x.strokeStyle='#d0d7e5'; x.lineWidth=1; x.strokeRect(PAD+.5,y+.5,tw,RH); let lx=PAD; W.forEach(w=>{ lx+=w; x.beginPath(); x.moveTo(lx+.5,y); x.lineTo(lx+.5,y+RH); x.stroke(); }); y+=RH; });
   c.toBlob(b=>{ if(!b){ toast('Gagal membuat gambar'); return; } const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name+'.png'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800); },'image/png');
 }
@@ -2564,75 +2567,85 @@ $('#' + ID + 'Tog').addEventListener('click',e=>{ const b=e.target.closest('butt
 let psNm='ikr', psNMm={};
 let psShI=new Set(), psShS=new Set();
 const psStat=n=>{ const L=psNm==='ikr'?psShI:psShS; return L.size?(L.has(n)?'DEPLOYED':'RESIGNED'):''; };
+const psPair=(c)=>c[0]+c[1]===0?'<td class="z">·</td>':null;
+function psNmPrep(ND){
+  const p=psPeriod, S=psNm==='sales', cols=new Set(), per={};
+  const add=(src,idx)=>{ const data=ND[src]||{}; Object.keys(data).forEach(n=>{ const o=per[n]=per[n]||{}; Object.keys(data[n]).forEach(d=>{ const k=psBucket(d,p); cols.add(k); const c=o[k]=o[k]||[0,0]; c[idx]+=data[n][d]; }); }); };
+  if(S){ add('reg',0); add('act',1); } else add('ikr',0);
+  const tot=n=>Object.values(per[n]).reduce((a,c)=>[a[0]+c[0],a[1]+c[1]],[0,0]), sz=c=>c[0]+c[1], names=Object.keys(per), ks=[...cols].sort().reverse();
+  names.sort((a,b)=>sz(tot(b))-sz(tot(a))||a.localeCompare(b,'id'));
+  const mx=Math.max(1,...names.map(n=>Math.max(...Object.values(per[n]).map(sz))));
+  return {p,S,per,names,ks,tot,sz,mx};
+}
 function psNameTable(ND){
-  const box=$('#' + ID + 'NmTbl'), p=psPeriod, data=ND[psNm]||{};
-  const names=Object.keys(data), per={}, cols=new Set();
-  names.forEach(n=>{ const o={}; Object.keys(data[n]).forEach(d=>{ const k=psBucket(d,p); o[k]=(o[k]||0)+data[n][d]; cols.add(k); }); per[n]=o; });
+  const box=$('#' + ID + 'NmTbl'), sub=$('#' + ID + 'NmSub'), D=psNmPrep(ND), {p,S,per,names,ks,tot,sz,mx}=D;
+  if(sub) sub.innerHTML=S?'Per periode · <span class="rg">Registrasi</span> / <span class="ak">Aktivasi</span> · ikuti tombol Harian / Bulanan di atas':'Per periode · ikuti tombol Harian / Bulanan di atas';
   if(!names.length){ box.innerHTML='<div class="empty" style="padding:14px">Belum ada data pada filter ini.</div>'; return; }
-  const ks=[...cols].sort().reverse();
-  const tot=n=>Object.values(per[n]).reduce((a,b)=>a+b,0);
-  names.sort((a,b)=>tot(b)-tot(a)||a.localeCompare(b,'id'));
-  const mx=Math.max(1,...names.map(n=>Math.max(...Object.values(per[n]))));
-  const color=psNm==='ikr'?'var(--s-ikr)':psNm==='reg'?'var(--s-sales)':'#1f9d6b';
+  const color=S?'var(--s-sales)':'var(--s-ikr)', fv=c=>S?'<span class="rg">'+fmt(c[0])+'</span><span class="sep">/</span><span class="ak">'+fmt(c[1])+'</span>':fmt(c[0]);
   let s='<table class="ps-tbl"><thead><tr><th class="nmc">Nama</th><th class="tot">Total</th>'+ks.map(k=>`<th title="${esc(psBLabel(k,p))}">${esc(psBShort(k,p))}</th>`).join('')+'</tr></thead><tbody>';
   names.forEach(n=>{
-    s+=`<tr><td class="nmc" title="${esc(n)}${psNMm[n]?' · '+esc(psNMm[n]):''}"><span class="nmn">${esc(n)}</span>${psStat(n)?`<span class="nst ${psStat(n)==='DEPLOYED'?'dep':'res'}">${psStat(n)}</span>`:''}${psNMm[n]?`<small class="nmm">${esc(psNMm[n])}</small>`:''}</td><td class="tot">${fmt(tot(n))}</td>`+ks.map(k=>{ const v=per[n][k]||0; return v?`<td style="background:color-mix(in srgb,${color} ${Math.round(12+v/mx*40)}%,transparent)">${fmt(v)}</td>`:'<td class="z">·</td>'; }).join('')+'</tr>';
+    s+=`<tr><td class="nmc" title="${esc(n)}${psNMm[n]?' · '+esc(psNMm[n]):''}"><span class="nmn">${esc(n)}</span>${psStat(n)?`<span class="nst ${psStat(n)==='DEPLOYED'?'dep':'res'}">${psStat(n)}</span>`:''}${psNMm[n]?`<small class="nmm">${esc(psNMm[n])}</small>`:''}</td><td class="tot">${fv(tot(n))}</td>`+ks.map(k=>{ const c=per[n][k]; return c&&sz(c)?`<td style="background:color-mix(in srgb,${color} ${S?Math.round(6+sz(c)/mx*16):Math.round(12+sz(c)/mx*40)}%,transparent)">${fv(c)}</td>`:'<td class="z">·</td>'; }).join('')+'</tr>';
   });
-  let sumRow='<tr><td class="nmc tot">Total</td><td class="tot">'+fmt(names.reduce((a,n)=>a+tot(n),0))+'</td>'+ks.map(k=>`<td class="tot">${fmt(names.reduce((a,n)=>a+(per[n][k]||0),0))}</td>`).join('')+'</tr>';
+  const colT=k=>names.reduce((a,n)=>{ const c=per[n][k]||[0,0]; return [a[0]+c[0],a[1]+c[1]]; },[0,0]), allT=names.reduce((a,n)=>{ const c=tot(n); return [a[0]+c[0],a[1]+c[1]]; },[0,0]);
+  let sumRow='<tr><td class="nmc tot">Total</td><td class="tot">'+fv(allT)+'</td>'+ks.map(k=>`<td class="tot">${fv(colT(k))}</td>`).join('')+'</tr>';
   box.innerHTML=s+sumRow+'</tbody></table>';
 }
 $('#' + ID + 'NmSw').addEventListener('click',e=>{ const b=e.target.closest('button[data-nm]'); if(!b) return; psNm=b.dataset.nm; document.querySelectorAll('#' + ID + 'NmSw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderProj(); });
 async function psNmDownload(){
-  const ND=psND; if(!ND) return; const p=psPeriod, data=ND[psNm]||{}, names=Object.keys(data), per={}, cols=new Set();
-  names.forEach(n=>{ const o={}; Object.keys(data[n]).forEach(d=>{ const k=psBucket(d,p); o[k]=(o[k]||0)+data[n][d]; cols.add(k); }); per[n]=o; });
+  const ND=psND; if(!ND) return; const D=psNmPrep(ND), {p,S,per,names,ks,tot,sz,mx}=D;
   if(!names.length){ toast('Belum ada data untuk diunduh'); return; }
-  const ks=[...cols].sort().reverse(), tot=n=>Object.values(per[n]).reduce((a,b)=>a+b,0);
-  names.sort((a,b)=>tot(b)-tot(a)||a.localeCompare(b,'id'));
-  const mLbl={ikr:'IKR Aktivasi',reg:'Sales Registrasi',act:'Sales Aktivasi'}[psNm], pLbl=p==='month'?'Bulanan':p==='week'?'Mingguan':'Harian';
-  const title='Pencapaian per nama '+LB+' · '+mLbl, sub=pLbl+' · '+names.length+' nama';
+  const mLbl=S?'Sales (Registrasi / Aktivasi)':'IKR', pLbl=p==='month'?'Bulanan':p==='week'?'Mingguan':'Harian';
+  const title='Pencapaian per nama '+LB+' · '+(S?'Sales':'IKR'), sub=pLbl+' · '+names.length+' nama'+(S?' · Registrasi (oranye) / Aktivasi (hijau)':'');
   const fname=(title+'_'+pLbl).replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'')+'_'+stamp();
-  const hex=psNm==='ikr'?'0B3D7A':psNm==='reg'?'D2622A':'1F9D6B', mx=Math.max(1,...names.map(n=>Math.max(...Object.values(per[n]))));
+  const hex=S?'D2622A':'0B3D7A', L=S?6:5;
   const blend=a=>{ const c=[0,2,4].map(i=>parseInt(hex.substr(i,2),16)); return 'FF'+c.map(v=>Math.round(255-(255-v)*a).toString(16).padStart(2,'0')).join('').toUpperCase(); };
+  const RG={argb:'FFC4521C'}, AK={argb:'FF14804F'};
+  const rich=(c)=>({richText:[{text:String(c[0]),font:{bold:true,color:RG,size:11}},{text:' / ',font:{color:{argb:'FF9AA3B8'},size:11}},{text:String(c[1]),font:{bold:true,color:AK,size:11}}]});
+  const heads=['No','Nama','Mitra','Status',...(S?['Total Reg','Total Akt']:['Total']),...ks.map(k=>psBLabel(k,p))];
   try{
     if(!window.ExcelJS) await loadScript(CDN+'exceljs/4.4.0/exceljs.min.js');
     const wb=new ExcelJS.Workbook(); wb.creator='Starlite';
-    const nc=5+ks.length, ws=wb.addWorksheet(mLbl.slice(0,31),{views:[{state:'frozen',xSplit:5,ySplit:5,showGridLines:false}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0}});
-    ws.columns=[{width:5},{width:34},{width:34},{width:13},{width:9},...ks.map(()=>({width:8.5}))];
+    const nc=L+ks.length, ws=wb.addWorksheet((S?'Sales':'IKR'),{views:[{state:'frozen',xSplit:L,ySplit:5,showGridLines:false}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0}});
+    ws.columns=[{width:5},{width:34},{width:34},{width:13},...(S?[{width:10},{width:10}]:[{width:9}]),...ks.map(()=>({width:S?12:8.5}))];
     const NAVY='FF0B3D7A', LINE={style:'thin',color:{argb:'FFD0D7E5'}}, box={top:LINE,left:LINE,bottom:LINE,right:LINE};
     ws.mergeCells(1,1,1,Math.min(nc,8)); ws.getCell(1,1).value=title; ws.getCell(1,1).font={bold:true,size:14,color:{argb:NAVY}}; ws.getRow(1).height=24;
     ws.mergeCells(2,1,2,Math.min(nc,8)); ws.getCell(2,1).value=sub; ws.getCell(2,1).font={size:10.5,color:{argb:'FF566179'}};
     ws.mergeCells(3,1,3,Math.min(nc,8)); ws.getCell(3,1).value='Diunduh '+new Date().toLocaleString('id-ID',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}); ws.getCell(3,1).font={size:9.5,italic:true,color:{argb:'FF8A93A8'}};
-    const h=ws.getRow(5); h.values=['No','Nama','Mitra','Status','Total',...ks.map(k=>psBLabel(k,p))]; h.height=30;
+    const h=ws.getRow(5); h.values=heads; h.height=30;
     h.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'},size:10}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:NAVY}}; c.alignment={vertical:'middle',horizontal:c.col>3?'center':'left',wrapText:true}; c.border=box; });
-    let r=6; const colTot=ks.map(()=>0);
-    names.forEach((n,i)=>{ const row=ws.getRow(r++), vals=ks.map(k=>per[n][k]||0); vals.forEach((v,j)=>colTot[j]+=v);
-      row.values=[i+1,n,psNMm[n]||'',psStat(n),tot(n),...vals.map(v=>v||null)];
-      row.eachCell({includeEmpty:true},(c,ci)=>{ if(ci>nc) return; c.border=box; if(ci===1) c.alignment={horizontal:'center'}; if(ci===4){ const st=psStat(n); c.alignment={horizontal:'center'}; if(st){ c.font={bold:true,size:9.5,color:{argb:st==='DEPLOYED'?'FF127A4B':'FFB42323'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:st==='DEPLOYED'?'FFDCF5E8':'FFFDE3E3'}}; } }
-        if(ci===5){ c.font={bold:true}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF1F4FA'}}; c.alignment={horizontal:'center'}; }
-        if(ci>5){ c.alignment={horizontal:'center'}; const v=vals[ci-6]; if(v) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:blend(0.12+0.5*v/mx)}}; } }); });
-    const t=ws.getRow(r); t.values=['','TOTAL','','',colTot.reduce((a,b)=>a+b,0),...colTot];
-    t.eachCell({includeEmpty:true},(c,ci)=>{ if(ci>nc) return; c.font={bold:true}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E2F3'}}; c.border={top:{style:'medium',color:{argb:NAVY}},bottom:LINE,left:LINE,right:LINE}; if(ci>3) c.alignment={horizontal:'center'}; });
+    const fillOf=a=>({type:'pattern',pattern:'solid',fgColor:{argb:a}});
+    let r=6; const colTot=ks.map(()=>[0,0]);
+    names.forEach((n,i)=>{ const row=ws.getRow(r++), t=tot(n);
+      row.getCell(1).value=i+1; row.getCell(2).value=n; row.getCell(3).value=psNMm[n]||''; row.getCell(4).value=psStat(n);
+      if(S){ row.getCell(5).value=t[0]; row.getCell(6).value=t[1]; } else row.getCell(5).value=t[0];
+      ks.forEach((k,j)=>{ const c=per[n][k]; if(c) { colTot[j][0]+=c[0]; colTot[j][1]+=c[1]; } const cell=row.getCell(L+1+j); if(c&&sz(c)){ cell.value=S?rich(c):c[0]; cell.fill=fillOf(blend(S?0.06+0.16*sz(c)/mx:0.12+0.5*sz(c)/mx)); } });
+      row.eachCell({includeEmpty:true},(c,ci)=>{ if(ci>nc) return; c.border=box; if(ci===1) c.alignment={horizontal:'center'};
+        if(ci===4){ const st=psStat(n); c.alignment={horizontal:'center'}; if(st){ c.font={bold:true,size:9.5,color:{argb:st==='DEPLOYED'?'FF127A4B':'FFB42323'}}; c.fill=fillOf(st==='DEPLOYED'?'FFDCF5E8':'FFFDE3E3'); } }
+        if(ci>4&&ci<=L){ c.font={bold:true,color:S?(ci===5?RG:AK):undefined}; c.fill=fillOf('FFF1F4FA'); c.alignment={horizontal:'center'}; }
+        if(ci>L) c.alignment={horizontal:'center'}; }); });
+    const t=ws.getRow(r), gt=colTot.reduce((a,c)=>[a[0]+c[0],a[1]+c[1]],[0,0]);
+    t.getCell(2).value='TOTAL'; if(S){ t.getCell(5).value=gt[0]; t.getCell(6).value=gt[1]; } else t.getCell(5).value=gt[0];
+    ks.forEach((k,j)=>{ t.getCell(L+1+j).value=S?rich(colTot[j]):colTot[j][0]; });
+    t.eachCell({includeEmpty:true},(c,ci)=>{ if(ci>nc) return; if(!(c.value&&c.value.richText)) c.font={bold:true}; c.fill=fillOf('FFD9E2F3'); c.border={top:{style:'medium',color:{argb:NAVY}},bottom:LINE,left:LINE,right:LINE}; if(ci>3) c.alignment={horizontal:'center'}; });
     const buf=await wb.xlsx.writeBuffer();
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download=fname+'.xlsx'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800);
   }catch(e){
-    dlCsv(fname+'.csv',[[title],[sub],[],['No','Nama','Mitra','Status','Total',...ks.map(k=>psBLabel(k,p))],...names.map((n,i)=>[i+1,n,psNMm[n]||'',psStat(n),tot(n),...ks.map(k=>per[n][k]||0)])]); toast('Pustaka Excel tidak termuat; diunduh sebagai CSV');
+    const cell=(n,k)=>{ const c=per[n][k]||[0,0]; return S?(sz(c)?c[0]+' / '+c[1]:''):(c[0]||0); };
+    dlCsv(fname+'.csv',[[title],[sub],[],heads,...names.map((n,i)=>[i+1,n,psNMm[n]||'',psStat(n),...(S?[tot(n)[0],tot(n)[1]]:[tot(n)[0]]),...ks.map(k=>cell(n,k))])]); toast('Pustaka Excel tidak termuat; diunduh sebagai CSV');
   }
 }
 function psNmPng(){
-  const ND=psND; if(!ND) return; const p=psPeriod, data=ND[psNm]||{}, names=Object.keys(data), per={}, cols=new Set();
-  names.forEach(n=>{ const o={}; Object.keys(data[n]).forEach(d=>{ const k=psBucket(d,p); o[k]=(o[k]||0)+data[n][d]; cols.add(k); }); per[n]=o; });
+  const ND=psND; if(!ND) return; const D=psNmPrep(ND), {p,S,per,names,ks,tot,sz,mx}=D;
   if(!names.length){ toast('Belum ada data untuk diunduh'); return; }
-  const ks=[...cols].sort().reverse(), tot=n=>Object.values(per[n]).reduce((a,b)=>a+b,0);
-  names.sort((a,b)=>tot(b)-tot(a)||a.localeCompare(b,'id'));
-  const mLbl={ikr:'IKR Aktivasi',reg:'Sales Registrasi',act:'Sales Aktivasi'}[psNm], pLbl=p==='month'?'Bulanan':p==='week'?'Mingguan':'Harian';
-  const hex=psNm==='ikr'?'0B3D7A':psNm==='reg'?'D2622A':'1F9D6B', mx=Math.max(1,...names.map(n=>Math.max(...Object.values(per[n]))));
+  const pLbl=p==='month'?'Bulanan':p==='week'?'Mingguan':'Harian', hex=S?'D2622A':'0B3D7A';
   const blend=a=>{ const c=[0,2,4].map(i=>parseInt(hex.substr(i,2),16)); return 'rgb('+c.map(v=>Math.round(255-(255-v)*a)).join(',')+')'; };
-  const colTot=ks.map(()=>0);
-  const rows=names.map((n,i)=>{ const vals=ks.map(k=>per[n][k]||0); vals.forEach((v,j)=>colTot[j]+=v);
-    const st=psStat(n); return {cells:[i+1,n,psNMm[n]||'',st,tot(n),...vals.map(v=>v||'')],cellFill:{3:st?(st==='DEPLOYED'?'#DCF5E8':'#FDE3E3'):null,4:'#F1F4FA',...Object.fromEntries(vals.map((v,j)=>[j+5,v?blend(0.12+0.5*v/mx):null]))},color:{2:'#566179',3:st==='DEPLOYED'?'#127A4B':'#B42323'}}; });
-  rows.push({cells:['','TOTAL','','',colTot.reduce((a,b)=>a+b,0),...colTot],bold:true,fill:'#D9E2F3'});
-  const title='Pencapaian per nama '+LB+' · '+mLbl, fname=(title+'_'+pLbl).replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'')+'_'+stamp();
-  dlPng(fname,title,pLbl+' · '+names.length+' nama',['No','Nama','Mitra','Status','Total',...ks.map(k=>psBShort(k,p))],rows,{align:['c','l','l','c','c',...ks.map(()=>'c')],maxW:[44,260,260,100,70]});
+  const colTot=ks.map(()=>[0,0]), v=c=>S?c:c[0];
+  const rows=names.map((n,i)=>{ const st=psStat(n), t=tot(n), cells=ks.map((k,j)=>{ const c=per[n][k]||[0,0]; colTot[j][0]+=c[0]; colTot[j][1]+=c[1]; return sz(c)?v(c):''; });
+    return {cells:[i+1,n,psNMm[n]||'',st,v(t),...cells],cellFill:{3:st?(st==='DEPLOYED'?'#DCF5E8':'#FDE3E3'):null,4:'#F1F4FA',...Object.fromEntries(ks.map((k,j)=>{ const c=per[n][k]; return [j+5,c&&sz(c)?blend(S?0.06+0.16*sz(c)/mx:0.12+0.5*sz(c)/mx):null]; }))},color:{2:'#566179',3:st==='DEPLOYED'?'#127A4B':'#B42323'}}; });
+  const gt=colTot.reduce((a,c)=>[a[0]+c[0],a[1]+c[1]],[0,0]);
+  rows.push({cells:['','TOTAL','','',v(gt),...colTot.map(c=>v(c))],bold:true,fill:'#D9E2F3'});
+  const title='Pencapaian per nama '+LB+' · '+(S?'Sales':'IKR'), fname=(title+'_'+pLbl).replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'')+'_'+stamp();
+  dlPng(fname,title,pLbl+' · '+names.length+' nama'+(S?' · Registrasi (oranye) / Aktivasi (hijau)':''),['No','Nama','Mitra','Status','Total',...ks.map(k=>psBShort(k,p))],rows,{align:['c','l','l','c','c',...ks.map(()=>'c')],maxW:[44,260,260,100,S?120:70]});
 }
 { const sw=$('#' + ID + 'NmSw'), wrap=document.createElement('div'); wrap.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap'; sw.parentNode.insertBefore(wrap,sw); wrap.appendChild(sw);
   const dd=document.createElement('div'); dd.className='dxm'; dd.innerHTML='<button type="button" class="dxl" aria-haspopup="menu" aria-expanded="false" title="Unduh tabel (sesuai metrik & periode yang tampil)">⬇ Unduh ▾</button><div class="dxm-pop" role="menu" hidden><button type="button" role="menuitem" data-f="xl">Excel (.xlsx)</button><button type="button" role="menuitem" data-f="img">Gambar (.png)</button></div>';
