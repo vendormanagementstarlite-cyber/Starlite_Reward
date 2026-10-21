@@ -1613,14 +1613,15 @@ function hcDrillHtml(){
   const sel=hcSel, list=sel.list=hcDrillData(sel.role,sel.kind,sel.keys), tot=list.reduce((t,o)=>t+o.total,0), mx=Math.max(1,...list.map(o=>o.total));
   const rows=list.map((o,i)=>{ const open=sel.open.has(o.name);
     return `<li><button type="button" class="dm" data-mi="${i}" aria-expanded="${open}"><span class="car">▸</span><span class="nm" title="${esc(o.name)}">${esc(o.name)}</span><span class="bar"><i style="width:${o.total/mx*100}%"></i></span><b>${fmt(o.total)}</b></button>${open?`<ul class="dp">${o.people.map(p=>`<li${p.nama==='Tanpa ID number'?' class="x"':''}><span title="${esc(p.nama)}">${esc(p.nama)}</span><b>${fmt(p.n)}</b></li>`).join('')}</ul>`:''}</li>`; }).join('');
-  return `<div class="dh"><div><b>${sel.kind==='reg'?'Registrasi':'Aktivasi'} · ${esc(sel.lbl)}</b><span>Tim ${sel.role} · total ${fmt(tot)} · ${list.length} mitra</span></div><span class="dact"><button type="button" class="dxl" data-xl="1" title="Unduh rincian ke Excel">⬇ Excel</button><button type="button" class="dx" aria-label="Tutup rincian">✕</button></span></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">Klik nama mitra untuk melihat anggota timnya. Tekan Esc atau klik di luar untuk menutup.</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
+  return `<div class="dh"><div><b>${sel.kind==='reg'?'Registrasi':'Aktivasi'} · ${esc(sel.lbl)}</b><span>Tim ${sel.role} · total ${fmt(tot)} · ${list.length} mitra</span></div><span class="dact"><button type="button" class="dxl" data-xl="1" title="Unduh rincian ke Excel">⬇ Excel</button><button type="button" class="dxl" data-img="1" title="Unduh rincian sebagai gambar">⬇ Gambar</button><button type="button" class="dx" aria-label="Tutup rincian">✕</button></span></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">Klik nama mitra untuk melihat anggota timnya. Tekan Esc atau klik di luar untuk menutup.</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
 }
 function hcDrillPaint(){
   const root=$('#hcMon'); if(!root) return;
   if(hcSel&&!root.querySelector('[data-sel="'+hcSel.id+'"]')) hcSel=null;
   let m=document.getElementById('hcModal');
   if(!m){ m=document.createElement('div'); m.id='hcModal'; m.className='hc-modal'; m.hidden=true; m.innerHTML='<div class="hc-pop hc-drill" role="dialog" aria-modal="true" aria-label="Rincian mitra"></div>'; document.body.appendChild(m);
-    m.addEventListener('click',e=>{ if(e.target.closest('[data-xl]')&&hcSel){ const t=(hcSel.kind==='reg'?'Registrasi':'Aktivasi')+' '+hcSel.lbl+' Tim '+hcSel.role; dlXlsx(dlName(t),t,'Tim '+hcSel.role,hcSel.list); return; }
+    m.addEventListener('click',e=>{ if(e.target.closest('[data-img]')&&hcSel){ const t=(hcSel.kind==='reg'?'Registrasi':'Aktivasi')+' '+hcSel.lbl+' Tim '+hcSel.role; popPng(dlName(t),t,'Tim '+hcSel.role,hcSel.list); return; }
+      if(e.target.closest('[data-xl]')&&hcSel){ const t=(hcSel.kind==='reg'?'Registrasi':'Aktivasi')+' '+hcSel.lbl+' Tim '+hcSel.role; dlXlsx(dlName(t),t,'Tim '+hcSel.role,hcSel.list); return; }
       if(e.target===m||e.target.closest('.dx')){ hcSel=null; hcDrillPaint(); return; }
       const dm=e.target.closest('.dm'); if(dm&&hcSel){ const o=hcSel.list[+dm.dataset.mi]; if(o){ hcSel.open.has(o.name)?hcSel.open.delete(o.name):hcSel.open.add(o.name); hcDrillPaint(); } } });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&hcSel){ hcSel=null; hcDrillPaint(); } }); }
@@ -1703,6 +1704,35 @@ async function dlXlsx(name,title,sub,list){
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download=name+'.xlsx'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800);
   }catch(e){ dlCsv(name+'.csv',popRows(title,sub,list)); toast('Pustaka Excel tidak termuat; diunduh sebagai CSV'); }
 }
+// ===== unduh gambar (PNG): tabel digambar langsung di kanvas, tanpa pustaka =====
+function dlPng(name,title,sub,head,rows,o){
+  o=o||{}; const al=o.align||[], F='"Plus Jakarta Sans",Inter,system-ui,-apple-system,"Segoe UI",sans-serif', PAD=24, RH=27, HH=32, TH=62;
+  const m=document.createElement('canvas').getContext('2d'), mw=(t,b)=>{ m.font=(b?'700 ':'500 ')+'13px '+F; return m.measureText(String(t==null?'':t)).width; };
+  const W=head.map((h,ci)=>{ let w=mw(h,true); rows.forEach(r=>{ const t=r.cells[ci]; w=Math.max(w,mw(t,r.bold)+(ci===o.indentCol&&r.indent?16:0)); }); return Math.ceil(Math.min(o.maxW&&o.maxW[ci]||420,w+22)); });
+  const subTxt=(sub?sub+'  ·  ':'')+'Diunduh '+new Date().toLocaleString('id-ID',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const tw0=W.reduce((a,b)=>a+b,0), cw=Math.max(tw0+PAD*2,Math.ceil(mw(title,true)*1.4)+PAD*2,Math.ceil(mw(subTxt))+PAD*2,360), tw=tw0, ch=TH+HH+rows.length*RH+PAD+8;
+  const sc=ch>7000?1:ch>3500?1.5:2, c=document.createElement('canvas'); c.width=Math.round(cw*sc); c.height=Math.round(ch*sc);
+  const x=c.getContext('2d'); x.scale(sc,sc); x.fillStyle='#fff'; x.fillRect(0,0,cw,ch); x.textBaseline='middle';
+  x.fillStyle='#0B3D7A'; x.font='800 17px '+F; x.fillText(title,PAD,PAD+4);
+  x.fillStyle='#566179'; x.font='500 12px '+F; x.fillText(subTxt,PAD,PAD+26);
+  let y=TH; x.fillStyle='#0B3D7A'; x.fillRect(PAD,y,tw,HH);
+  let cx=PAD; head.forEach((h,ci)=>{ x.fillStyle='#fff'; x.font='700 12.5px '+F; x.textAlign=al[ci]==='c'?'center':al[ci]==='r'?'right':'left'; const tx=al[ci]==='c'?cx+W[ci]/2:al[ci]==='r'?cx+W[ci]-10:cx+10; x.fillText(h,tx,y+HH/2); cx+=W[ci]; });
+  y+=HH;
+  rows.forEach(r=>{ cx=PAD;
+    if(r.fill){ x.fillStyle=r.fill; x.fillRect(PAD,y,tw,RH); }
+    r.cells.forEach((t,ci)=>{ const cf=r.cellFill&&r.cellFill[ci]; if(cf){ x.fillStyle=cf; x.fillRect(cx,y,W[ci],RH); }
+      x.fillStyle=r.color&&r.color[ci]||(r.bold?'#0B3D7A':'#1b2540'); x.font=(r.bold?'700 ':'500 ')+'13px '+F; x.textAlign=al[ci]==='c'?'center':al[ci]==='r'?'right':'left';
+      const ind=(ci===o.indentCol&&r.indent)?16:0, tx=al[ci]==='c'?cx+W[ci]/2:al[ci]==='r'?cx+W[ci]-10:cx+10+ind; if(t!==''&&t!=null) x.fillText(String(t),tx,y+RH/2+1); cx+=W[ci]; });
+    x.strokeStyle='#d0d7e5'; x.lineWidth=1; x.strokeRect(PAD+.5,y+.5,tw,RH); let lx=PAD; W.forEach(w=>{ lx+=w; x.beginPath(); x.moveTo(lx+.5,y); x.lineTo(lx+.5,y+RH); x.stroke(); }); y+=RH; });
+  c.toBlob(b=>{ if(!b){ toast('Gagal membuat gambar'); return; } const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name+'.png'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800); },'image/png');
+}
+function popPng(name,title,sub,list){
+  const rows=[]; let g=0, n=0;
+  (list||[]).forEach(o=>{ n++; g+=o.total; rows.push({cells:[n,o.name,'Total mitra',o.total],bold:true,fill:'#E8EEF8',color:{2:'#566179'}});
+    (o.people||[]).forEach(p=>rows.push({cells:['',o.name,p.nama,p.n],indent:true,color:{1:'#8A93A8'}})); });
+  rows.push({cells:['','TOTAL','',g],bold:true,fill:'#D9E2F3'});
+  dlPng(name,title,sub,['No','Mitra','Nama tim','Jumlah'],rows,{align:['c','l','l','r'],indentCol:2,maxW:[50,300,320,90]});
+}
 const dlName=t=>String(t).replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,60)+'_'+stamp();
 function chPopFromEntries(ents){
   const M=new Map();
@@ -1714,12 +1744,13 @@ function chPopHtml(){
   const s=chSel, list=s.list, mx=Math.max(1,...list.map(o=>o.total));
   const rows=list.map((o,i)=>{ const has=o.people&&o.people.length, open=s.open.has(o.name);
     return `<li><button type="button" class="dm" data-mi="${i}" aria-expanded="${open}"><span class="car">${has?'▸':''}</span><span class="nm" title="${esc(o.name)}">${esc(o.name)}</span><span class="bar"><i style="width:${o.total/mx*100}%"></i></span><b>${fmt(o.total)}</b></button>${open&&has?`<ul class="dp">${o.people.map(p=>`<li><span title="${esc(p.nama)}">${esc(p.nama)}</span><b>${fmt(p.n)}</b></li>`).join('')}</ul>`:''}</li>`; }).join('');
-  return `<div class="dh"><div><b>${esc(s.title)}</b><span>${esc(s.sub)}</span></div><span class="dact"><button type="button" class="dxl" data-xl="1" title="Unduh rincian ke Excel">⬇ Excel</button><button type="button" class="dx" aria-label="Tutup rincian">✕</button></span></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">${esc(s.note)}</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
+  return `<div class="dh"><div><b>${esc(s.title)}</b><span>${esc(s.sub)}</span></div><span class="dact"><button type="button" class="dxl" data-xl="1" title="Unduh rincian ke Excel">⬇ Excel</button><button type="button" class="dxl" data-img="1" title="Unduh rincian sebagai gambar">⬇ Gambar</button><button type="button" class="dx" aria-label="Tutup rincian">✕</button></span></div>${list.length?`<ul class="dl">${rows}</ul><p class="dn">${esc(s.note)}</p>`:'<p class="dn">Tidak ada data pada periode ini.</p>'}`;
 }
 function chPopPaint(){
   let m=document.getElementById('chModal');
   if(!m){ m=document.createElement('div'); m.id='chModal'; m.className='hc-modal'; m.hidden=true; m.innerHTML='<div class="hc-pop hc-drill" role="dialog" aria-modal="true" aria-label="Rincian chart"></div>'; document.body.appendChild(m);
-    m.addEventListener('click',e=>{ if(e.target.closest('[data-xl]')&&chSel){ dlXlsx(dlName(chSel.title),chSel.title,chSel.sub,chSel.list); return; }
+    m.addEventListener('click',e=>{ if(e.target.closest('[data-img]')&&chSel){ popPng(dlName(chSel.title),chSel.title,chSel.sub,chSel.list); return; }
+      if(e.target.closest('[data-xl]')&&chSel){ dlXlsx(dlName(chSel.title),chSel.title,chSel.sub,chSel.list); return; }
       if(e.target===m||e.target.closest('.dx')){ chSel=null; chPopPaint(); return; }
       const dm=e.target.closest('.dm'); if(dm&&chSel){ const o=chSel.list[+dm.dataset.mi]; if(o&&o.people&&o.people.length){ chSel.open.has(o.name)?chSel.open.delete(o.name):chSel.open.add(o.name); chPopPaint(); } } });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&chSel){ chSel=null; chPopPaint(); } }); }
@@ -2587,8 +2618,25 @@ async function psNmDownload(){
     dlCsv(fname+'.csv',[[title],[sub],[],['No','Nama','Mitra','Total',...ks.map(k=>psBLabel(k,p))],...names.map((n,i)=>[i+1,n,psNMm[n]||'',tot(n),...ks.map(k=>per[n][k]||0)])]); toast('Pustaka Excel tidak termuat; diunduh sebagai CSV');
   }
 }
+function psNmPng(){
+  const ND=psND; if(!ND) return; const p=psPeriod, data=ND[psNm]||{}, names=Object.keys(data), per={}, cols=new Set();
+  names.forEach(n=>{ const o={}; Object.keys(data[n]).forEach(d=>{ const k=psBucket(d,p); o[k]=(o[k]||0)+data[n][d]; cols.add(k); }); per[n]=o; });
+  if(!names.length){ toast('Belum ada data untuk diunduh'); return; }
+  const ks=[...cols].sort().reverse(), tot=n=>Object.values(per[n]).reduce((a,b)=>a+b,0);
+  names.sort((a,b)=>tot(b)-tot(a)||a.localeCompare(b,'id'));
+  const mLbl={ikr:'IKR Aktivasi',reg:'Sales Registrasi',act:'Sales Aktivasi'}[psNm], pLbl=p==='month'?'Bulanan':p==='week'?'Mingguan':'Harian';
+  const hex=psNm==='ikr'?'0B3D7A':psNm==='reg'?'D2622A':'1F9D6B', mx=Math.max(1,...names.map(n=>Math.max(...Object.values(per[n]))));
+  const blend=a=>{ const c=[0,2,4].map(i=>parseInt(hex.substr(i,2),16)); return 'rgb('+c.map(v=>Math.round(255-(255-v)*a)).join(',')+')'; };
+  const colTot=ks.map(()=>0);
+  const rows=names.map((n,i)=>{ const vals=ks.map(k=>per[n][k]||0); vals.forEach((v,j)=>colTot[j]+=v);
+    return {cells:[i+1,n,psNMm[n]||'',tot(n),...vals.map(v=>v||'')],cellFill:{3:'#F1F4FA',...Object.fromEntries(vals.map((v,j)=>[j+4,v?blend(0.12+0.5*v/mx):null]))},color:{2:'#566179'}}; });
+  rows.push({cells:['','TOTAL','',colTot.reduce((a,b)=>a+b,0),...colTot],bold:true,fill:'#D9E2F3'});
+  const title='Pencapaian per nama '+LB+' · '+mLbl, fname=(title+'_'+pLbl).replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'')+'_'+stamp();
+  dlPng(fname,title,pLbl+' · '+names.length+' nama',['No','Nama','Mitra','Total',...ks.map(k=>psBShort(k,p))],rows,{align:['c','l','l','c',...ks.map(()=>'c')],maxW:[44,260,260,70]});
+}
 { const sw=$('#' + ID + 'NmSw'), wrap=document.createElement('div'); wrap.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap'; sw.parentNode.insertBefore(wrap,sw); wrap.appendChild(sw);
-  const b=document.createElement('button'); b.type='button'; b.className='dxl'; b.textContent='⬇ Excel'; b.title='Unduh tabel ke Excel (sesuai metrik & periode yang tampil)'; b.addEventListener('click',psNmDownload); wrap.appendChild(b); }
+  const b=document.createElement('button'); b.type='button'; b.className='dxl'; b.textContent='⬇ Excel'; b.title='Unduh tabel ke Excel (sesuai metrik & periode yang tampil)'; b.addEventListener('click',psNmDownload); wrap.appendChild(b);
+  const g=document.createElement('button'); g.type='button'; g.className='dxl'; g.textContent='⬇ Gambar'; g.title='Unduh tabel sebagai gambar (sesuai metrik & periode yang tampil)'; g.addEventListener('click',psNmPng); wrap.appendChild(g); }
 function psFillOpts(rows){
   [['#' + ID + 'Mitra',4,'Semua mitra'],['#' + ID + 'Stasiun',5,'Semua stasiun']].forEach(([sel,i,all])=>{
     const el=$(sel), cur=el.value, set=[...new Set(rows.map(r=>r[i]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
