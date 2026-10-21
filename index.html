@@ -707,6 +707,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .grid2:has(.ps-chart){grid-template-columns:repeat(2,minmax(0,1fr))}@media (max-width:900px){.grid2:has(.ps-chart){grid-template-columns:minmax(0,1fr)}}
 #rwKpis,#psKpis,#pnKpis,#gmKpis{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
 #dQ4.on{background:var(--ink,#0B3D7A);color:#fff;border-color:transparent}
+.dxm{position:relative}.dxm-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:150px;background:var(--surface,#fff);border:1px solid var(--line-2);border-radius:12px;box-shadow:var(--shadow-up,0 8px 24px rgba(20,30,60,.15));padding:5px}.dxm-pop button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:8px;font:600 12.5px var(--font,inherit);color:var(--ink);cursor:pointer}.dxm-pop button:hover{background:var(--surface-2,#f1f4fa)}
 .dact{display:flex;gap:8px;align-items:center;flex:none}.dxl{border:1px solid var(--line-2);background:var(--surface,#fff);color:var(--ink);border-radius:99px;height:32px;padding:0 12px;font:600 12px var(--font,inherit);cursor:pointer;white-space:nowrap}.dxl:hover{background:var(--line-2)}
 .ps-tbl .nst{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:.04em;vertical-align:1px}.ps-tbl .nst.dep{background:#dcf5e8;color:#127a4b}.ps-tbl .nst.res{background:#fde3e3;color:#b42323}
 .ps-tbl .nmm{display:block;margin-top:1px;font-size:10.5px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2634,8 +2635,12 @@ function psNmPng(){
   dlPng(fname,title,pLbl+' · '+names.length+' nama',['No','Nama','Mitra','Status','Total',...ks.map(k=>psBShort(k,p))],rows,{align:['c','l','l','c','c',...ks.map(()=>'c')],maxW:[44,260,260,100,70]});
 }
 { const sw=$('#' + ID + 'NmSw'), wrap=document.createElement('div'); wrap.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap'; sw.parentNode.insertBefore(wrap,sw); wrap.appendChild(sw);
-  const b=document.createElement('button'); b.type='button'; b.className='dxl'; b.textContent='⬇ Excel'; b.title='Unduh tabel ke Excel (sesuai metrik & periode yang tampil)'; b.addEventListener('click',psNmDownload); wrap.appendChild(b);
-  const g=document.createElement('button'); g.type='button'; g.className='dxl'; g.textContent='⬇ Gambar'; g.title='Unduh tabel sebagai gambar (sesuai metrik & periode yang tampil)'; g.addEventListener('click',psNmPng); wrap.appendChild(g); }
+  const dd=document.createElement('div'); dd.className='dxm'; dd.innerHTML='<button type="button" class="dxl" aria-haspopup="menu" aria-expanded="false" title="Unduh tabel (sesuai metrik & periode yang tampil)">⬇ Unduh ▾</button><div class="dxm-pop" role="menu" hidden><button type="button" role="menuitem" data-f="xl">Excel (.xlsx)</button><button type="button" role="menuitem" data-f="img">Gambar (.png)</button></div>';
+  const mb=dd.firstChild, mp=dd.lastChild, mclose=()=>{ mp.hidden=true; mb.setAttribute('aria-expanded','false'); };
+  mb.addEventListener('click',()=>{ const o=mp.hidden; mp.hidden=!o; mb.setAttribute('aria-expanded',String(o)); });
+  mp.addEventListener('click',e=>{ const x=e.target.closest('button[data-f]'); if(!x) return; mclose(); x.dataset.f==='xl'?psNmDownload():psNmPng(); });
+  document.addEventListener('mousedown',e=>{ if(!dd.contains(e.target)) mclose(); }); document.addEventListener('keydown',e=>{ if(e.key==='Escape') mclose(); });
+  wrap.appendChild(dd); }
 const fM=MultiFilter($('#' + ID + 'Mitra'),{all:'Semua mitra',noun:'mitra',onChange:()=>renderProj()});
 const fS=MultiFilter($('#' + ID + 'Stasiun'),{all:'Semua stasiun',noun:'stasiun',onChange:()=>renderProj()});
 const fN=MultiFilter($('#' + ID + 'Q'),{all:'Semua nama',noun:'nama',onChange:()=>renderProj()});
