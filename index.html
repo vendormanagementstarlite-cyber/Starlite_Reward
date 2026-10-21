@@ -1619,7 +1619,7 @@ function hcDrillPaint(){
   if(hcSel&&!root.querySelector('[data-sel="'+hcSel.id+'"]')) hcSel=null;
   let m=document.getElementById('hcModal');
   if(!m){ m=document.createElement('div'); m.id='hcModal'; m.className='hc-modal'; m.hidden=true; m.innerHTML='<div class="hc-pop hc-drill" role="dialog" aria-modal="true" aria-label="Rincian mitra"></div>'; document.body.appendChild(m);
-    m.addEventListener('click',e=>{ if(e.target.closest('[data-xl]')&&hcSel){ const t=(hcSel.kind==='reg'?'Registrasi':'Aktivasi')+' '+hcSel.lbl+' Tim '+hcSel.role; dlXlsx(dlName(t),t,popRows(t,'Tim '+hcSel.role,hcSel.list)); return; }
+    m.addEventListener('click',e=>{ if(e.target.closest('[data-xl]')&&hcSel){ const t=(hcSel.kind==='reg'?'Registrasi':'Aktivasi')+' '+hcSel.lbl+' Tim '+hcSel.role; dlXlsx(dlName(t),t,'Tim '+hcSel.role,hcSel.list); return; }
       if(e.target===m||e.target.closest('.dx')){ hcSel=null; hcDrillPaint(); return; }
       const dm=e.target.closest('.dm'); if(dm&&hcSel){ const o=hcSel.list[+dm.dataset.mi]; if(o){ hcSel.open.has(o.name)?hcSel.open.delete(o.name):hcSel.open.add(o.name); hcDrillPaint(); } } });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&hcSel){ hcSel=null; hcDrillPaint(); } }); }
@@ -1678,13 +1678,29 @@ function popRows(title,sub,list){
   (list||[]).forEach(o=>{ g+=o.total; rows.push([o.name,'(Total mitra)',o.total]); (o.people||[]).forEach(p=>rows.push([o.name,p.nama,p.n])); });
   rows.push([],['TOTAL','',g]); return rows;
 }
-async function dlXlsx(name,sheet,rows){
+async function dlXlsx(name,title,sub,list){
   try{
-    if(!window.XLSX) await loadScript(CDN+'xlsx/0.18.5/xlsx.full.min.js');
-    const ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:34},{wch:38},{wch:12}];
-    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,String(sheet).replace(/[\\\/?*\[\]:]/g,' ').slice(0,31)||'Rincian');
-    XLSX.writeFile(wb,name+'.xlsx');
-  }catch(e){ dlCsv(name+'.csv',rows); toast&&toast('Pustaka Excel tidak termuat; diunduh sebagai CSV'); }
+    if(!window.ExcelJS) await loadScript(CDN+'exceljs/4.4.0/exceljs.min.js');
+    const wb=new ExcelJS.Workbook(); wb.creator='Starlite'; wb.created=new Date();
+    const ws=wb.addWorksheet(String(title).replace(/[\\\/?*\[\]:]/g,' ').slice(0,31)||'Rincian',{views:[{state:'frozen',ySplit:5,showGridLines:false}],pageSetup:{orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:0}});
+    ws.columns=[{width:6},{width:38},{width:42},{width:14}];
+    const NAVY='FF0B3D7A', LINE={style:'thin',color:{argb:'FFD0D7E5'}}, box={top:LINE,left:LINE,bottom:LINE,right:LINE};
+    ws.mergeCells('A1:D1'); ws.getCell('A1').value=title; ws.getCell('A1').font={bold:true,size:14,color:{argb:NAVY}}; ws.getRow(1).height=24; ws.getCell('A1').alignment={vertical:'middle'};
+    ws.mergeCells('A2:D2'); ws.getCell('A2').value=sub||''; ws.getCell('A2').font={size:10.5,color:{argb:'FF566179'}};
+    ws.mergeCells('A3:D3'); ws.getCell('A3').value='Diunduh '+new Date().toLocaleString('id-ID',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}); ws.getCell('A3').font={size:9.5,italic:true,color:{argb:'FF8A93A8'}};
+    const h=ws.getRow(5); h.values=['No','Mitra','Nama tim','Jumlah']; h.height=22;
+    h.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:NAVY}}; c.alignment={vertical:'middle',horizontal:c.col===4||c.col===1?'center':'left'}; c.border=box; });
+    let r=6, g=0, n=0;
+    (list||[]).forEach(o=>{ n++; g+=o.total;
+      const m=ws.getRow(r++); m.values=[n,o.name,'Total mitra',o.total];
+      m.eachCell(c=>{ c.font={bold:true,color:{argb:NAVY}}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFE8EEF8'}}; c.border=box; });
+      m.getCell(1).alignment={horizontal:'center'}; m.getCell(3).font={italic:true,color:{argb:'FF566179'}}; m.getCell(4).numFmt='#,##0'; m.getCell(4).alignment={horizontal:'right'};
+      (o.people||[]).forEach(p=>{ const q=ws.getRow(r++); q.values=['',o.name,p.nama,p.n];
+        q.eachCell(c=>{ c.border=box; }); q.getCell(2).font={color:{argb:'FF8A93A8'},size:9.5}; q.getCell(3).alignment={indent:1}; q.getCell(4).numFmt='#,##0'; q.getCell(4).alignment={horizontal:'right'}; }); });
+    const t=ws.getRow(r); t.values=['','TOTAL','',g]; t.eachCell(c=>{ c.font={bold:true}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E2F3'}}; c.border={top:{style:'medium',color:{argb:NAVY}},bottom:LINE,left:LINE,right:LINE}; }); t.getCell(4).numFmt='#,##0'; t.getCell(4).alignment={horizontal:'right'};
+    const buf=await wb.xlsx.writeBuffer();
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download=name+'.xlsx'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800);
+  }catch(e){ dlCsv(name+'.csv',popRows(title,sub,list)); toast('Pustaka Excel tidak termuat; diunduh sebagai CSV'); }
 }
 const dlName=t=>String(t).replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,60)+'_'+stamp();
 function chPopFromEntries(ents){
@@ -1702,7 +1718,7 @@ function chPopHtml(){
 function chPopPaint(){
   let m=document.getElementById('chModal');
   if(!m){ m=document.createElement('div'); m.id='chModal'; m.className='hc-modal'; m.hidden=true; m.innerHTML='<div class="hc-pop hc-drill" role="dialog" aria-modal="true" aria-label="Rincian chart"></div>'; document.body.appendChild(m);
-    m.addEventListener('click',e=>{ if(e.target.closest('[data-xl]')&&chSel){ dlXlsx(dlName(chSel.title),chSel.title,popRows(chSel.title,chSel.sub,chSel.list)); return; }
+    m.addEventListener('click',e=>{ if(e.target.closest('[data-xl]')&&chSel){ dlXlsx(dlName(chSel.title),chSel.title,chSel.sub,chSel.list); return; }
       if(e.target===m||e.target.closest('.dx')){ chSel=null; chPopPaint(); return; }
       const dm=e.target.closest('.dm'); if(dm&&chSel){ const o=chSel.list[+dm.dataset.mi]; if(o&&o.people&&o.people.length){ chSel.open.has(o.name)?chSel.open.delete(o.name):chSel.open.add(o.name); chPopPaint(); } } });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&chSel){ chSel=null; chPopPaint(); } }); }
