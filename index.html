@@ -709,6 +709,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 #dQ4.on{background:var(--ink,#0B3D7A);color:#fff;border-color:transparent}
 .dact{display:flex;gap:8px;align-items:center;flex:none}.dxl{border:1px solid var(--line-2);background:var(--surface,#fff);color:var(--ink);border-radius:99px;height:32px;padding:0 12px;font:600 12px var(--font,inherit);cursor:pointer;white-space:nowrap}.dxl:hover{background:var(--line-2)}
 .ps-tbl .nmm{display:block;margin-top:1px;font-size:10.5px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ps-bar .mf{max-width:230px}.ps-bar .mf-q{width:100%;max-width:none;box-sizing:border-box}
 .chk{outline:none;cursor:pointer}.chk:hover .b,.chk:focus-visible .b{opacity:.8}.chrow:hover .nm{color:var(--accent);font-weight:700}.ps-chart svg{max-width:none}
 </style>
 </head>
@@ -931,9 +932,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div></div>
       <div class="ps-bar">
     <span class="rk-range" title="Filter tanggal. Kosongkan untuk semua periode"><input type="date" id="psFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="psTo" aria-label="Sampai tanggal"></span>
-    <select id="psMitra" aria-label="Filter mitra"><option value="">Semua mitra</option></select>
-    <select id="psStasiun" aria-label="Filter stasiun"><option value="">Semua stasiun</option></select>
-    <input type="search" id="psQ" list="psNameList" placeholder="Cari nama Psd lalu pilih…" aria-label="Cari nama" autocomplete="off"><datalist id="psNameList"></datalist>
+    <div class="mf" id="psMitra"></div><div class="mf" id="psStasiun"></div><div class="mf" id="psQ"></div>
     <button type="button" class="ps-reset" id="psReset" hidden>Reset</button>
   </div>
   <div class="kpis" id="psKpis"></div>
@@ -962,9 +961,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div></div>
       <div class="ps-bar">
     <span class="rk-range" title="Filter tanggal. Kosongkan untuk semua periode"><input type="date" id="pnFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="pnTo" aria-label="Sampai tanggal"></span>
-    <select id="pnMitra" aria-label="Filter mitra"><option value="">Semua mitra</option></select>
-    <select id="pnStasiun" aria-label="Filter stasiun"><option value="">Semua stasiun</option></select>
-    <input type="search" id="pnQ" list="pnNameList" placeholder="Cari nama PNM lalu pilih…" aria-label="Cari nama" autocomplete="off"><datalist id="pnNameList"></datalist>
+    <div class="mf" id="pnMitra"></div><div class="mf" id="pnStasiun"></div><div class="mf" id="pnQ"></div>
     <button type="button" class="ps-reset" id="pnReset" hidden>Reset</button>
   </div>
   <div class="kpis" id="pnKpis"></div>
@@ -993,9 +990,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
       </div></div>
       <div class="ps-bar">
     <span class="rk-range" title="Filter tanggal. Kosongkan untuk semua periode"><input type="date" id="gmFrom" aria-label="Dari tanggal"><span>–</span><input type="date" id="gmTo" aria-label="Sampai tanggal"></span>
-    <select id="gmMitra" aria-label="Filter mitra"><option value="">Semua mitra</option></select>
-    <select id="gmStasiun" aria-label="Filter stasiun"><option value="">Semua stasiun</option></select>
-    <input type="search" id="gmQ" list="gmNameList" placeholder="Cari nama GMT lalu pilih…" aria-label="Cari nama" autocomplete="off"><datalist id="gmNameList"></datalist>
+    <div class="mf" id="gmMitra"></div><div class="mf" id="gmStasiun"></div><div class="mf" id="gmQ"></div>
     <button type="button" class="ps-reset" id="gmReset" hidden>Reset</button>
   </div>
   <div class="kpis" id="gmKpis"></div>
@@ -2637,13 +2632,13 @@ function psNmPng(){
 { const sw=$('#' + ID + 'NmSw'), wrap=document.createElement('div'); wrap.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap'; sw.parentNode.insertBefore(wrap,sw); wrap.appendChild(sw);
   const b=document.createElement('button'); b.type='button'; b.className='dxl'; b.textContent='⬇ Excel'; b.title='Unduh tabel ke Excel (sesuai metrik & periode yang tampil)'; b.addEventListener('click',psNmDownload); wrap.appendChild(b);
   const g=document.createElement('button'); g.type='button'; g.className='dxl'; g.textContent='⬇ Gambar'; g.title='Unduh tabel sebagai gambar (sesuai metrik & periode yang tampil)'; g.addEventListener('click',psNmPng); wrap.appendChild(g); }
+const fM=MultiFilter($('#' + ID + 'Mitra'),{all:'Semua mitra',noun:'mitra',onChange:()=>renderProj()});
+const fS=MultiFilter($('#' + ID + 'Stasiun'),{all:'Semua stasiun',noun:'stasiun',onChange:()=>renderProj()});
+const fN=MultiFilter($('#' + ID + 'Q'),{all:'Semua nama',noun:'nama',onChange:()=>renderProj()});
 function psFillOpts(rows){
-  [['#' + ID + 'Mitra',4,'Semua mitra'],['#' + ID + 'Stasiun',5,'Semua stasiun']].forEach(([sel,i,all])=>{
-    const el=$(sel), cur=el.value, set=[...new Set(rows.map(r=>r[i]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
-    const sig=set.join('|'); if(el._sig===sig) return; el._sig=sig;
-    el.innerHTML='<option value="">'+all+'</option>'+set.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
-    el.value=set.includes(cur)?cur:'';
-  });
+  const set=(f,list)=>{ const u=[...new Set(list.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id')), sig=u.join('|'); if(f._sig===sig) return; f._sig=sig; f.setOptions(u); };
+  set(fM,rows.map(r=>r[4])); set(fS,rows.map(r=>r[5]));
+  const nm=[]; rows.forEach(r=>{ const ni=psNorm(r[2]), ns=psNorm(r[3]); if(RE_IKR.test(ni)) nm.push(ni); if(ns&&(SBI||RE_SAL.test(ns))) nm.push(ns); }); set(fN,nm);
 }
 function renderProj(){
   const rows=((state.ach&&state.ach.persada&&state.ach.persada.rows)||[]).filter(r=>SBI?RE_IKR.test(psNorm(r[2])):(RE_IKR.test(psNorm(r[2]))||RE_SAL.test(psNorm(r[3]))));
@@ -2651,8 +2646,8 @@ function renderProj(){
   if(PJ&&PJ.error){ $('#' + ID + 'Kpis').innerHTML='<div class="empty" style="grid-column:1/-1">'+esc(PJ.error)+'</div>'; return; }
   const warn=PJ&&PJ.warn?'<div class="empty" style="grid-column:1/-1">⚠ Sumber Project: '+esc(PJ.warn)+'</div>':'';
   psFillOpts(rows);
-  const f=$('#' + ID + 'From').value, t=$('#' + ID + 'To').value, mi=$('#' + ID + 'Mitra').value, st=$('#' + ID + 'Stasiun').value;
-  $('#' + ID + 'Reset').hidden=!(f||t||mi||st);
+  const f=$('#' + ID + 'From').value, t=$('#' + ID + 'To').value, mi=fM.size(), st=fS.size();
+  $('#' + ID + 'Reset').hidden=!(f||t||mi||st||fN.size());
   const inR=d=>d&&(!f||d>=f)&&(!t||d<=t);
   const I={tot:0,dy:{},nm:{}}, S={tot:0,dy:{},nm:{},regTot:0,regDy:{},regNm:{}};
   const bump=(o,k)=>{ o[k]=(o[k]||0)+1; };
@@ -2660,9 +2655,9 @@ function renderProj(){
   const ND={ikr:{},reg:{},act:{}}, DL={ikr:[],reg:[],act:[]}; const nb=(t,n,d,m)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); DL[t].push([d,m,n]); if(m&&!psNMm[n]) psNMm[n]=m; };
   rows.forEach(([reg,act,ni0,ns0,m,s])=>{
     const ni=psNorm(ni0), ns=psNorm(ns0);
-    if(mi&&m!==mi) return; if(st&&s!==st) return;
-    if(RE_IKR.test(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); if(act){ bump(I.dy,act); nb('ikr',ni,act,m); } }
-    if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){
+    if(!fM.has(m)||!fS.has(s)) return;
+    if(RE_IKR.test(ni)&&fN.has(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); if(act){ bump(I.dy,act); nb('ikr',ni,act,m); } }
+    if((SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns))&&fN.has(ns)){
       if(inR(reg)){ S.regTot++; bump(S.regNm,ns); if(reg){ bump(S.regDy,reg); nb('reg',ns,reg,m); } }
       if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); if(act){ bump(S.dy,act); nb('act',ns,act,m); } }
     }
@@ -2670,14 +2665,14 @@ function renderProj(){
   const tS=new Set([...Object.keys(S.regNm),...Object.keys(S.nm)]);
   // Tim aktif = nama yang masih bekerja di periode terakhir data (bulan/minggu/hari sesuai toggle); ikut semua filter (tanggal, mitra, stasiun)
   const aI=new Set(), aS=new Set(), eI=[], eS=[]; let lastD='', pI=0, pR=0, pA=0;
-  rows.forEach(([reg,act,ni0,ns0,m,s])=>{ if(mi&&m!==mi) return; if(st&&s!==st) return; [reg,act].forEach(d=>{ if(d&&/^\d{4}-\d{2}/.test(d)&&inR(d)&&d>lastD) lastD=d; }); });
+  rows.forEach(([reg,act,ni0,ns0,m,s])=>{ if(!fM.has(m)||!fS.has(s)) return; [reg,act].forEach(d=>{ if(d&&/^\d{4}-\d{2}/.test(d)&&inR(d)&&d>lastD) lastD=d; }); });
   const useRange=!!(f||t);   // bila filter tanggal dipilih, angka card = jumlah seluruh rentang itu (bukan hanya periode terakhir)
   const lastM=lastD?(useRange?'range':psBucket(lastD,psPeriod)):'';
   if(lastM) rows.forEach(([reg,act,ni0,ns0,m,s])=>{
-    if(mi&&m!==mi) return; if(st&&s!==st) return;
+    if(!fM.has(m)||!fS.has(s)) return;
     const ni=psNorm(ni0), ns=psNorm(ns0), inM=d=>d&&inR(d)&&/^\d{4}-\d{2}-\d{2}/.test(d)&&(useRange||psBucket(String(d).slice(0,10),psPeriod)===lastM);
-    if(RE_IKR.test(ni)&&inM(act)){ aI.add(ni); eI.push([act,m,ni]); pI++; }
-    if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){ if(inM(reg)||inM(act)){ aS.add(ns); if(inM(reg)){ eS.push([reg,m,ns]); pR++; } if(inM(act)){ eS.push([act,m,ns]); if(reg) pA++; } } }
+    if(RE_IKR.test(ni)&&fN.has(ni)&&inM(act)){ aI.add(ni); eI.push([act,m,ni]); pI++; }
+    if((SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns))&&fN.has(ns)){ if(inM(reg)||inM(act)){ aS.add(ns); if(inM(reg)){ eS.push([reg,m,ns]); pR++; } if(inM(act)){ eS.push([act,m,ns]); if(reg) pA++; } } }
   });
   // Tim aktif keseluruhan dari sheet SALES IKR AKTIVE (bila ada & cocok dengan project ini); selain itu pakai hitungan dari data
   const AC=(state.ach&&state.ach.active)||null, uq=a=>[...new Set((a||[]).map(psNorm).filter(Boolean))];
@@ -2708,12 +2703,12 @@ function renderProj(){
     chPop((isI?'Tim IKR Active':'Tim Sales Active')+' · '+lastLbl, LB+' · '+fmt(nn)+' nama · '+list.length+' mitra', list, 'Angka = '+(isI?'aktivasi':'registrasi + aktivasi')+' per nama di '+lastLbl+'. Klik mitra untuk melihat nama. Tekan Esc atau klik di luar untuk menutup.'); };
   kbox.onclick=openAct; kbox.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ if(e.target.closest('[data-act]')){ e.preventDefault(); openAct(e); } } };
   psChart(I.dy,S.regDy,S.dy,DL);
-  psND=ND; psNameTable(ND); psNameList(rows);
+  psND=ND; psNameTable(ND);
   $('#' + ID + 'IkrNames').innerHTML=psNames(I.nm,'var(--s-ikr)','ikr');
   $('#' + ID + 'SalNames').innerHTML=psNames(S.nm,'var(--s-sales)','act');
   psPerf(I,S);
 }
-['#' + ID + 'From','#' + ID + 'To','#' + ID + 'Mitra','#' + ID + 'Stasiun'].forEach(s=>$(s).addEventListener('change',renderProj));
+['#' + ID + 'From','#' + ID + 'To'].forEach(s=>$(s).addEventListener('change',renderProj));
 let psND=null;
 function psNameDetail(t,n){
   const d=(psND&&psND[t]&&psND[t][n])||{}, p=psPeriod, B={};
@@ -2722,27 +2717,8 @@ function psNameDetail(t,n){
   const tot=list.reduce((s,o)=>s+o.total,0), lab={ikr:'Aktivasi IKR',reg:'Registrasi Sales',act:'Aktivasi Sales'}[t]||'';
   chPop(n,lab+' · total '+fmt(tot),list,'Klik periode untuk melihat rincian per hari. Tekan Esc atau klik di luar untuk menutup.');
 }
-function psNameList(rows){
-  const set=[...new Set(rows.flatMap(r=>[RE_IKR.test(psNorm(r[2]))?psNorm(r[2]):'',(SBI?RE_IKR.test(psNorm(r[2])):RE_SAL.test(psNorm(r[3])))?psNorm(r[3]):'']).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
-  const dl=$('#' + ID + 'NameList'), sig=set.join('|'); if(dl._sig===sig) return; dl._sig=sig;
-  dl.innerHTML=set.map(n=>`<option value="${esc(n)}"></option>`).join('');
-}
-function psJump(scroll){
-  document.querySelectorAll('#' + ID + 'NmTbl tr.ps-hit').forEach(r=>r.classList.remove('ps-hit'));
-  const q=$('#' + ID + 'Q').value.trim().toLowerCase(); if(!q||!psND) return;
-  const has=m=>Object.keys(psND[m]||{}).some(n=>n.toLowerCase().includes(q));
-  const m=[psNm,'ikr','reg','act'].find(has); if(!m) return;
-  if(m!==psNm){ psNm=m; document.querySelectorAll('#' + ID + 'NmSw button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.nm===m)); psNameTable(psND); }
-  const rows=[...document.querySelectorAll('#' + ID + 'NmTbl tbody tr')].filter(r=>{ const c=r.querySelector('.nmc'); return c&&!c.classList.contains('tot')&&(c.querySelector('.nmn')||c).textContent.toLowerCase().includes(q); });
-  const row=rows.find(r=>{ const c=r.querySelector('.nmc'); return (c.querySelector('.nmn')||c).textContent.toLowerCase()===q; })||rows[0]; if(!row) return;
-  row.classList.add('ps-hit');
-  const wrap=$('#' + ID + 'NmTbl'); wrap.scrollTop=Math.max(0,row.offsetTop-wrap.clientHeight/2+row.offsetHeight/2);
-  if(scroll) wrap.closest('.card').scrollIntoView({behavior:'smooth',block:'center'});
-}
-let psQt; $('#' + ID + 'Q').addEventListener('input',()=>{ clearTimeout(psQt); psQt=setTimeout(()=>psJump(true),250); });
-$('#' + ID + 'Q').addEventListener('change',()=>psJump(true));
 ['IkrNames','SalNames','High','Low'].forEach(x=>{ $('#' + ID + x).addEventListener('click',e=>{ const r=e.target.closest('.chrow'); if(r) psNameDetail(r.dataset.t,r.dataset.n); }); });
-$('#' + ID + 'Reset').addEventListener('click',()=>{ ['#' + ID + 'From','#' + ID + 'To','#' + ID + 'Mitra','#' + ID + 'Stasiun','#' + ID + 'Q'].forEach(s=>$(s).value=''); renderProj(); });
+$('#' + ID + 'Reset').addEventListener('click',()=>{ ['#' + ID + 'From','#' + ID + 'To'].forEach(s=>$(s).value=''); fM.clear(); fS.clear(); fN.clear(); renderProj(); });
 return renderProj;
 }
 const PSP={persada:psProject('ps','Psd',/^psd(2k|1m)/i,/^psd1m/i,new Set(['psd1m monika erlina','psd1m leonidas gultom','psd1m irwan arifin','psd1m eko nugroho','psd1m ade ridwan','psd1m andhika priambodo','psd1m asif rahmatullah','psd1m rifaldi sulistyo pratama','psd1m rma kharisma buna','psd1m ismuha','psd1m aline hestia','psd1m lisnawati','psd1m miftakhul graha putra','psd1m catur nanang maret firmansyah','psd1m reno try widodo','psd1m novi putri utami','psd1m sukmah','psd1m arif lutfi hakim'])),pnm:psProject('pn','PNM',/^pnm2k/i,/./,null,true),gmt:psProject('gm','GMT',/^gmt2k/i,/./,null,true)};
