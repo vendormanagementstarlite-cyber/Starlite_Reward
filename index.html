@@ -2594,6 +2594,10 @@ function renderProj(){
   // Tim aktif keseluruhan dari sheet SALES IKR AKTIVE (bila ada & cocok dengan project ini); selain itu pakai hitungan dari data
   const AC=(state.ach&&state.ach.active)||null, uq=a=>[...new Set((a||[]).map(psNorm).filter(Boolean))];
   const shI=AC?uq(AC.ikr).filter(n=>RE_IKR.test(n)):[], shS=(AC&&ACTIVE)?uq(AC.sales).filter(n=>RE_SAL.test(n)):[];
+  // Active dicocokkan dengan nama di Tim IKR / Tim Sales (daftar sheet): hanya nama yang ada di daftar yang dihitung
+  const setI=new Set(shI), setS=new Set(shS);
+  const aIc=shI.length?new Set([...aI].filter(n=>setI.has(n))):aI, aSc=shS.length?new Set([...aS].filter(n=>setS.has(n))):aS;
+  const eIc=shI.length?eI.filter(e=>setI.has(e[2])):eI, eSc=shS.length?eS.filter(e=>setS.has(e[2])):eS;
   const nm2m=new Map(); rows.forEach(([reg,act,ni0,ns0,m])=>{ if(!m) return; const a=psNorm(ni0), b=psNorm(ns0); if(a&&!nm2m.has(a)) nm2m.set(a,m); if(b&&!nm2m.has(b)) nm2m.set(b,m); });
   const shList=(names,ents)=>{ const c=new Map(); ents.forEach(e=>c.set(e[2],(c.get(e[2])||0)+1)); const M=new Map();
     names.forEach(n=>{ const mk=nm2m.get(n)||'(Belum ada data mitra)'; let o=M.get(mk); if(!o){ o={name:mk,total:0,people:[]}; M.set(mk,o); } const k=c.get(n)||0; o.total+=k; o.people.push({nama:n,n:k}); });
@@ -2603,15 +2607,15 @@ function renderProj(){
     ['Aktivasi IKR',pI,'aktivasi IKR '+LB+' · '+lastLbl,'c-ikr'],
     ['Registrasi Sales',pR,'registrasi Sales '+LB+' · '+lastLbl,'c-sales'],
     ['Aktivasi Sales',pA,'aktivasi Sales '+LB+' · '+lastLbl,'c-st'],
-    ['Tim IKR',shI.length?shI.length:aI.size,shI.length?'Seluruh Tim IKR yang aktif (sheet SALES IKR AKTIVE)':'jumlah nama IKR '+LB+' · '+lastLbl,'c-mitra',shI.length?'ikrsh':''],
-    ['Tim IKR Active',aI.size,'masih bekerja di '+lastLbl,'c-mitra','ikr'],
-    ['Tim Sales',shS.length?shS.length:aS.size,shS.length?'Seluruh Tim Sales yang aktif (sheet SALES IKR AKTIVE)':'jumlah nama Sales '+LB+' · '+lastLbl,'c-ikr',shS.length?'salessh':''],
-    ['Tim Sales Active',aS.size,'masih bekerja di '+lastLbl,'c-st','sales']
+    ['Tim IKR',shI.length?shI.length:aI.size,shI.length?'Seluruh Tim IKR yang aktif':'jumlah nama IKR '+LB+' · '+lastLbl,'c-mitra',shI.length?'ikrsh':''],
+    ['Tim IKR Active',aIc.size,'masih bekerja di '+lastLbl,'c-mitra','ikr'],
+    ['Tim Sales',shS.length?shS.length:aS.size,shS.length?'Seluruh Tim Sales yang aktif':'jumlah nama Sales '+LB+' · '+lastLbl,'c-ikr',shS.length?'salessh':''],
+    ['Tim Sales Active',aSc.size,'masih bekerja di '+lastLbl,'c-st','sales']
   ].map(([k,v,d,c,a])=>`<div class="kpi ${c}"${a?` data-act="${a}" role="button" tabindex="0" style="cursor:pointer" title="Klik untuk melihat nama tim aktif"`:''}><div class="k">${k}</div><div class="v">${fmt(v)}</div><div class="d">${d}</div></div>`).join('');
   const kbox=$('#' + ID + 'Kpis');
   const openAct=e=>{ const c=e.target.closest('[data-act]'); if(!c) return; const ak=c.dataset.act, isI=ak.indexOf('ikr')===0, ents=isI?eI:eS, sh=/sh$/.test(ak)?(isI?shI:shS):[];
     if(sh.length){ const list=shList(sh,ents); chPop((isI?'Tim IKR':'Tim Sales')+' · keseluruhan', LB+' · '+fmt(sh.length)+' nama · '+list.length+' mitra', list, 'Seluruh Tim '+(isI?'IKR':'Sales')+' yang aktif sesuai sheet SALES IKR AKTIVE. Angka = '+(isI?'aktivasi':'registrasi + aktivasi')+' pada periode terpilih ('+lastLbl+'); 0 = belum ada aktivitas. Klik mitra untuk melihat nama. Tekan Esc atau klik di luar untuk menutup.'); return; }
-    const list=chPopFromEntries(ents), nn=isI?aI.size:aS.size;
+    const list=chPopFromEntries(isI?eIc:eSc), nn=isI?aIc.size:aSc.size;
     chPop((isI?'Tim IKR Active':'Tim Sales Active')+' · '+lastLbl, LB+' · '+fmt(nn)+' nama · '+list.length+' mitra', list, 'Angka = '+(isI?'aktivasi':'registrasi + aktivasi')+' per nama di '+lastLbl+'. Klik mitra untuk melihat nama. Tekan Esc atau klik di luar untuk menutup.'); };
   kbox.onclick=openAct; kbox.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ if(e.target.closest('[data-act]')){ e.preventDefault(); openAct(e); } } };
   psChart(I.dy,S.regDy,S.dy,DL);
