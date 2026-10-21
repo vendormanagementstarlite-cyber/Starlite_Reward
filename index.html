@@ -708,6 +708,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 #rwKpis,#psKpis,#pnKpis,#gmKpis{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
 #dQ4.on{background:var(--ink,#0B3D7A);color:#fff;border-color:transparent}
 .dact{display:flex;gap:8px;align-items:center;flex:none}.dxl{border:1px solid var(--line-2);background:var(--surface,#fff);color:var(--ink);border-radius:99px;height:32px;padding:0 12px;font:600 12px var(--font,inherit);cursor:pointer;white-space:nowrap}.dxl:hover{background:var(--line-2)}
+.ps-tbl .nmm{display:block;margin-top:1px;font-size:10.5px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chk{outline:none;cursor:pointer}.chk:hover .b,.chk:focus-visible .b{opacity:.8}.chrow:hover .nm{color:var(--accent);font-weight:700}.ps-chart svg{max-width:none}
 </style>
 </head>
@@ -2532,7 +2533,7 @@ function psChart(a,b,c,DL){
 }
 $('#' + ID + 'Sw').addEventListener('click',e=>{ const b=e.target.closest('button[data-sw]'); if(!b) return; psSal=b.dataset.sw; document.querySelectorAll('#' + ID + 'Sw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderProj(); });
 $('#' + ID + 'Tog').addEventListener('click',e=>{ const b=e.target.closest('button[data-p]'); if(!b) return; psPeriod=b.dataset.p; document.querySelectorAll('#' + ID + 'Tog button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderProj(); });
-let psNm='ikr';
+let psNm='ikr', psNMm={};
 function psNameTable(ND){
   const box=$('#' + ID + 'NmTbl'), p=psPeriod, data=ND[psNm]||{};
   const names=Object.keys(data), per={}, cols=new Set();
@@ -2545,12 +2546,49 @@ function psNameTable(ND){
   const color=psNm==='ikr'?'var(--s-ikr)':psNm==='reg'?'var(--s-sales)':'#1f9d6b';
   let s='<table class="ps-tbl"><thead><tr><th class="nmc">Nama</th><th class="tot">Total</th>'+ks.map(k=>`<th title="${esc(psBLabel(k,p))}">${esc(psBShort(k,p))}</th>`).join('')+'</tr></thead><tbody>';
   names.forEach(n=>{
-    s+=`<tr><td class="nmc" title="${esc(n)}">${esc(n)}</td><td class="tot">${fmt(tot(n))}</td>`+ks.map(k=>{ const v=per[n][k]||0; return v?`<td style="background:color-mix(in srgb,${color} ${Math.round(12+v/mx*40)}%,transparent)">${fmt(v)}</td>`:'<td class="z">·</td>'; }).join('')+'</tr>';
+    s+=`<tr><td class="nmc" title="${esc(n)}${psNMm[n]?' · '+esc(psNMm[n]):''}"><span class="nmn">${esc(n)}</span>${psNMm[n]?`<small class="nmm">${esc(psNMm[n])}</small>`:''}</td><td class="tot">${fmt(tot(n))}</td>`+ks.map(k=>{ const v=per[n][k]||0; return v?`<td style="background:color-mix(in srgb,${color} ${Math.round(12+v/mx*40)}%,transparent)">${fmt(v)}</td>`:'<td class="z">·</td>'; }).join('')+'</tr>';
   });
   let sumRow='<tr><td class="nmc tot">Total</td><td class="tot">'+fmt(names.reduce((a,n)=>a+tot(n),0))+'</td>'+ks.map(k=>`<td class="tot">${fmt(names.reduce((a,n)=>a+(per[n][k]||0),0))}</td>`).join('')+'</tr>';
   box.innerHTML=s+sumRow+'</tbody></table>';
 }
 $('#' + ID + 'NmSw').addEventListener('click',e=>{ const b=e.target.closest('button[data-nm]'); if(!b) return; psNm=b.dataset.nm; document.querySelectorAll('#' + ID + 'NmSw button').forEach(x=>x.setAttribute('aria-pressed',x===b)); renderProj(); });
+async function psNmDownload(){
+  const ND=psND; if(!ND) return; const p=psPeriod, data=ND[psNm]||{}, names=Object.keys(data), per={}, cols=new Set();
+  names.forEach(n=>{ const o={}; Object.keys(data[n]).forEach(d=>{ const k=psBucket(d,p); o[k]=(o[k]||0)+data[n][d]; cols.add(k); }); per[n]=o; });
+  if(!names.length){ toast('Belum ada data untuk diunduh'); return; }
+  const ks=[...cols].sort().reverse(), tot=n=>Object.values(per[n]).reduce((a,b)=>a+b,0);
+  names.sort((a,b)=>tot(b)-tot(a)||a.localeCompare(b,'id'));
+  const mLbl={ikr:'IKR Aktivasi',reg:'Sales Registrasi',act:'Sales Aktivasi'}[psNm], pLbl=p==='month'?'Bulanan':p==='week'?'Mingguan':'Harian';
+  const title='Pencapaian per nama '+LB+' · '+mLbl, sub=pLbl+' · '+names.length+' nama';
+  const fname=(title+'_'+pLbl).replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'')+'_'+stamp();
+  const hex=psNm==='ikr'?'0B3D7A':psNm==='reg'?'D2622A':'1F9D6B', mx=Math.max(1,...names.map(n=>Math.max(...Object.values(per[n]))));
+  const blend=a=>{ const c=[0,2,4].map(i=>parseInt(hex.substr(i,2),16)); return 'FF'+c.map(v=>Math.round(255-(255-v)*a).toString(16).padStart(2,'0')).join('').toUpperCase(); };
+  try{
+    if(!window.ExcelJS) await loadScript(CDN+'exceljs/4.4.0/exceljs.min.js');
+    const wb=new ExcelJS.Workbook(); wb.creator='Starlite';
+    const nc=4+ks.length, ws=wb.addWorksheet(mLbl.slice(0,31),{views:[{state:'frozen',xSplit:4,ySplit:5,showGridLines:false}],pageSetup:{orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0}});
+    ws.columns=[{width:5},{width:34},{width:34},{width:9},...ks.map(()=>({width:8.5}))];
+    const NAVY='FF0B3D7A', LINE={style:'thin',color:{argb:'FFD0D7E5'}}, box={top:LINE,left:LINE,bottom:LINE,right:LINE};
+    ws.mergeCells(1,1,1,Math.min(nc,8)); ws.getCell(1,1).value=title; ws.getCell(1,1).font={bold:true,size:14,color:{argb:NAVY}}; ws.getRow(1).height=24;
+    ws.mergeCells(2,1,2,Math.min(nc,8)); ws.getCell(2,1).value=sub; ws.getCell(2,1).font={size:10.5,color:{argb:'FF566179'}};
+    ws.mergeCells(3,1,3,Math.min(nc,8)); ws.getCell(3,1).value='Diunduh '+new Date().toLocaleString('id-ID',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}); ws.getCell(3,1).font={size:9.5,italic:true,color:{argb:'FF8A93A8'}};
+    const h=ws.getRow(5); h.values=['No','Nama','Mitra','Total',...ks.map(k=>psBLabel(k,p))]; h.height=30;
+    h.eachCell(c=>{ c.font={bold:true,color:{argb:'FFFFFFFF'},size:10}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:NAVY}}; c.alignment={vertical:'middle',horizontal:c.col>3?'center':'left',wrapText:true}; c.border=box; });
+    let r=6; const colTot=ks.map(()=>0);
+    names.forEach((n,i)=>{ const row=ws.getRow(r++), vals=ks.map(k=>per[n][k]||0); vals.forEach((v,j)=>colTot[j]+=v);
+      row.values=[i+1,n,psNMm[n]||'',tot(n),...vals.map(v=>v||null)];
+      row.eachCell({includeEmpty:true},(c,ci)=>{ if(ci>nc) return; c.border=box; if(ci===1) c.alignment={horizontal:'center'}; if(ci===4){ c.font={bold:true}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF1F4FA'}}; c.alignment={horizontal:'center'}; }
+        if(ci>4){ c.alignment={horizontal:'center'}; const v=vals[ci-5]; if(v) c.fill={type:'pattern',pattern:'solid',fgColor:{argb:blend(0.12+0.5*v/mx)}}; } }); });
+    const t=ws.getRow(r); t.values=['','TOTAL','',colTot.reduce((a,b)=>a+b,0),...colTot];
+    t.eachCell({includeEmpty:true},(c,ci)=>{ if(ci>nc) return; c.font={bold:true}; c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E2F3'}}; c.border={top:{style:'medium',color:{argb:NAVY}},bottom:LINE,left:LINE,right:LINE}; if(ci>3) c.alignment={horizontal:'center'}; });
+    const buf=await wb.xlsx.writeBuffer();
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})); a.download=fname+'.xlsx'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800);
+  }catch(e){
+    dlCsv(fname+'.csv',[[title],[sub],[],['No','Nama','Mitra','Total',...ks.map(k=>psBLabel(k,p))],...names.map((n,i)=>[i+1,n,psNMm[n]||'',tot(n),...ks.map(k=>per[n][k]||0)])]); toast('Pustaka Excel tidak termuat; diunduh sebagai CSV');
+  }
+}
+{ const sw=$('#' + ID + 'NmSw'), wrap=document.createElement('div'); wrap.style.cssText='display:flex;gap:8px;align-items:center;flex-wrap:wrap'; sw.parentNode.insertBefore(wrap,sw); wrap.appendChild(sw);
+  const b=document.createElement('button'); b.type='button'; b.className='dxl'; b.textContent='⬇ Excel'; b.title='Unduh tabel ke Excel (sesuai metrik & periode yang tampil)'; b.addEventListener('click',psNmDownload); wrap.appendChild(b); }
 function psFillOpts(rows){
   [['#' + ID + 'Mitra',4,'Semua mitra'],['#' + ID + 'Stasiun',5,'Semua stasiun']].forEach(([sel,i,all])=>{
     const el=$(sel), cur=el.value, set=[...new Set(rows.map(r=>r[i]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'id'));
@@ -2570,7 +2608,8 @@ function renderProj(){
   const inR=d=>d&&(!f||d>=f)&&(!t||d<=t);
   const I={tot:0,dy:{},nm:{}}, S={tot:0,dy:{},nm:{},regTot:0,regDy:{},regNm:{}};
   const bump=(o,k)=>{ o[k]=(o[k]||0)+1; };
-  const ND={ikr:{},reg:{},act:{}}, DL={ikr:[],reg:[],act:[]}; const nb=(t,n,d,m)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); DL[t].push([d,m,n]); };
+  psNMm={};
+  const ND={ikr:{},reg:{},act:{}}, DL={ikr:[],reg:[],act:[]}; const nb=(t,n,d,m)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); DL[t].push([d,m,n]); if(m&&!psNMm[n]) psNMm[n]=m; };
   rows.forEach(([reg,act,ni0,ns0,m,s])=>{
     const ni=psNorm(ni0), ns=psNorm(ns0);
     if(mi&&m!==mi) return; if(st&&s!==st) return;
@@ -2584,10 +2623,11 @@ function renderProj(){
   // Tim aktif = nama yang masih bekerja di periode terakhir data (bulan/minggu/hari sesuai toggle); ikut semua filter (tanggal, mitra, stasiun)
   const aI=new Set(), aS=new Set(), eI=[], eS=[]; let lastD='', pI=0, pR=0, pA=0;
   rows.forEach(([reg,act,ni0,ns0,m,s])=>{ if(mi&&m!==mi) return; if(st&&s!==st) return; [reg,act].forEach(d=>{ if(d&&/^\d{4}-\d{2}/.test(d)&&inR(d)&&d>lastD) lastD=d; }); });
-  const lastM=lastD?psBucket(lastD,psPeriod):'';
+  const useRange=!!(f||t);   // bila filter tanggal dipilih, angka card = jumlah seluruh rentang itu (bukan hanya periode terakhir)
+  const lastM=lastD?(useRange?'range':psBucket(lastD,psPeriod)):'';
   if(lastM) rows.forEach(([reg,act,ni0,ns0,m,s])=>{
     if(mi&&m!==mi) return; if(st&&s!==st) return;
-    const ni=psNorm(ni0), ns=psNorm(ns0), inM=d=>d&&inR(d)&&/^\d{4}-\d{2}-\d{2}/.test(d)&&psBucket(String(d).slice(0,10),psPeriod)===lastM;
+    const ni=psNorm(ni0), ns=psNorm(ns0), inM=d=>d&&inR(d)&&/^\d{4}-\d{2}-\d{2}/.test(d)&&(useRange||psBucket(String(d).slice(0,10),psPeriod)===lastM);
     if(RE_IKR.test(ni)&&inM(act)){ aI.add(ni); eI.push([act,m,ni]); pI++; }
     if(SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns)){ if(inM(reg)||inM(act)){ aS.add(ns); if(inM(reg)){ eS.push([reg,m,ns]); pR++; } if(inM(act)){ eS.push([act,m,ns]); if(reg) pA++; } } }
   });
@@ -2602,7 +2642,8 @@ function renderProj(){
   const shList=(names,ents)=>{ const c=new Map(); ents.forEach(e=>c.set(e[2],(c.get(e[2])||0)+1)); const M=new Map();
     names.forEach(n=>{ const mk=nm2m.get(n)||'(Belum ada data mitra)'; let o=M.get(mk); if(!o){ o={name:mk,total:0,people:[]}; M.set(mk,o); } const k=c.get(n)||0; o.total+=k; o.people.push({nama:n,n:k}); });
     return [...M.values()].map(o=>({name:o.name,total:o.total,people:o.people.sort((a,b)=>b.n-a.n||a.nama.localeCompare(b.nama,'id'))})).sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name,'id')); };
-  const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'], lastLbl=lastM?psBLabel(lastM,psPeriod)+(psPeriod==='month'?'':' '+lastM.slice(0,4)):'-';
+  const BLN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'], fD=k=>k.slice(8,10)+'/'+k.slice(5,7)+'/'+k.slice(0,4), rngTxt=f&&t?(f===t?fD(f):fD(f)+'–'+fD(t)):(f?'mulai '+fD(f):'s.d. '+(t?fD(t):'')),
+    lastLbl=lastM==='range'?rngTxt:lastM?psBLabel(lastM,psPeriod)+(psPeriod==='month'?'':' '+lastM.slice(0,4)):'-';
   $('#' + ID + 'Kpis').innerHTML=warn+[
     ['Aktivasi IKR',pI,'aktivasi IKR '+LB+' · '+lastLbl,'c-ikr'],
     ['Registrasi Sales',pR,'registrasi Sales '+LB+' · '+lastLbl,'c-sales'],
@@ -2644,8 +2685,8 @@ function psJump(scroll){
   const has=m=>Object.keys(psND[m]||{}).some(n=>n.toLowerCase().includes(q));
   const m=[psNm,'ikr','reg','act'].find(has); if(!m) return;
   if(m!==psNm){ psNm=m; document.querySelectorAll('#' + ID + 'NmSw button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.nm===m)); psNameTable(psND); }
-  const rows=[...document.querySelectorAll('#' + ID + 'NmTbl tbody tr')].filter(r=>{ const c=r.querySelector('.nmc'); return c&&!c.classList.contains('tot')&&c.textContent.toLowerCase().includes(q); });
-  const row=rows.find(r=>r.querySelector('.nmc').textContent.toLowerCase()===q)||rows[0]; if(!row) return;
+  const rows=[...document.querySelectorAll('#' + ID + 'NmTbl tbody tr')].filter(r=>{ const c=r.querySelector('.nmc'); return c&&!c.classList.contains('tot')&&(c.querySelector('.nmn')||c).textContent.toLowerCase().includes(q); });
+  const row=rows.find(r=>{ const c=r.querySelector('.nmc'); return (c.querySelector('.nmn')||c).textContent.toLowerCase()===q; })||rows[0]; if(!row) return;
   row.classList.add('ps-hit');
   const wrap=$('#' + ID + 'NmTbl'); wrap.scrollTop=Math.max(0,row.offsetTop-wrap.clientHeight/2+row.offsetHeight/2);
   if(scroll) wrap.closest('.card').scrollIntoView({behavior:'smooth',block:'center'});
