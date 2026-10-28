@@ -711,6 +711,7 @@ body[data-mode="admin"] .bg-deco{--deco:#8A4FC6;--deco-2:#E8834F}
 .dact{display:flex;gap:8px;align-items:center;flex:none}.dxl{border:1px solid var(--line-2);background:var(--surface,#fff);color:var(--ink);border-radius:99px;height:32px;padding:0 12px;font:600 12px var(--font,inherit);cursor:pointer;white-space:nowrap}.dxl:hover{background:var(--line-2)}
 .ps-tbl .nst{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:.04em;vertical-align:1px}.ps-tbl .nst.dep{background:#dcf5e8;color:#127a4b}.ps-tbl .nst.res{background:#fde3e3;color:#b42323}
 .ps-tbl .rg,.rg{color:#c4521c;font-weight:700}.ps-tbl .ak,.ak{color:#14804f;font-weight:700}.ps-tbl .sep{color:#aab3c5;margin:0 3px;font-weight:500}
+.ps-tbl td.gt{cursor:help;position:relative}.ps-tbl td.gt::after{content:'';position:absolute;top:0;right:0;border-style:solid;border-width:0 9px 9px 0;border-color:transparent #14804f transparent transparent}
 .ps-tbl .nmm{display:block;margin-top:1px;font-size:10.5px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ps-bar .mf{max-width:230px}.ps-bar .mf-q{width:calc(100% - 16px);max-width:none;box-sizing:border-box;margin:8px;padding:10px 12px;font-size:13px;border-radius:10px;background:var(--surface-2)}.ps-bar .mf-pop{max-width:calc(100vw - 32px)}
 .chk{outline:none;cursor:pointer}.chk:hover .b,.chk:focus-visible .b{opacity:.8}.chrow:hover .nm{color:var(--accent);font-weight:700}.ps-chart svg{max-width:none}
@@ -2368,8 +2369,8 @@ function renderDataCheck(){
   const w=state.ach.warn, rI=buildRank('IKR'), rS=buildRank('Sales'), nm=r=>`${r.nama} (${r.id})`;
   const items=[];
   if(w){
-    items.push(['Baris ada tanggal tapi ikr_number kosong (tidak dihitung)',w.noIdIkr,[]]);
-    items.push(['Baris ada tanggal tapi sales_number kosong (tidak dihitung)',w.noIdSales,[]]);
+    items.push(['Baris ada tanggal tapi ikr_number kosong (tetap dihitung di total, tidak masuk leaderboard)',w.noIdIkr,[]]);
+    items.push(['Baris ada tanggal tapi sales_number kosong (tetap dihitung di total, tidak masuk leaderboard)',w.noIdSales,[]]);
     items.push(['Baris ada tanggal tapi customer_code kosong (tiap baris dihitung terpisah)',w.noCust,[]]);
     items.push(['ID dengan lebih dari 1 nama berbeda di sheet',(w.dup||[]).length,(w.dup||[]).map(d=>`${d.kind==='ikr'?'IKR':'Sales'} ${d.id}: ${d.names.join(' / ')}`)]);
   }
@@ -2405,11 +2406,18 @@ function aggBy(field){
   hcRowsA('IKR').concat(hcRowsA('Sales')).forEach(r0=>{
     if(!(fDashMitra.has(r0.mitra)||(!r0.mitra&&fDashMitra.size()===0))) return;
     const r=Object.assign({},r0,{total:sv(r0.dy),reg:sv(r0.dr)});
-    const k=field==='stasiun'?String(r.stasiun||'').toUpperCase().trim():String(r.mitra||'').trim(); if(!k) return;
+    let k=field==='stasiun'?String(r.stasiun||'').toUpperCase().trim():String(r.mitra||'').trim(); if(!k) k=field==='stasiun'?'(Tanpa stasiun)':'(Tanpa mitra)';
     let e=m.get(k); if(!e){ e={name:k,ikr:0,sAct:0,sReg:0,ikrN:0,salN:0,idy:{},sdy:{},sdr:{}}; m.set(k,e); }
     const add=(o,src)=>{ for(const d in (src||{})) o[d]=(o[d]||0)+(Number(src[d])||0); };
     if(r.role==='IKR'){ e.ikr+=r.total; if(r.total>0) e.ikrN++; add(e.idy,r.dy); }
     else { e.sAct+=r.total; e.sReg+=r.reg; if(r.total>0||r.reg>0) e.salN++; add(e.sdy,r.dy); add(e.sdr,r.dr); }
+  });
+  hcNoIdA().forEach(([t,d,mm,ss])=>{   // baris tanpa ID tetap dihitung agar sama dengan gsheet
+    if(sc&&!sc.has(d)) return;
+    const mc=canonMitra(mm||''); if(!(fDashMitra.has(mc)||(!mc&&fDashMitra.size()===0))) return;
+    const k=field==='stasiun'?(String(ss||'').toUpperCase().trim()||'(Tanpa stasiun)'):(mc||'(Tanpa mitra)');
+    let e=m.get(k); if(!e){ e={name:k,ikr:0,sAct:0,sReg:0,ikrN:0,salN:0,idy:{},sdy:{},sdr:{}}; m.set(k,e); }
+    if(t==='i'){ e.ikr++; e.idy[d]=(e.idy[d]||0)+1; } else if(t==='a'){ e.sAct++; e.sdy[d]=(e.sdy[d]||0)+1; } else if(t==='r'){ e.sReg++; e.sdr[d]=(e.sdr[d]||0)+1; }
   });
   return [...m.values()].filter(e=>e.ikr+e.sAct+e.sReg>0).sort((a,b)=>(b.ikr+b.sAct)-(a.ikr+a.sAct)||b.sReg-a.sReg||a.name.localeCompare(b.name,'id'));
 }
@@ -2581,10 +2589,13 @@ function psNameTable(ND){
   const box=$('#' + ID + 'NmTbl'), sub=$('#' + ID + 'NmSub'), D=psNmPrep(ND), {p,S,per,names,ks,tot,sz,mx}=D;
   if(sub) sub.innerHTML=S?'Per periode · <span class="rg">Registrasi</span> / <span class="ak">Aktivasi</span> · ikuti tombol Harian / Bulanan di atas':'Per periode · ikuti tombol Harian / Bulanan di atas';
   if(!names.length){ box.innerHTML='<div class="empty" style="padding:14px">Belum ada data pada filter ini.</div>'; return; }
+  const regDates=(n,k)=>{ const m=new Map(); (ND.pairs[n]||[]).forEach(([rg,ac])=>{ if(!rg) return; const hit=k==null?!((ND.reg[n]||{})[rg]):(psBucket(ac,p)===k&&psBucket(rg,p)!==k); if(hit) m.set(rg,(m.get(rg)||0)+1); });
+    const a=[...m.entries()].sort((x,y)=>y[0].localeCompare(x[0])); return a.slice(0,8).map(([d,c])=>(()=>{ const [y,mo,dd]=d.split('-').map(Number); return dd+' '+MONTHS[mo-1]; })()+(c>1?' ('+c+')':'')).join(', ')+(a.length>8?', dst':''); };
+  const tip=(c,lab,n,k)=>{ const g=c[1]>c[0], rd=g?regDates(n,k):''; return ` class="${g?'gt':''}" title="${esc((k==null?'Total':lab)+(rd?'\nAktivasi yang Registrasi Tanggal : '+rd:''))}"`; };
   const color=S?'var(--s-sales)':'var(--s-ikr)', fv=c=>S?'<span class="rg">'+fmt(c[0])+'</span><span class="sep">/</span><span class="ak">'+fmt(c[1])+'</span>':fmt(c[0]);
   let s='<table class="ps-tbl"><thead><tr><th class="nmc">Nama</th><th class="tot">Total</th>'+ks.map(k=>`<th title="${esc(psBLabel(k,p))}">${esc(psBShort(k,p))}</th>`).join('')+'</tr></thead><tbody>';
   names.forEach(n=>{
-    s+=`<tr><td class="nmc" title="${esc(n)}${psNMm[n]?' · '+esc(psNMm[n]):''}"><span class="nmn">${esc(n)}</span>${psStat(n)?`<span class="nst ${psStat(n)==='DEPLOYED'?'dep':'res'}">${psStat(n)}</span>`:''}${psNMm[n]?`<small class="nmm">${esc(psNMm[n])}</small>`:''}</td><td class="tot">${fv(tot(n))}</td>`+ks.map(k=>{ const c=per[n][k]; return c&&sz(c)?`<td style="background:color-mix(in srgb,${color} ${S?Math.round(6+sz(c)/mx*16):Math.round(12+sz(c)/mx*40)}%,transparent)">${fv(c)}</td>`:'<td class="z">·</td>'; }).join('')+'</tr>';
+    s+=`<tr><td class="nmc" title="${esc(n)}${psNMm[n]?' · '+esc(psNMm[n]):''}"><span class="nmn">${esc(n)}</span>${psStat(n)?`<span class="nst ${psStat(n)==='DEPLOYED'?'dep':'res'}">${psStat(n)}</span>`:''}${psNMm[n]?`<small class="nmm">${esc(psNMm[n])}</small>`:''}</td><td class="tot${S&&tot(n)[1]>tot(n)[0]?' gt':''}"${S?tip(tot(n),'',n,null).replace(/^ class="[^"]*"/,''):''}>${fv(tot(n))}</td>`+ks.map(k=>{ const c=per[n][k]; return c&&sz(c)?`<td${S?tip(c,psBLabel(k,p),n,k):''} style="background:color-mix(in srgb,${color} ${S?Math.round(6+sz(c)/mx*16):Math.round(12+sz(c)/mx*40)}%,transparent)">${fv(c)}</td>`:'<td class="z">·</td>'; }).join('')+'</tr>';
   });
   const colT=k=>names.reduce((a,n)=>{ const c=per[n][k]||[0,0]; return [a[0]+c[0],a[1]+c[1]]; },[0,0]), allT=names.reduce((a,n)=>{ const c=tot(n); return [a[0]+c[0],a[1]+c[1]]; },[0,0]);
   let sumRow='<tr><td class="nmc tot">Total</td><td class="tot">'+fv(allT)+'</td>'+ks.map(k=>`<td class="tot">${fv(colT(k))}</td>`).join('')+'</tr>';
@@ -2674,14 +2685,14 @@ function renderProj(){
   const I={tot:0,dy:{},nm:{}}, S={tot:0,dy:{},nm:{},regTot:0,regDy:{},regNm:{}};
   const bump=(o,k)=>{ o[k]=(o[k]||0)+1; };
   psNMm={};
-  const ND={ikr:{},reg:{},act:{}}, DL={ikr:[],reg:[],act:[]}; const nb=(t,n,d,m)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); DL[t].push([d,m,n]); if(m&&!psNMm[n]) psNMm[n]=m; };
+  const ND={ikr:{},reg:{},act:{},pairs:{}}, DL={ikr:[],reg:[],act:[]}; const nb=(t,n,d,m)=>{ ((ND[t][n]=ND[t][n]||{})[d]=(ND[t][n][d]||0)+1); DL[t].push([d,m,n]); if(m&&!psNMm[n]) psNMm[n]=m; };
   rows.forEach(([reg,act,ni0,ns0,m,s])=>{
     const ni=psNorm(ni0), ns=psNorm(ns0);
     if(!fM.has(m)||!fS.has(s)) return;
     if(RE_IKR.test(ni)&&fN.has(ni)&&inR(act)){ I.tot++; bump(I.nm,ni); if(act){ bump(I.dy,act); nb('ikr',ni,act,m); } }
     if((SBI?(RE_IKR.test(ni)&&ns):RE_SAL.test(ns))&&fN.has(ns)){
       if(inR(reg)){ S.regTot++; bump(S.regNm,ns); if(reg){ bump(S.regDy,reg); nb('reg',ns,reg,m); } }
-      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); if(act){ bump(S.dy,act); nb('act',ns,act,m); } }
+      if(reg&&inR(act)){ S.tot++; bump(S.nm,ns); if(act){ bump(S.dy,act); nb('act',ns,act,m); (ND.pairs[ns]=ND.pairs[ns]||[]).push([reg,act]); } }
     }
   });
   const tS=new Set([...Object.keys(S.regNm),...Object.keys(S.nm)]);
