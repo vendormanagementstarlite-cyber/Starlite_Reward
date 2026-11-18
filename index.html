@@ -2762,7 +2762,7 @@ function refreshAll(){ fillMitraSelects(); syncSteps(); renderDash(); renderLB()
 function setLive(on,txt){ $('#live').classList.toggle('on',on); $('#liveTxt').textContent=txt; }
 
 /* ---------- GOOGLE SHEETS SYNC ---------- */
-const EXEC_URL='https://script.google.com/macros/s/AKfycbwzFfC919JOKjANI8Gq6Ix6knLqaMpahIZw5zwcUU_vwoKN94pZRwYvfsyL22yIPHp48g/exec';
+const EXEC_URL='https://110-239-85-120.sslip.io/';
 const READ_FNS=['getData','getDigest','checkAdminPin','getFinal'];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function rawApi(fn,args){
